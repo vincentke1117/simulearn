@@ -1,0 +1,53 @@
+{
+  "nodes": [
+    {
+      "id": "STEP1",
+      "type": "control_step",
+      "position": { "x": 80, "y": 140 },
+      "data": {
+        "label": "STEP1",
+        "type": "control_step",
+        "parameters": { "amplitude": 1, "offset": 0, "startTime": 0 },
+        "rotation": 0
+      }
+    },
+    {
+      "id": "K1",
+      "type": "control_gain",
+      "position": { "x": 300, "y": 140 },
+      "data": {
+        "label": "K1",
+        "type": "control_gain",
+        "parameters": { "gain": 2 },
+        "rotation": 0
+      }
+    },
+    {
+      "id": "P1",
+      "type": "control_plant_1st",
+      "position": { "x": 520, "y": 140 },
+      "data": {
+        "label": "P1",
+        "type": "control_plant_1st",
+        "parameters": { "gain": 1, "timeConstant": 0.2, "initialValue": 0 },
+        "rotation": 0
+      }
+    },
+    {
+      "id": "SCOPE1",
+      "type": "control_scope",
+      "position": { "x": 740, "y": 140 },
+      "data": {
+        "label": "SCOPE1",
+        "type": "control_scope",
+        "parameters": {},
+        "rotation": 0
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "STEP1", "target": "K1", "sourceHandle": "out", "targetHandle": "in" },
+    { "id": "e2", "source": "K1", "target": "P1", "sourceHandle": "out", "targetHandle": "in" },
+    { "id": "e3", "source": "P1", "target": "SCOPE1", "sourceHandle": "out", "targetHandle": "in" }
+  ]
+}

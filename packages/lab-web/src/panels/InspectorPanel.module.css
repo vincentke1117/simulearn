@@ -1,0 +1,85 @@
+.panel {
+  padding: 16px;
+  width: 260px;
+  border-left: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dark .panel {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.empty {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.input {
+  border-radius: 6px;
+  border: 1px solid #cbd5f5;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.unitHint {
+  color: #94a3b8;
+}
+
+.caption {
+  font-size: 12px;
+  color: #475569;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.hint {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.handleList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.handleItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.handleId {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+}

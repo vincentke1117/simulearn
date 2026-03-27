@@ -1,0 +1,119 @@
+.controls {
+  padding: 12px 16px;
+  border-top: 1px solid #e2e8f0;
+  background: #ffffff;
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.dark .controls {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.input {
+  border-radius: 6px;
+  border: 1px solid #cbd5f5;
+  padding: 6px 8px;
+  font-size: 12px;
+  width: 140px;
+}
+
+.button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.buttonSecondary {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #2563eb;
+  background: #ffffff;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.buttonSecondary:hover {
+  background: #eff6ff;
+}
+
+.buttonSecondary:active {
+  background: #dbeafe;
+}
+
+/* 方法对比模式样式 */
+.comparisonSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #7dd3fc;
+  border-radius: 6px;
+  flex: 1;
+}
+
+.comparisonTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0369a1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.methodCheckboxes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #0369a1;
+}
+
+.checkboxText {
+  color: #164e63;
+  user-select: none;
+}
+
+.comparisonInfo {
+  font-size: 11px;
+  color: #0c4a6e;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 6px 8px;
+  border-radius: 4px;
+  text-align: center;
+  margin-top: 4px;
+}

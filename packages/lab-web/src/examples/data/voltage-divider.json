@@ -1,0 +1,34 @@
+{
+  "nodes": [
+    {
+      "id": "source",
+      "type": "vsource_dc",
+      "position": { "x": 0, "y": 100 },
+      "data": { "label": "Vs", "type": "vsource_dc", "parameters": { "voltage": 10 }, "rotation": 0 }
+    },
+    {
+      "id": "r1",
+      "type": "resistor",
+      "position": { "x": 100, "y": 50 },
+      "data": { "label": "R1", "type": "resistor", "parameters": { "resistance": 1000 }, "rotation": 90 }
+    },
+    {
+      "id": "r2",
+      "type": "resistor",
+      "position": { "x": 100, "y": 150 },
+      "data": { "label": "R2", "type": "resistor", "parameters": { "resistance": 2000 }, "rotation": 90 }
+    },
+    {
+      "id": "gnd",
+      "type": "ground",
+      "position": { "x": 0, "y": 200 },
+      "data": { "label": "GND", "type": "ground", "parameters": {}, "rotation": 0 }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "source", "target": "r1", "sourceHandle": "pos", "targetHandle": "left" },
+    { "id": "e2", "source": "r1", "target": "r2", "sourceHandle": "right", "targetHandle": "left" },
+    { "id": "e3", "source": "r2", "target": "gnd", "sourceHandle": "right", "targetHandle": "top" },
+    { "id": "e4", "source": "source", "target": "gnd", "sourceHandle": "neg", "targetHandle": "top" }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "nodes": [
+    {
+      "id": "source",
+      "type": "vsource_ac",
+      "position": { "x": 0, "y": 100 },
+      "data": { "label": "Vac", "type": "vsource_ac", "parameters": { "amplitude": 10, "frequency": 50 }, "rotation": 0 }
+    },
+    {
+      "id": "r1",
+      "type": "resistor",
+      "position": { "x": 100, "y": 50 },
+      "data": { "label": "R", "type": "resistor", "parameters": { "resistance": 10 }, "rotation": 0 }
+    },
+    {
+      "id": "l1",
+      "type": "inductor",
+      "position": { "x": 250, "y": 50 },
+      "data": { "label": "L", "type": "inductor", "parameters": { "inductance": 0.1 }, "rotation": 0 }
+    },
+    {
+      "id": "c1",
+      "type": "capacitor",
+      "position": { "x": 400, "y": 50 },
+      "data": { "label": "C", "type": "capacitor", "parameters": { "capacitance": 0.0001 }, "rotation": 0 }
+    },
+    {
+      "id": "gnd",
+      "type": "ground",
+      "position": { "x": 250, "y": 200 },
+      "data": { "label": "GND", "type": "ground", "parameters": {}, "rotation": 0 }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "source", "target": "r1", "sourceHandle": "pos", "targetHandle": "left" },
+    { "id": "e2", "source": "r1", "target": "l1", "sourceHandle": "right", "targetHandle": "left" },
+    { "id": "e3", "source": "l1", "target": "c1", "sourceHandle": "right", "targetHandle": "left" },
+    { "id": "e4", "source": "c1", "target": "gnd", "sourceHandle": "right", "targetHandle": "top" },
+    { "id": "e5", "source": "source", "target": "gnd", "sourceHandle": "neg", "targetHandle": "top" }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "nodes": [
+    {
+      "id": "source",
+      "type": "vsource_dc",
+      "position": { "x": 0, "y": 150 },
+      "data": { "label": "Vs", "type": "vsource_dc", "parameters": { "voltage": 5 }, "rotation": 0 }
+    },
+    {
+      "id": "r1",
+      "type": "resistor",
+      "position": { "x": 150, "y": 50 },
+      "data": { "label": "R1", "type": "resistor", "parameters": { "resistance": 100 }, "rotation": 0 }
+    },
+    {
+      "id": "r2",
+      "type": "resistor",
+      "position": { "x": 300, "y": 50 },
+      "data": { "label": "R2", "type": "resistor", "parameters": { "resistance": 100 }, "rotation": 0 }
+    },
+    {
+      "id": "r3",
+      "type": "resistor",
+      "position": { "x": 150, "y": 250 },
+      "data": { "label": "R3", "type": "resistor", "parameters": { "resistance": 100 }, "rotation": 0 }
+    },
+    {
+      "id": "rx",
+      "type": "resistor",
+      "position": { "x": 300, "y": 250 },
+      "data": { "label": "Rx", "type": "resistor", "parameters": { "resistance": 120 }, "rotation": 0 }
+    },
+    {
+      "id": "meter",
+      "type": "current_probe",
+      "position": { "x": 225, "y": 150 },
+      "data": { "label": "A", "type": "current_probe", "parameters": {}, "rotation": 90 }
+    },
+    {
+      "id": "gnd",
+      "type": "ground",
+      "position": { "x": 0, "y": 250 },
+      "data": { "label": "GND", "type": "ground", "parameters": {}, "rotation": 0 }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "source", "target": "r1", "sourceHandle": "pos", "targetHandle": "left" },
+    { "id": "e2", "source": "r1", "target": "r2", "sourceHandle": "right", "targetHandle": "left" },
+    { "id": "e3", "source": "source", "target": "r3", "sourceHandle": "pos", "targetHandle": "left" },
+    { "id": "e4", "source": "r3", "target": "rx", "sourceHandle": "right", "targetHandle": "left" },
+    { "id": "e5", "source": "r1", "target": "meter", "sourceHandle": "right", "targetHandle": "left" },
+    { "id": "e6", "source": "r3", "target": "meter", "sourceHandle": "right", "targetHandle": "right" },
+    { "id": "e7", "source": "r2", "target": "rx", "sourceHandle": "right", "targetHandle": "right" },
+    { "id": "e8", "source": "source", "target": "gnd", "sourceHandle": "neg", "targetHandle": "top" }
+  ]
+}

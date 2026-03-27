@@ -1,0 +1,14 @@
+{
+  "nodes": [
+    { "id": "VAC", "type": "vsource_ac", "position": { "x": 120, "y": 140 }, "data": { "label": "VAC", "type": "vsource_ac", "parameters": { "amplitude": 2, "frequency": 1000 } } },
+    { "id": "C1", "type": "capacitor", "position": { "x": 300, "y": 140 }, "data": { "label": "C", "type": "capacitor", "parameters": { "value": 1e-6 } } },
+    { "id": "GND", "type": "ground", "position": { "x": 300, "y": 240 }, "data": { "label": "G", "type": "ground", "parameters": {} } },
+    { "id": "VP", "type": "voltage_probe", "position": { "x": 380, "y": 100 }, "data": { "label": "VP", "type": "voltage_probe", "parameters": {} } }
+  ],
+  "edges": [
+    { "id": "eVACpos-C1p", "source": "VAC", "target": "C1", "sourceHandle": "pos", "targetHandle": "p" },
+    { "id": "eC1n-GND", "source": "C1", "target": "GND", "sourceHandle": "n", "targetHandle": "gnd" },
+    { "id": "eVACneg-GND", "source": "VAC", "target": "GND", "sourceHandle": "neg", "targetHandle": "gnd" },
+    { "id": "eVP-node-C1n", "source": "VP", "target": "C1", "sourceHandle": "node", "targetHandle": "n" }
+  ]
+}

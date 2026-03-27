@@ -1,0 +1,14 @@
+{
+  "nodes": [
+    { "id": "I1", "type": "isource_dc", "position": { "x": 120, "y": 180 }, "data": { "label": "I", "type": "isource_dc", "parameters": { "dc": 0.001 } } },
+    { "id": "IP", "type": "current_probe", "position": { "x": 240, "y": 180 }, "data": { "label": "IP", "type": "current_probe", "parameters": {} } },
+    { "id": "R1", "type": "resistor", "position": { "x": 360, "y": 180 }, "data": { "label": "R", "type": "resistor", "parameters": { "value": 1000 } } },
+    { "id": "GND", "type": "ground", "position": { "x": 360, "y": 280 }, "data": { "label": "G", "type": "ground", "parameters": {} } }
+  ],
+  "edges": [
+    { "id": "eI1pos-IPp", "source": "I1", "target": "IP", "sourceHandle": "pos", "targetHandle": "p" },
+    { "id": "eIPn-R1p", "source": "IP", "target": "R1", "sourceHandle": "n", "targetHandle": "p" },
+    { "id": "eR1n-GND", "source": "R1", "target": "GND", "sourceHandle": "n", "targetHandle": "gnd" },
+    { "id": "eI1neg-GND", "source": "I1", "target": "GND", "sourceHandle": "neg", "targetHandle": "gnd" }
+  ]
+}

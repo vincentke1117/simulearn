@@ -1,0 +1,62 @@
+[
+  {
+    "id": "A1",
+    "title": "初始化 tasks.json 并创建首批任务",
+    "status": "completed",
+    "priority": "high",
+    "owner": "admin",
+    "start_date": "2025-11-13",
+    "due_date": "2025-11-13",
+    "notes": "任务记录文件初始化"
+  },
+  {
+    "id": "E1",
+    "title": "项目详情增强：展示目标与前置并新增开始按钮",
+    "status": "pending",
+    "priority": "high",
+    "owner": "admin",
+    "start_date": "2025-11-13"
+  },
+  {
+    "id": "W1",
+    "title": "工作区任务清单本地持久化与仿真状态同步",
+    "status": "pending",
+    "priority": "high",
+    "owner": "admin"
+  },
+  {
+    "id": "R1",
+    "title": "结果页读取工作区进度并丰富报告内容",
+    "status": "pending",
+    "priority": "medium",
+    "owner": "admin"
+  },
+  {
+    "id": "AI1",
+    "title": "AI对话Markdown渲染与来源占位、会话持久化",
+    "status": "pending",
+    "priority": "high",
+    "owner": "admin"
+  },
+  {
+    "id": "D1",
+    "title": "Dashboard统计联动（本地聚合）",
+    "status": "pending",
+    "priority": "medium",
+    "owner": "admin"
+  },
+  {
+    "id": "RBAC1",
+    "title": "路由守卫RBAC占位与入口可见性调整",
+    "status": "pending",
+    "priority": "medium",
+    "owner": "admin"
+  },
+  {
+    "id": "ERR1",
+    "title": "接入错误边界并统一异常提示",
+    "status": "pending",
+    "priority": "medium",
+    "owner": "admin"
+  }
+]

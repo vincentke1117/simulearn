@@ -1,0 +1,121 @@
+.matrixContainer {
+  margin: 12px 0;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.matrixLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.matrixScroll {
+  overflow-x: auto;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.matrix {
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  background: #ffffff;
+}
+
+.matrix th,
+.matrix td {
+  border: 1px solid #cbd5e1;
+  padding: 6px 8px;
+  text-align: right;
+}
+
+.matrix th {
+  background: #f1f5f9;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.cornerCell {
+  background: #f8fafc !important;
+}
+
+.colHeader {
+  min-width: 50px;
+  text-align: center;
+}
+
+.rowHeader {
+  background: #f1f5f9;
+  font-weight: 600;
+  color: #1e293b;
+  text-align: center;
+  min-width: 40px;
+}
+
+.cell {
+  background: #ffffff;
+  color: #334155;
+}
+
+.matrix tr:nth-child(even) .cell {
+  background: #f9fafb;
+}
+
+.matrix tr:hover .cell {
+  background: #f0f4f8;
+}
+
+/* 向量显示 */
+.vectorContainer {
+  margin: 12px 0;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #7dd3fc;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.vectorLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0c4a6e;
+  margin: 0 0 10px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vectorContent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vectorItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid #bae6fd;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+
+.vectorItemLabel {
+  font-weight: 600;
+  color: #0369a1;
+  min-width: 40px;
+}
+
+.vectorItemValue {
+  color: #164e63;
+  text-align: right;
+  flex: 1;
+  padding-left: 12px;
+}

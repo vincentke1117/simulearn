@@ -1,0 +1,96 @@
+.node {
+  min-width: 160px;
+  border-radius: 8px;
+  border: 2px solid var(--node-accent, #3b82f6);
+  background: #1e293b;
+  color: #f1f5f9;
+  font-size: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.voltage {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.5px;
+}
+
+.current {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.5px;
+}
+
+.voltageSecondary {
+  background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+  color: #e2e8f0;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  letter-spacing: 0.3px;
+}
+
+.titleIcon {
+  display: inline-flex;
+  margin-right: 6px;
+}
+
+.iconCenter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 0;
+}
+
+.parameters {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.parameterRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.parameterUnit {
+  color: #cbd5e1;
+}
+
+.handleLabel {
+  position: absolute;
+  font-size: 10px;
+  pointer-events: none;
+  color: #cbd5e1;
+}
+
+.handleWrapper {
+  position: absolute;
+  inset: 0;
+}

@@ -1,0 +1,14 @@
+{
+  "nodes": [
+    { "id": "V1", "type": "vsource_dc", "position": { "x": 100, "y": 150 }, "data": { "label": "V", "type": "vsource_dc", "parameters": { "dc": 5 } } },
+    { "id": "R1", "type": "resistor", "position": { "x": 300, "y": 150 }, "data": { "label": "R", "type": "resistor", "parameters": { "value": 1000 } } },
+    { "id": "GND", "type": "ground", "position": { "x": 300, "y": 260 }, "data": { "label": "G", "type": "ground", "parameters": {} } },
+    { "id": "VP", "type": "voltage_probe", "position": { "x": 380, "y": 110 }, "data": { "label": "VP", "type": "voltage_probe", "parameters": {} } }
+  ],
+  "edges": [
+    { "id": "eV1pos-R1p", "source": "V1", "target": "R1", "sourceHandle": "pos", "targetHandle": "p" },
+    { "id": "eR1n-GND", "source": "R1", "target": "GND", "sourceHandle": "n", "targetHandle": "gnd" },
+    { "id": "eVP-node-R1n", "source": "VP", "target": "R1", "sourceHandle": "node", "targetHandle": "n" },
+    { "id": "eV1neg-GND", "source": "V1", "target": "GND", "sourceHandle": "neg", "targetHandle": "gnd" }
+  ]
+}

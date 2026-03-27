@@ -1,0 +1,100 @@
+.workspace {
+  display: flex;
+  height: 100%;
+  background: #1e293b;
+  --palette-bg: #1e293b;
+  --palette-border: #334155;
+}
+
+.canvasArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #1e293b;
+  height: 100%;
+}
+
+.canvasContainer {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* React Flow canvas styling */
+.canvasContainer :global(.react-flow) {
+  background: #0f172a !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.canvasContainer :global(.react-flow__background) {
+  background: #0f172a !important;
+}
+
+/* Controls styling */
+.canvasContainer :global(.react-flow__controls) {
+  background: rgba(51, 65, 85, 0.95) !important;
+  border: 1px solid #475569 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.canvasContainer :global(.react-flow__controls button) {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #e2e8f0 !important;
+}
+
+.canvasContainer :global(.react-flow__controls button:hover) {
+  background: #475569 !important;
+}
+
+/* Node styling */
+.canvasContainer :global(.react-flow__node) {
+  font-size: 12px;
+}
+
+/* Minimap styling */
+.canvasContainer :global(.react-flow__minimap) {
+  background: rgba(51, 65, 85, 0.95) !important;
+  border: 1px solid #475569 !important;
+  border-radius: 8px !important;
+}
+
+/* Selection styling */
+.canvasContainer :global(.react-flow__selection) {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border: 2px solid #3b82f6 !important;
+}
+
+/* Edge styling */
+.canvasContainer :global(.react-flow__edge-path) {
+  stroke: #94a3b8 !important;
+  stroke-width: 2 !important;
+}
+
+.canvasContainer :global(.react-flow__edge.selected .react-flow__edge-path) {
+  stroke: #60a5fa !important;
+}
+
+/* Connection line */
+.canvasContainer :global(.react-flow__connection-line) {
+  stroke: #60a5fa !important;
+  stroke-width: 2 !important;
+}
+
+/* Panel overlay */
+.canvasContainer :global(.react-flow__panel) {
+  background: rgba(51, 65, 85, 0.9) !important;
+  border: 1px solid #475569 !important;
+  border-radius: 8px !important;
+  color: #e2e8f0 !important;
+}
+
+/* Background dots */
+.canvasContainer :global(.react-flow__background pattern circle) {
+  fill: #334155 !important;
+}

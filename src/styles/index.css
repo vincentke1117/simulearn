@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+/* 全局主题覆盖 */
+:root {
+  --primary: #1890ff;
+  --primary-hover: #40a9ff;
+  --border-radius: 8px;
+}
+
+/* 卡片统一圆角与阴影 */
+.ant-card {
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+
+/* 按钮圆角 */
+.ant-btn {
+  border-radius: var(--border-radius);
+}
+
+/* 输入框圆角 */
+.ant-input,
+.ant-input-password,
+.ant-select-selector {
+  border-radius: var(--border-radius);
+}
+
+/* 主色调覆盖 */
+.ant-layout-header {
+  background: var(--primary);
+}
+
+/* 链接颜色 */
+a {
+  color: var(--primary);
+}
+a:hover {
+  color: var(--primary-hover);
+}
