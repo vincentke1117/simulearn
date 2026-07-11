@@ -12,7 +12,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
-    "build:lab": "npm run build -w @simulearn/lab-web"
+    "build:lab": "npm run build -w @simulearn/lab-web",
+    "typecheck:lab": "npm run typecheck -w @simulearn/lab-web",
+    "test:lab": "npm run test -w @simulearn/lab-web -- run",
+    "check": "npm run typecheck:lab && npm run test:lab"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.2.3",
@@ -40,6 +43,6 @@
     "prettier": "^3.3.3",
     "tailwindcss": "^3.4.13",
     "typescript": "^5.6.2",
-    "vite": "^5.4.8"
+    "vite": "^7.1.12"
   }
 }
