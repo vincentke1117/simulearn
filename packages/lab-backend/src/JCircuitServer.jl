@@ -13,6 +13,10 @@ using SHA
 
 const EPS_RESISTANCE = 1e-9
 const _SIMPLIFY_CACHE = Dict{String, Any}()
+# HTTP.jl 每请求一个 task：全局缓存/指标必须持锁访问；LRU 上限防长期运行内存无界增长
+const _SIMPLIFY_CACHE_ORDER = String[]
+const _SIMPLIFY_CACHE_LIMIT = 32
+const _STATE_LOCK = ReentrantLock()
 const _METRICS = Dict{String, Int}("simulate_calls" => 0, "simplify_hits" => 0, "simplify_misses" => 0)
 
 export bootstrap, run_simulation, SimulationPayload, ComponentPayload, NetPayload, SimulationSettings, ControlBlockPayload, ControlEdgePayload, ControlOutputPayload, ControlSimulationPayload, MixedBridgeBindingPayload, MixedCircuitPayload, MixedSimulationPayload
@@ -1456,7 +1460,6 @@ function solve_by_mesh_current(payload::SimulationPayload)
 end
 
 function simulate_payload(payload::SimulationPayload)
-    _METRICS["simulate_calls"] = get(_METRICS, "simulate_calls", 0) + 1
     payload.sim.t_stop > 0 ||
         throw(ValidationError("仿真时长必须大于 0", Dict()))
     payload.sim.n_samples > 1 ||
@@ -1536,13 +1539,29 @@ function simulate_payload(payload::SimulationPayload)
         "nets" => [Dict("name"=>n.name, "nodes"=>n.nodes) for n in payload.nets],
     ))
     topo_key = String(bytes2hex(sha1(topo_str)))
-    simplified = get(_SIMPLIFY_CACHE, topo_key, nothing)
+    simplified = lock(_STATE_LOCK) do
+        cached = get(_SIMPLIFY_CACHE, topo_key, nothing)
+        if cached !== nothing
+            filter!(!=(topo_key), _SIMPLIFY_CACHE_ORDER)
+            push!(_SIMPLIFY_CACHE_ORDER, topo_key)
+            _METRICS["simplify_hits"] = get(_METRICS, "simplify_hits", 0) + 1
+        end
+        cached
+    end
     if simplified === nothing
+        # structural_simplify 昂贵（秒~分钟级），绝不能在锁内执行；并发下同 key 重复计算是可接受的幂等浪费
         simplified = structural_simplify(circuit)
-        _SIMPLIFY_CACHE[topo_key] = simplified
-        _METRICS["simplify_misses"] = get(_METRICS, "simplify_misses", 0) + 1
-    else
-        _METRICS["simplify_hits"] = get(_METRICS, "simplify_hits", 0) + 1
+        lock(_STATE_LOCK) do
+            if !haskey(_SIMPLIFY_CACHE, topo_key)
+                _SIMPLIFY_CACHE[topo_key] = simplified
+                push!(_SIMPLIFY_CACHE_ORDER, topo_key)
+                while length(_SIMPLIFY_CACHE_ORDER) > _SIMPLIFY_CACHE_LIMIT
+                    evicted = popfirst!(_SIMPLIFY_CACHE_ORDER)
+                    delete!(_SIMPLIFY_CACHE, evicted)
+                end
+            end
+            _METRICS["simplify_misses"] = get(_METRICS, "simplify_misses", 0) + 1
+        end
     end
 
     # 为所有未知数和参数提供明确的初始值，避免循环依赖
@@ -1732,6 +1751,10 @@ function extract_payload_kind(raw_body::String)
 end
 
 function handle_simulate(req::HTTP.Request)
+    # simulate_calls 统计所有 /simulate 调用（此前只在瞬态路径递增，计数失真）
+    lock(_STATE_LOCK) do
+        _METRICS["simulate_calls"] = get(_METRICS, "simulate_calls", 0) + 1
+    end
     raw_body = String(req.body)
     kind = extract_payload_kind(raw_body)
 
@@ -1768,7 +1791,7 @@ function bootstrap(; host::AbstractString = "127.0.0.1", port::Integer = 8080, s
         HTTP.Response(200, collect(RESPONSE_HEADERS), body)
     end)
     HTTP.register!(router, "GET", "/metrics", _ -> begin
-        body = JSON3.write(_METRICS)
+        body = JSON3.write(lock(() -> copy(_METRICS), _STATE_LOCK))
         HTTP.Response(200, collect(RESPONSE_HEADERS), body)
     end)
     HTTP.register!(router, "GET", "/version", _ -> begin

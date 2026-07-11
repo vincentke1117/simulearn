@@ -36,3 +36,4 @@ Thumbs.db
 # gateway 二进制与运行产物
 gateway/bin/
 packages/grid-backend/runs/*.json
+packages/*/sysimage/
