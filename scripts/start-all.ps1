@@ -22,9 +22,11 @@ function Wait-Health {
 
 Write-Host "启动 SimuLearn 服务栈（首启含 Julia 编译，约 1-2 分钟）..." -ForegroundColor Cyan
 
-# 1. 配电网内核（JGDO / Oxygen, 127.0.0.1:8123）
-Start-Process julia -ArgumentList '--project=packages/grid-backend', 'packages/grid-backend/scripts/serve.jl' `
-    -WorkingDirectory $root -WindowStyle Minimized
+# 1. 配电网内核（JGDO / Oxygen, 127.0.0.1:8123）；有 sysimage 就用（启动 30s → 7s，构建见 build_sysimage.jl）
+$gridSysimage = Join-Path $root 'packages\grid-backend\sysimage\grid.sysimage.dll'
+$gridArgs = @('--project=packages/grid-backend', 'packages/grid-backend/scripts/serve.jl')
+if (Test-Path $gridSysimage) { $gridArgs = @("-J$gridSysimage") + $gridArgs }
+Start-Process julia -ArgumentList $gridArgs -WorkingDirectory $root -WindowStyle Minimized
 # 2. 电路内核（JCircuitServer, 127.0.0.1:8080）
 Start-Process julia -ArgumentList '--project=packages/lab-backend', 'packages/lab-backend/run_server.jl' `
     -WorkingDirectory $root -WindowStyle Minimized

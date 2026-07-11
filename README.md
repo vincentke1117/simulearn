@@ -24,6 +24,8 @@ powershell -File scripts/start-all.ps1
 
 就绪后访问 **<http://127.0.0.1:8100>**。首次启动含 Julia 编译约 1–2 分钟；之后潮流/DC 分析为毫秒级，首个瞬态仿真因 MTK JIT 需要额外等待。
 
+可选加速：`julia packages/grid-backend/scripts/build_sysimage.jl` 构建 sysimage（一次约 20 分钟，产物 ~680MB），此后 start-all 自动使用，配电网内核启动从 ~30s 降到 ~7s（实测 4.2×）。JGDO 源码大改后建议重建。
+
 ## 仓库结构
 
 ```
