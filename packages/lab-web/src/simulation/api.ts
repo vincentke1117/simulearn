@@ -1,6 +1,6 @@
 import type { SimulationRequestPayload, SimulationResponse } from '@/types/circuit'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/lab'
 
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit & { timeout?: number } = {}) {
   const controller = new AbortController()
@@ -68,8 +68,8 @@ function hashPayload(payload: SimulationRequestPayload): string {
 }
 
 export async function runSimulationRequest(payload: SimulationRequestPayload): Promise<SimulationResponse> {
-  const cacheKey = 'lastSimulationResponse'
-  const keyedCacheKey = `sim:${hashPayload(payload)}`
+  const cacheKey = 'slp:lab:last-simulation'
+  const keyedCacheKey = `slp:lab:sim:${hashPayload(payload)}`
   const maxRetries = 2
   let attempt = 0
   let lastError: Error | null = null
@@ -115,7 +115,7 @@ export async function runSimulationRequest(payload: SimulationRequestPayload): P
     msg.includes('NetworkError') ||
     msg.includes('ERR_CONNECTION_REFUSED')
   ) {
-    const cached = localStorage.getItem(keyedCacheKey) || localStorage.getItem('lastSimulationResponse')
+    const cached = localStorage.getItem(keyedCacheKey) || localStorage.getItem('slp:lab:last-simulation')
     if (cached) {
       return JSON.parse(cached) as SimulationResponse
     }

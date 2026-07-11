@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>" />
+  <title>SimuLearn — 电气工程仿真学习平台</title>
+  <style>
+    :root { --ink:#0f172a; --ink2:#475569; --line:#e2e8f0; --accent:#2563eb; --ok:#16a34a; --bad:#dc2626; }
+    * { box-sizing:border-box; margin:0; }
+    body { font:15px/1.7 system-ui,"Segoe UI",sans-serif; color:var(--ink);
+           background:linear-gradient(180deg,#eef4fb,#f8fafc 320px); min-height:100vh; }
+    .wrap { max-width:960px; margin:0 auto; padding:0 24px 64px; }
+    header { display:flex; align-items:center; gap:10px; padding:28px 0; }
+    .mark { font-size:22px; }
+    .brand { font-size:19px; font-weight:800; letter-spacing:-0.01em; }
+    .hero { padding:44px 0 36px; }
+    h1 { font-size:clamp(28px,4.5vw,40px); line-height:1.25; letter-spacing:-0.02em; }
+    .sub { color:var(--ink2); margin-top:14px; max-width:620px; }
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:18px; margin-top:40px; }
+    a.card { display:block; background:#fff; border:1px solid var(--line); border-radius:14px;
+             padding:26px 26px 22px; text-decoration:none; color:inherit;
+             transition:transform .15s, box-shadow .15s; }
+    a.card:hover { transform:translateY(-3px); box-shadow:0 10px 30px rgba(15,23,42,.08); border-color:var(--accent); }
+    .card-icon { font-size:26px; }
+    .card h2 { font-size:18px; margin:10px 0 6px; }
+    .card p { color:var(--ink2); font-size:13.5px; }
+    .card .go { display:inline-block; margin-top:14px; color:var(--accent); font-weight:700; font-size:14px; }
+    .status { margin-top:12px; font-size:12px; color:var(--ink2); display:flex; align-items:center; gap:6px; }
+    .dot { width:8px; height:8px; border-radius:50%; background:#cbd5e1; }
+    .dot.ok { background:var(--ok); } .dot.bad { background:var(--bad); }
+    footer { margin-top:56px; color:#94a3b8; font-size:12.5px; border-top:1px solid var(--line); padding-top:18px; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ink:#e2e8f0; --ink2:#a8b6cc; --line:#263349; }
+      body { background:linear-gradient(180deg,#0d1626,#0b1220 320px); }
+      a.card { background:#131c2e; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header><span class="mark">⚡</span><span class="brand">SimuLearn</span></header>
+    <section class="hero">
+      <h1>电气工程仿真学习平台</h1>
+      <p class="sub">从元件级电路、控制闭环，到配电网潮流与重构优化——在浏览器里完成建模、仿真与分析。Julia 计算内核驱动，数据不出本机。</p>
+    </section>
+    <div class="cards">
+      <a class="card" href="/circuit/">
+        <span class="card-icon">🔌</span>
+        <h2>电路实验室</h2>
+        <p>拖拽搭建电路与控制框图：瞬态分析、直流教学解法（节点电压 / 支路电流 / 网孔 / 戴维南）、控制系统与混合仿真、开关多场景对比。</p>
+        <span class="go">进入实验室 →</span>
+        <span class="status"><span class="dot" id="dot-lab"></span><span id="txt-lab">检测后端…</span></span>
+      </a>
+      <a class="card" href="/grid/">
+        <span class="card-icon">🗼</span>
+        <h2>配电网实验室</h2>
+        <p>配电网单线图建模：AC 潮流计算、网络重构 + 分布式电源联合优化（网损最小），内置 IEEE 33 节点等标准算例。</p>
+        <span class="go">进入实验室 →</span>
+        <span class="status"><span class="dot" id="dot-grid"></span><span id="txt-grid">检测后端…</span></span>
+      </a>
+    </div>
+    <footer>SimuLearn · Julia（ModelingToolkit / PowerModels）计算内核 · 本机运行 · 端口 8100</footer>
+  </div>
+  <script>
+    async function probe(url, dotId, txtId) {
+      const dot = document.getElementById(dotId), txt = document.getElementById(txtId);
+      try {
+        const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
+        if (r.ok) { dot.className = 'dot ok'; txt.textContent = '后端就绪'; return; }
+        throw new Error();
+      } catch {
+        dot.className = 'dot bad';
+        txt.textContent = '后端未启动（运行 scripts/start-all.ps1）';
+      }
+    }
+    probe('/api/lab/health', 'dot-lab', 'txt-lab');
+    probe('/api/grid/health', 'dot-grid', 'txt-grid');
+  </script>
+</body>
+</html>

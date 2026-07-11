@@ -1742,7 +1742,7 @@ function handle_simulate(req::HTTP.Request)
     return HTTP.Response(200, collect(RESPONSE_HEADERS), JSON3.write(response))
 end
 
-function bootstrap(; host::AbstractString = "0.0.0.0", port::Integer = 8080, start::Bool = true)
+function bootstrap(; host::AbstractString = "127.0.0.1", port::Integer = 8080, start::Bool = true)
     router = HTTP.Router()
     HTTP.register!(router, "GET", "/health", _ -> begin
         body = JSON3.write(Dict("status" => "ok"))

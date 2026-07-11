@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>" />
+    <title>PowerJulia — 配电网设计与优化</title>
+  </head>
+  <body>
+    <div id="app">
+      <!-- ==================== 首页 ==================== -->
+      <div id="home-view">
+        <header class="home-nav">
+          <div class="brand">
+            <span class="brand-mark">⚡</span>
+            <span class="brand-name">PowerJulia</span>
+          </div>
+          <nav class="home-nav-links">
+            <a href="#/editor">进入编辑器</a>
+          </nav>
+        </header>
+
+        <section class="hero">
+          <div class="hero-inner">
+            <h1>在浏览器里设计与优化<br />配电网</h1>
+            <p class="hero-sub">
+              拖拽建模 · AC 潮流计算 · 网络重构 + 分布式电源联合优化<br />
+              Julia / PowerModels 计算内核驱动，暖请求毫秒级响应
+            </p>
+            <div class="hero-actions">
+              <button id="home-new" class="cta">新建空白工程</button>
+              <button id="home-continue" class="cta ghost" hidden>继续上次编辑</button>
+              <button id="home-import" class="cta ghost">导入拓扑 JSON</button>
+            </div>
+            <div class="hero-badges">
+              <span class="badge">✓ IEEE 33 节点金标准 202.7 kW</span>
+              <span class="badge">✓ 重构降损 50.9% 实证</span>
+              <span class="badge">✓ 潮流求解 &lt; 10 ms</span>
+            </div>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <svg viewBox="0 0 340 260" fill="none">
+              <rect x="30" y="40" width="120" height="8" rx="2" fill="#1e293b"/>
+              <rect x="190" y="40" width="120" height="8" rx="2" fill="#1e293b"/>
+              <rect x="110" y="150" width="120" height="8" rx="2" fill="#1e293b"/>
+              <path d="M 90 48 V 100 H 170 V 150" stroke="#475569" stroke-width="2.5" fill="none"/>
+              <path d="M 250 48 V 100 H 170" stroke="#475569" stroke-width="2.5" fill="none"/>
+              <rect x="163" y="93" width="14" height="14" rx="2" fill="#334155"/>
+              <circle cx="60" cy="14" r="14" fill="#fff" stroke="#1f2937" stroke-width="2"/>
+              <text x="60" y="19" text-anchor="middle" font-size="13" font-weight="700" fill="#15803d" font-family="Georgia">G</text>
+              <path d="M 60 28 V 40" stroke="#1f2937" stroke-width="2"/>
+              <circle cx="280" cy="14" r="12" fill="#fff" stroke="#1f2937" stroke-width="2"/>
+              <text x="280" y="18" text-anchor="middle" font-size="9" font-weight="700" fill="#0369a1" font-family="Georgia">DG</text>
+              <path d="M 280 26 V 40" stroke="#1f2937" stroke-width="2"/>
+              <path d="M 150 158 V 178 M 142 178 H 158 L 150 192 Z" stroke="#1f2937" stroke-width="2" fill="#d97706"/>
+              <path d="M 195 158 V 178 M 187 178 H 203 L 195 192 Z" stroke="#1f2937" stroke-width="2" fill="#d97706"/>
+              <text x="90" y="230" font-size="11" font-family="monospace" fill="#16a34a">0.998 pu</text>
+              <text x="215" y="230" font-size="11" font-family="monospace" fill="#16a34a">0.996 pu</text>
+            </svg>
+          </div>
+        </section>
+
+        <section class="gallery">
+          <h2>从示例算例开始</h2>
+          <div id="example-cards" class="cards">
+            <p class="muted">正在加载算例…</p>
+          </div>
+        </section>
+
+        <footer class="home-footer">
+          PowerJulia · Julia + PowerModels + JuMP 计算内核 · JointJS 画布 · 本机运行，数据不出本地
+        </footer>
+      </div>
+
+      <!-- ==================== 编辑器 ==================== -->
+      <div id="editor-view" hidden>
+        <header class="topbar">
+          <div class="brand brand-clickable" id="btn-home" title="返回首页">
+            <span class="brand-mark">⚡</span>
+            <span class="brand-name">PowerJulia</span>
+          </div>
+          <div class="topbar-actions">
+            <div class="select-wrap">
+              <select id="example-select" title="加载内置算例">
+                <option value="">📚 示例算例…</option>
+              </select>
+            </div>
+            <button id="btn-new" title="清空画布">新建</button>
+            <button id="btn-import" title="从 JSON 文件导入拓扑">导入</button>
+            <button id="btn-export" title="导出拓扑为 JSON 文件">导出</button>
+            <span class="divider"></span>
+            <label class="basemva-label" title="系统基准容量 (MVA)">基准
+              <input id="base-mva" type="number" value="100" min="0.1" step="1" /> MVA
+            </label>
+            <span class="divider"></span>
+            <button id="btn-run-pf" class="primary" title="运行 AC 潮流">⚡ 潮流计算</button>
+            <button id="btn-run-opt" class="primary" title="网络重构 + DG 联合优化">🎯 重构优化</button>
+            <button id="btn-clear-results" title="清除画布上的计算结果">清除结果</button>
+          </div>
+        </header>
+
+        <main class="workspace">
+          <aside class="palette" id="palette"></aside>
+          <section class="canvas-wrap">
+            <div id="canvas"></div>
+            <div class="canvas-hint" id="canvas-hint">
+              点击左侧元件加入画布 · 从连接桩拖出连线 · 设备拖到母线挂接 · Delete 删除选中
+            </div>
+            <div class="zoom-controls">
+              <button id="btn-zoom-in" title="放大">＋</button>
+              <button id="btn-zoom-reset" title="适应画布">⌂</button>
+              <button id="btn-zoom-out" title="缩小">－</button>
+            </div>
+            <div class="run-overlay" id="run-overlay" hidden>
+              <div class="run-overlay-card">
+                <div class="spinner"></div>
+                <div id="run-overlay-text">计算中…</div>
+              </div>
+            </div>
+          </section>
+          <aside class="sidebar">
+            <section class="panel" id="inspector-panel">
+              <h2>检查器</h2>
+              <div id="inspector-body" class="panel-body">
+                <p class="muted">未选中元件。点击画布中的元件查看/编辑参数。</p>
+              </div>
+            </section>
+            <section class="panel" id="results-panel">
+              <h2>计算结果</h2>
+              <div id="results-body" class="panel-body">
+                <p class="muted">尚未运行计算。</p>
+              </div>
+            </section>
+            <section class="panel" id="history-panel">
+              <h2>运行记录</h2>
+              <ul id="history-list" class="history-list"></ul>
+            </section>
+          </aside>
+        </main>
+      </div>
+    </div>
+    <input type="file" id="file-input" accept="application/json" hidden />
+    <div id="toast-container"></div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

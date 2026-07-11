@@ -1,0 +1,457 @@
+{
+  "meta": {
+    "baseMVA": 100.0,
+    "feeder": "Reconfiguration-Test-Feeder",
+    "description": "专门用于测试拓扑重构功能的配电网，包含3条备用路径和多个开关"
+  },
+  "nodes": [
+    {
+      "id": "bus-1",
+      "type": "Bus",
+      "name": "主电源节点",
+      "kv": 10.5,
+      "is_slack": true,
+      "vm_pu": 1.0,
+      "va_deg": 0.0
+    },
+    {
+      "id": "bus-2",
+      "type": "Bus",
+      "name": "分支点A",
+      "kv": 10.5
+    },
+    {
+      "id": "bus-3",
+      "type": "Bus",
+      "name": "分支点B",
+      "kv": 10.5
+    },
+    {
+      "id": "bus-4",
+      "type": "Bus",
+      "name": "分支点C",
+      "kv": 10.5
+    },
+    {
+      "id": "bus-5",
+      "type": "Bus",
+      "name": "A支路末端",
+      "kv": 10.5
+    },
+    {
+      "id": "bus-6",
+      "type": "Bus",
+      "name": "B支路末端",
+      "kv": 10.5
+    },
+    {
+      "id": "bus-7",
+      "type": "Bus",
+      "name": "C支路末端",
+      "kv": 10.5
+    },
+    {
+      "id": "bus-8",
+      "type": "Bus",
+      "name": "A-B联络点",
+      "kv": 10.5
+    },
+    {
+      "id": "bus-9",
+      "type": "Bus",
+      "name": "A-C联络点",
+      "kv": 10.5
+    },
+    {
+      "id": "bus-10",
+      "type": "Bus",
+      "name": "B-C联络点",
+      "kv": 10.5
+    },
+    {
+      "id": "bus-11",
+      "type": "Bus",
+      "name": "负荷节点1",
+      "kv": 10.5
+    },
+    {
+      "id": "bus-12",
+      "type": "Bus",
+      "name": "负荷节点2",
+      "kv": 10.5
+    },
+    {
+      "id": "bus-13",
+      "type": "Bus",
+      "name": "负荷节点3",
+      "kv": 10.5
+    },
+    {
+      "id": "bus-14",
+      "type": "Bus",
+      "name": "负荷节点4",
+      "kv": 10.5
+    },
+    {
+      "id": "bus-15",
+      "type": "Bus",
+      "name": "负荷节点5",
+      "kv": 10.5
+    },
+    {
+      "id": "load-1",
+      "type": "Load",
+      "name": "重负荷1",
+      "bus": "bus-5",
+      "p_kw": 1200,
+      "q_kvar": 400
+    },
+    {
+      "id": "load-2",
+      "type": "Load",
+      "name": "重负荷2",
+      "bus": "bus-6",
+      "p_kw": 1500,
+      "q_kvar": 500
+    },
+    {
+      "id": "load-3",
+      "type": "Load",
+      "name": "重负荷3",
+      "bus": "bus-7",
+      "p_kw": 1000,
+      "q_kvar": 300
+    },
+    {
+      "id": "load-4",
+      "type": "Load",
+      "name": "中负荷4",
+      "bus": "bus-11",
+      "p_kw": 600,
+      "q_kvar": 200
+    },
+    {
+      "id": "load-5",
+      "type": "Load",
+      "name": "中负荷5",
+      "bus": "bus-12",
+      "p_kw": 800,
+      "q_kvar": 250
+    },
+    {
+      "id": "load-6",
+      "type": "Load",
+      "name": "轻负荷6",
+      "bus": "bus-13",
+      "p_kw": 300,
+      "q_kvar": 100
+    },
+    {
+      "id": "load-7",
+      "type": "Load",
+      "name": "轻负荷7",
+      "bus": "bus-14",
+      "p_kw": 400,
+      "q_kvar": 120
+    },
+    {
+      "id": "load-8",
+      "type": "Load",
+      "name": "中负荷8",
+      "bus": "bus-15",
+      "p_kw": 700,
+      "q_kvar": 230
+    },
+    {
+      "id": "grid-1",
+      "type": "Gen",
+      "name": "主电源",
+      "bus": "bus-1",
+      "p_kw": 3000,
+      "p_max_kw": 5000,
+      "p_min_kw": 0,
+      "q_kvar": 1000,
+      "q_max_kvar": 2000,
+      "q_min_kvar": -2000,
+      "status": 1
+    },
+    {
+      "id": "dg-1",
+      "type": "DG",
+      "name": "光伏A",
+      "bus": "bus-8",
+      "p_kw": 800,
+      "p_max_kw": 1000,
+      "p_min_kw": 0,
+      "q_kvar": 200,
+      "q_max_kvar": 400,
+      "q_min_kvar": -400,
+      "status": 1
+    },
+    {
+      "id": "dg-2",
+      "type": "DG",
+      "name": "光伏B",
+      "bus": "bus-9",
+      "p_kw": 600,
+      "p_max_kw": 800,
+      "p_min_kw": 0,
+      "q_kvar": 150,
+      "q_max_kvar": 300,
+      "q_min_kvar": -300,
+      "status": 1
+    }
+  ],
+  "links": [
+    {
+      "id": "line-main-1",
+      "type": "Line",
+      "from": "bus-1",
+      "to": "bus-2",
+      "r_ohm": 0.08,
+      "x_ohm": 0.25,
+      "rate_mva": 15
+    },
+    {
+      "id": "line-main-2",
+      "type": "Line",
+      "from": "bus-2",
+      "to": "bus-3",
+      "r_ohm": 0.1,
+      "x_ohm": 0.3,
+      "rate_mva": 12,
+      "switchable": true
+    },
+    {
+      "id": "line-main-3",
+      "type": "Line",
+      "from": "bus-3",
+      "to": "bus-4",
+      "r_ohm": 0.12,
+      "x_ohm": 0.35,
+      "rate_mva": 10,
+      "switchable": true
+    },
+    {
+      "id": "line-a",
+      "type": "Line",
+      "from": "bus-2",
+      "to": "bus-5",
+      "r_ohm": 0.15,
+      "x_ohm": 0.4,
+      "rate_mva": 8
+    },
+    {
+      "id": "line-b",
+      "type": "Line",
+      "from": "bus-3",
+      "to": "bus-6",
+      "r_ohm": 0.18,
+      "x_ohm": 0.45,
+      "rate_mva": 8
+    },
+    {
+      "id": "line-c",
+      "type": "Line",
+      "from": "bus-4",
+      "to": "bus-7",
+      "r_ohm": 0.2,
+      "x_ohm": 0.5,
+      "rate_mva": 6
+    },
+    {
+      "id": "line-bypass-1",
+      "type": "Line",
+      "from": "bus-5",
+      "to": "bus-8",
+      "r_ohm": 0.08,
+      "x_ohm": 0.24,
+      "rate_mva": 10
+    },
+    {
+      "id": "line-bypass-2",
+      "type": "Line",
+      "from": "bus-6",
+      "to": "bus-10",
+      "r_ohm": 0.08,
+      "x_ohm": 0.24,
+      "rate_mva": 10
+    },
+    {
+      "id": "line-bypass-3",
+      "type": "Line",
+      "from": "bus-7",
+      "to": "bus-9",
+      "r_ohm": 0.08,
+      "x_ohm": 0.24,
+      "rate_mva": 10
+    },
+    {
+      "id": "line-tie-1",
+      "type": "Line",
+      "from": "bus-8",
+      "to": "bus-9",
+      "r_ohm": 0.06,
+      "x_ohm": 0.2,
+      "rate_mva": 12,
+      "switchable": true
+    },
+    {
+      "id": "line-tie-2",
+      "type": "Line",
+      "from": "bus-9",
+      "to": "bus-10",
+      "r_ohm": 0.06,
+      "x_ohm": 0.2,
+      "rate_mva": 12,
+      "switchable": true
+    },
+    {
+      "id": "line-tie-3",
+      "type": "Line",
+      "from": "bus-10",
+      "to": "bus-8",
+      "r_ohm": 0.06,
+      "x_ohm": 0.2,
+      "rate_mva": 12,
+      "switchable": true
+    },
+    {
+      "id": "line-load-1",
+      "type": "Line",
+      "from": "bus-5",
+      "to": "bus-11",
+      "r_ohm": 0.05,
+      "x_ohm": 0.18,
+      "rate_mva": 6
+    },
+    {
+      "id": "line-load-2",
+      "type": "Line",
+      "from": "bus-6",
+      "to": "bus-12",
+      "r_ohm": 0.05,
+      "x_ohm": 0.18,
+      "rate_mva": 6
+    },
+    {
+      "id": "line-load-3",
+      "type": "Line",
+      "from": "bus-7",
+      "to": "bus-13",
+      "r_ohm": 0.05,
+      "x_ohm": 0.18,
+      "rate_mva": 6
+    },
+    {
+      "id": "line-load-4",
+      "type": "Line",
+      "from": "bus-8",
+      "to": "bus-14",
+      "r_ohm": 0.04,
+      "x_ohm": 0.15,
+      "rate_mva": 5
+    },
+    {
+      "id": "line-load-5",
+      "type": "Line",
+      "from": "bus-9",
+      "to": "bus-15",
+      "r_ohm": 0.04,
+      "x_ohm": 0.15,
+      "rate_mva": 5
+    },
+    {
+      "id": "sw-main-a",
+      "type": "Switch",
+      "from": "bus-2",
+      "to": "bus-3",
+      "status": "OPEN",
+      "r_ohm": 0.05,
+      "x_ohm": 0.15
+    },
+    {
+      "id": "sw-main-b",
+      "type": "Switch",
+      "from": "bus-3",
+      "to": "bus-4",
+      "status": "CLOSED",
+      "r_ohm": 0.05,
+      "x_ohm": 0.15
+    },
+    {
+      "id": "sw-bypass-1",
+      "type": "Switch",
+      "from": "bus-2",
+      "to": "bus-8",
+      "status": "CLOSED",
+      "r_ohm": 0.05,
+      "x_ohm": 0.15
+    },
+    {
+      "id": "sw-bypass-2",
+      "type": "Switch",
+      "from": "bus-3",
+      "to": "bus-10",
+      "status": "OPEN",
+      "r_ohm": 0.05,
+      "x_ohm": 0.15
+    },
+    {
+      "id": "sw-bypass-3",
+      "type": "Switch",
+      "from": "bus-4",
+      "to": "bus-9",
+      "status": "CLOSED",
+      "r_ohm": 0.05,
+      "x_ohm": 0.15
+    },
+    {
+      "id": "sw-tie-1",
+      "type": "Switch",
+      "from": "bus-8",
+      "to": "bus-9",
+      "status": "OPEN",
+      "r_ohm": 0.05,
+      "x_ohm": 0.15
+    },
+    {
+      "id": "sw-tie-2",
+      "type": "Switch",
+      "from": "bus-9",
+      "to": "bus-10",
+      "status": "OPEN",
+      "r_ohm": 0.05,
+      "x_ohm": 0.15
+    },
+    {
+      "id": "sw-tie-3",
+      "type": "Switch",
+      "from": "bus-10",
+      "to": "bus-8",
+      "status": "OPEN",
+      "r_ohm": 0.05,
+      "x_ohm": 0.15
+    },
+    {
+      "id": "sw-backup-1",
+      "type": "Switch",
+      "from": "bus-1",
+      "to": "bus-10",
+      "status": "OPEN",
+      "r_ohm": 0.1,
+      "x_ohm": 0.3,
+      "rate_mva": 15
+    },
+    {
+      "id": "sw-backup-2",
+      "type": "Switch",
+      "from": "bus-1",
+      "to": "bus-9",
+      "status": "OPEN",
+      "r_ohm": 0.12,
+      "x_ohm": 0.35,
+      "rate_mva": 12
+    }
+  ]
+}

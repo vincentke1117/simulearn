@@ -1,0 +1,19 @@
+{
+  "meta": {
+    "baseMVA": 100.0,
+    "feeder": "No-Slack-Bus-Test",
+    "description": "缺少平衡节点错误场景 - 没有设置is_slack=true的节点"
+  },
+  "nodes": [
+    { "id": "bus-1", "type": "Bus", "name": "节点1", "kv": 10.5 },
+    { "id": "bus-2", "type": "Bus", "name": "节点2", "kv": 10.5 },
+    { "id": "bus-3", "type": "Bus", "name": "节点3", "kv": 10.5 },
+    { "id": "load-1", "type": "Load", "name": "负荷1", "bus": "bus-1", "p_kw": 800, "q_kvar": 300 },
+    { "id": "load-2", "type": "Load", "name": "负荷2", "bus": "bus-2", "p_kw": 600, "q_kvar": 200 },
+    { "id": "dg-1", "type": "DG", "name": "分布式电源", "bus": "bus-3", "p_kw": 500, "p_max_kw": 800, "p_min_kw": 0, "q_kvar": 200, "q_max_kvar": 400, "q_min_kvar": -400, "status": 1 }
+  ],
+  "links": [
+    { "id": "line-1", "type": "Line", "from": "bus-1", "to": "bus-2", "r_ohm": 0.10, "x_ohm": 0.30, "rate_mva": 10 },
+    { "id": "line-2", "type": "Line", "from": "bus-2", "to": "bus-3", "r_ohm": 0.12, "x_ohm": 0.35, "rate_mva": 8 }
+  ]
+}

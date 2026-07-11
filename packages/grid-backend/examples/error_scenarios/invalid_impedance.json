@@ -1,0 +1,21 @@
+{
+  "meta": {
+    "baseMVA": 100.0,
+    "feeder": "Invalid-Impedance-Test",
+    "description": "阻抗参数错误场景 - 包含负阻抗、零阻抗、过大阻抗等错误参数"
+  },
+  "nodes": [
+    { "id": "bus-1", "type": "Bus", "name": "平衡节点", "kv": 10.5, "is_slack": true, "vm_pu": 1.0, "va_deg": 0.0 },
+    { "id": "bus-2", "type": "Bus", "name": "节点2", "kv": 10.5 },
+    { "id": "bus-3", "type": "Bus", "name": "节点3", "kv": 10.5 },
+    { "id": "bus-4", "type": "Bus", "name": "节点4", "kv": 10.5 },
+    { "id": "load-1", "type": "Load", "name": "负荷1", "bus": "bus-2", "p_kw": 500, "q_kvar": 200 },
+    { "id": "load-2", "type": "Load", "name": "负荷2", "bus": "bus-3", "p_kw": 400, "q_kvar": 150 },
+    { "id": "load-3", "type": "Load", "name": "负荷3", "bus": "bus-4", "p_kw": 600, "q_kvar": 250 }
+  ],
+  "links": [
+    { "id": "line-neg-r", "type": "Line", "from": "bus-1", "to": "bus-2", "r_ohm": -0.10, "x_ohm": 0.30, "rate_mva": 10 },
+    { "id": "line-zero-x", "type": "Line", "from": "bus-2", "to": "bus-3", "r_ohm": 0.12, "x_ohm": 0.0, "rate_mva": 8 },
+    { "id": "line-large-r", "type": "Line", "from": "bus-3", "to": "bus-4", "r_ohm": 100.0, "x_ohm": 200.0, "rate_mva": 5 }
+  ]
+}

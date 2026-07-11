@@ -4,7 +4,7 @@ using JCircuitServer: ComponentPayload, NetPayload, SimulationSettings, Simulati
 
 @testset "bootstrap" begin
     config = bootstrap(start = false)
-    @test config.host == "0.0.0.0"
+    @test config.host == "127.0.0.1"
     @test config.port == 8080
     @test config.router !== nothing
 end

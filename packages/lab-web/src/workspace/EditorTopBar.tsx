@@ -16,7 +16,6 @@ import type { DiagramMode } from '@/types/control'
 // 分析方法显示名称
 const ANALYSIS_METHOD_LABELS: Record<AnalysisMethod, string> = {
   transient: '瞬态分析 (Transient)',
-  transient_modia: '瞬态分析 (Modia)',
   node_voltage: '节点电压法 (Node Voltage)',
   branch_current: '支路电流法 (Branch Current)',
   mesh_current: '网孔电流法 (Mesh Current)',
@@ -109,13 +108,13 @@ export function EditorTopBar({
   const availableMethods: AnalysisMethod[] = diagramMode === 'control' || diagramMode === 'mixed'
     ? ['transient']
     : isResistive
-      ? ['node_voltage', 'branch_current', 'mesh_current', 'thevenin', 'transient', 'transient_modia']
-      : ['transient', 'transient_modia']
+      ? ['node_voltage', 'branch_current', 'mesh_current', 'thevenin', 'transient']
+      : ['transient']
   
   const currentMethod: AnalysisMethod = diagramMode === 'control' || diagramMode === 'mixed'
     ? 'transient'
     : settings.method ?? 'transient'
-  const isTransient = currentMethod === 'transient' || currentMethod === 'transient_modia'
+  const isTransient = currentMethod === 'transient'
   const showTheveninConfig = diagramMode === 'electrical' && currentMethod === 'thevenin'
   const showTeachingMode = diagramMode === 'electrical' && isResistive && (currentMethod !== 'thevenin' && currentMethod !== 'transient' || (settings.comparisonMethods?.length ?? 0) > 0)
 

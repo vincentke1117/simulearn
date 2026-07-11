@@ -1,0 +1,42 @@
+# SimuLearn 统一网关（本机单用户）
+# 启动：在仓库根目录运行 gateway/bin/caddy.exe run --config gateway/Caddyfile
+# 路径约定：/           → 静态首页（gateway/site）
+#           /circuit/*  → 电路实验室（lab-web 构建产物）
+#           /grid/*     → 配电网实验室（grid-web 构建产物）
+#           /api/lab/*  → JCircuitServer（8080，前缀剥离：/api/lab/simulate → /simulate）
+#           /api/grid/* → JGDO/Oxygen（8123，前缀透传：后端路由本身就是 /api/grid/*）
+
+{
+	auto_https off
+	admin off
+}
+
+http://127.0.0.1:8100 {
+	encode gzip
+
+	handle /api/grid/* {
+		reverse_proxy 127.0.0.1:8123
+	}
+
+	handle_path /api/lab/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+
+	redir /grid /grid/ 308
+	redir /circuit /circuit/ 308
+
+	handle_path /grid/* {
+		root * packages/grid-web/dist
+		file_server
+	}
+
+	handle_path /circuit/* {
+		root * packages/lab-web/dist
+		file_server
+	}
+
+	handle {
+		root * gateway/site
+		file_server
+	}
+}

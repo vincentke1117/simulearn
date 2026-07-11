@@ -4,7 +4,6 @@ import type { ControlOutputPayload, ControlSimulationPayload, MixedBlockPayload 
 // 分析方法枚举
 export type AnalysisMethod = 
   | 'transient'           // 瞬态分析（时域仿真）
-  | 'transient_modia'     // 瞬态分析（Modia）
   | 'node_voltage'        // 节点电压法（直流稳态）
   | 'branch_current'      // 支路电流法
   | 'mesh_current'        // 网孔电流法

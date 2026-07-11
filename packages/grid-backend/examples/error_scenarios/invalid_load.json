@@ -1,0 +1,19 @@
+{
+  "meta": {
+    "baseMVA": 100.0,
+    "feeder": "Invalid-Load-Test",
+    "description": "负荷参数错误场景 - 包含负负荷、过大负荷等错误参数"
+  },
+  "nodes": [
+    { "id": "bus-1", "type": "Bus", "name": "平衡节点", "kv": 10.5, "is_slack": true, "vm_pu": 1.0, "va_deg": 0.0 },
+    { "id": "bus-2", "type": "Bus", "name": "节点2", "kv": 10.5 },
+    { "id": "bus-3", "type": "Bus", "name": "节点3", "kv": 10.5 },
+    { "id": "load-1", "type": "Load", "name": "正常负荷", "bus": "bus-1", "p_kw": 500, "q_kvar": 200 },
+    { "id": "load-2", "type": "Load", "name": "负有功负荷", "bus": "bus-2", "p_kw": -800, "q_kvar": 300 },
+    { "id": "load-3", "type": "Load", "name": "过大负荷", "bus": "bus-3", "p_kw": 50000, "q_kvar": 20000 }
+  ],
+  "links": [
+    { "id": "line-1", "type": "Line", "from": "bus-1", "to": "bus-2", "r_ohm": 0.10, "x_ohm": 0.30, "rate_mva": 10 },
+    { "id": "line-2", "type": "Line", "from": "bus-2", "to": "bus-3", "r_ohm": 0.12, "x_ohm": 0.35, "rate_mva": 8 }
+  ]
+}

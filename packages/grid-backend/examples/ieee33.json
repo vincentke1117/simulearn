@@ -1,0 +1,915 @@
+{
+    "nodes": [
+        {
+            "vmin_pu": 1,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "is_slack": true,
+            "id": "bus-1",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-2",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-3",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-4",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-5",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-6",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-7",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-8",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-9",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-10",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-11",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-12",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-13",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-14",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-15",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-16",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-17",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-18",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-19",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-20",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-21",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-22",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-23",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-24",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-25",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-26",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-27",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-28",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-29",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-30",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-31",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-32",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "vmin_pu": 0.9,
+            "va_deg": 0,
+            "vm_pu": 1,
+            "id": "bus-33",
+            "kv": 12.66,
+            "type": "Bus",
+            "vmax_pu": 1.1
+        },
+        {
+            "q_kvar": 60,
+            "id": "load-2",
+            "p_kw": 100,
+            "bus": "bus-2",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 40,
+            "id": "load-3",
+            "p_kw": 90,
+            "bus": "bus-3",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 80,
+            "id": "load-4",
+            "p_kw": 120,
+            "bus": "bus-4",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 30,
+            "id": "load-5",
+            "p_kw": 60,
+            "bus": "bus-5",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 20,
+            "id": "load-6",
+            "p_kw": 60,
+            "bus": "bus-6",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 100,
+            "id": "load-7",
+            "p_kw": 200,
+            "bus": "bus-7",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 100,
+            "id": "load-8",
+            "p_kw": 200,
+            "bus": "bus-8",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 20,
+            "id": "load-9",
+            "p_kw": 60,
+            "bus": "bus-9",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 20,
+            "id": "load-10",
+            "p_kw": 60,
+            "bus": "bus-10",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 30,
+            "id": "load-11",
+            "p_kw": 45,
+            "bus": "bus-11",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 35,
+            "id": "load-12",
+            "p_kw": 60,
+            "bus": "bus-12",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 35,
+            "id": "load-13",
+            "p_kw": 60,
+            "bus": "bus-13",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 80,
+            "id": "load-14",
+            "p_kw": 120,
+            "bus": "bus-14",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 10,
+            "id": "load-15",
+            "p_kw": 60,
+            "bus": "bus-15",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 20,
+            "id": "load-16",
+            "p_kw": 60,
+            "bus": "bus-16",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 20,
+            "id": "load-17",
+            "p_kw": 60,
+            "bus": "bus-17",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 40,
+            "id": "load-18",
+            "p_kw": 90,
+            "bus": "bus-18",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 40,
+            "id": "load-19",
+            "p_kw": 90,
+            "bus": "bus-19",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 40,
+            "id": "load-20",
+            "p_kw": 90,
+            "bus": "bus-20",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 40,
+            "id": "load-21",
+            "p_kw": 90,
+            "bus": "bus-21",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 40,
+            "id": "load-22",
+            "p_kw": 90,
+            "bus": "bus-22",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 50,
+            "id": "load-23",
+            "p_kw": 90,
+            "bus": "bus-23",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 200,
+            "id": "load-24",
+            "p_kw": 420,
+            "bus": "bus-24",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 200,
+            "id": "load-25",
+            "p_kw": 420,
+            "bus": "bus-25",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 25,
+            "id": "load-26",
+            "p_kw": 60,
+            "bus": "bus-26",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 25,
+            "id": "load-27",
+            "p_kw": 60,
+            "bus": "bus-27",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 20,
+            "id": "load-28",
+            "p_kw": 60,
+            "bus": "bus-28",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 70,
+            "id": "load-29",
+            "p_kw": 120,
+            "bus": "bus-29",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 600,
+            "id": "load-30",
+            "p_kw": 200,
+            "bus": "bus-30",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 70,
+            "id": "load-31",
+            "p_kw": 150,
+            "bus": "bus-31",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 100,
+            "id": "load-32",
+            "p_kw": 210,
+            "bus": "bus-32",
+            "type": "Load"
+        },
+        {
+            "q_kvar": 40,
+            "id": "load-33",
+            "p_kw": 60,
+            "bus": "bus-33",
+            "type": "Load"
+        },
+        {
+            "q_min_kvar": -10000,
+            "status": 1,
+            "q_kvar": 0,
+            "id": "grid-1",
+            "p_kw": 0,
+            "p_min_kw": 0,
+            "p_max_kw": 10000,
+            "bus": "bus-1",
+            "type": "Gen",
+            "q_max_kvar": 10000
+        }
+    ],
+    "meta": {
+        "baseMVA": 10,
+        "description": "Baran & Wu 33-bus benchmark",
+        "feeder": "IEEE33-BW"
+    },
+    "links": [
+        {
+            "status": "CLOSED",
+            "id": "br-1",
+            "rate_mva": 10,
+            "to": "bus-2",
+            "from": "bus-1",
+            "type": "Line",
+            "x_ohm": 0.047,
+            "r_ohm": 0.0922
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-2",
+            "rate_mva": 10,
+            "to": "bus-3",
+            "from": "bus-2",
+            "type": "Line",
+            "x_ohm": 0.2511,
+            "r_ohm": 0.493
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-3",
+            "rate_mva": 10,
+            "to": "bus-4",
+            "from": "bus-3",
+            "type": "Line",
+            "x_ohm": 0.1864,
+            "r_ohm": 0.366
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-4",
+            "rate_mva": 10,
+            "to": "bus-5",
+            "from": "bus-4",
+            "type": "Line",
+            "x_ohm": 0.1941,
+            "r_ohm": 0.3811
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-5",
+            "rate_mva": 10,
+            "to": "bus-6",
+            "from": "bus-5",
+            "type": "Line",
+            "x_ohm": 0.707,
+            "r_ohm": 0.819
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-6",
+            "rate_mva": 10,
+            "to": "bus-7",
+            "from": "bus-6",
+            "type": "Line",
+            "x_ohm": 0.6188,
+            "r_ohm": 0.1872
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-7",
+            "rate_mva": 10,
+            "to": "bus-8",
+            "from": "bus-7",
+            "type": "Line",
+            "x_ohm": 0.2351,
+            "r_ohm": 0.7114
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-8",
+            "rate_mva": 10,
+            "to": "bus-9",
+            "from": "bus-8",
+            "type": "Line",
+            "x_ohm": 0.74,
+            "r_ohm": 1.03
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-9",
+            "rate_mva": 10,
+            "to": "bus-10",
+            "from": "bus-9",
+            "type": "Line",
+            "x_ohm": 0.74,
+            "r_ohm": 1.044
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-10",
+            "rate_mva": 10,
+            "to": "bus-11",
+            "from": "bus-10",
+            "type": "Line",
+            "x_ohm": 0.065,
+            "r_ohm": 0.1966
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-11",
+            "rate_mva": 10,
+            "to": "bus-12",
+            "from": "bus-11",
+            "type": "Line",
+            "x_ohm": 0.1238,
+            "r_ohm": 0.3744
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-12",
+            "rate_mva": 10,
+            "to": "bus-13",
+            "from": "bus-12",
+            "type": "Line",
+            "x_ohm": 1.155,
+            "r_ohm": 1.468
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-13",
+            "rate_mva": 10,
+            "to": "bus-14",
+            "from": "bus-13",
+            "type": "Line",
+            "x_ohm": 0.7129,
+            "r_ohm": 0.5416
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-14",
+            "rate_mva": 10,
+            "to": "bus-15",
+            "from": "bus-14",
+            "type": "Line",
+            "x_ohm": 0.526,
+            "r_ohm": 0.591
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-15",
+            "rate_mva": 10,
+            "to": "bus-16",
+            "from": "bus-15",
+            "type": "Line",
+            "x_ohm": 0.545,
+            "r_ohm": 0.7463
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-16",
+            "rate_mva": 10,
+            "to": "bus-17",
+            "from": "bus-16",
+            "type": "Line",
+            "x_ohm": 1.721,
+            "r_ohm": 1.289
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-17",
+            "rate_mva": 10,
+            "to": "bus-18",
+            "from": "bus-17",
+            "type": "Line",
+            "x_ohm": 0.574,
+            "r_ohm": 0.732
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-18",
+            "rate_mva": 10,
+            "to": "bus-19",
+            "from": "bus-2",
+            "type": "Line",
+            "x_ohm": 0.1565,
+            "r_ohm": 0.164
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-19",
+            "rate_mva": 10,
+            "to": "bus-20",
+            "from": "bus-19",
+            "type": "Line",
+            "x_ohm": 1.3554,
+            "r_ohm": 1.5042
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-20",
+            "rate_mva": 10,
+            "to": "bus-21",
+            "from": "bus-20",
+            "type": "Line",
+            "x_ohm": 0.4784,
+            "r_ohm": 0.4095
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-21",
+            "rate_mva": 10,
+            "to": "bus-22",
+            "from": "bus-21",
+            "type": "Line",
+            "x_ohm": 0.9373,
+            "r_ohm": 0.7089
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-22",
+            "rate_mva": 10,
+            "to": "bus-23",
+            "from": "bus-3",
+            "type": "Line",
+            "x_ohm": 0.3083,
+            "r_ohm": 0.4512
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-23",
+            "rate_mva": 10,
+            "to": "bus-24",
+            "from": "bus-23",
+            "type": "Line",
+            "x_ohm": 0.7091,
+            "r_ohm": 0.898
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-24",
+            "rate_mva": 10,
+            "to": "bus-25",
+            "from": "bus-24",
+            "type": "Line",
+            "x_ohm": 0.7011,
+            "r_ohm": 0.896
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-25",
+            "rate_mva": 10,
+            "to": "bus-26",
+            "from": "bus-6",
+            "type": "Line",
+            "x_ohm": 0.1034,
+            "r_ohm": 0.203
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-26",
+            "rate_mva": 10,
+            "to": "bus-27",
+            "from": "bus-26",
+            "type": "Line",
+            "x_ohm": 0.1447,
+            "r_ohm": 0.2842
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-27",
+            "rate_mva": 10,
+            "to": "bus-28",
+            "from": "bus-27",
+            "type": "Line",
+            "x_ohm": 0.9337,
+            "r_ohm": 1.059
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-28",
+            "rate_mva": 10,
+            "to": "bus-29",
+            "from": "bus-28",
+            "type": "Line",
+            "x_ohm": 0.7006,
+            "r_ohm": 0.8042
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-29",
+            "rate_mva": 10,
+            "to": "bus-30",
+            "from": "bus-29",
+            "type": "Line",
+            "x_ohm": 0.2585,
+            "r_ohm": 0.5075
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-30",
+            "rate_mva": 10,
+            "to": "bus-31",
+            "from": "bus-30",
+            "type": "Line",
+            "x_ohm": 0.963,
+            "r_ohm": 0.9744
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-31",
+            "rate_mva": 10,
+            "to": "bus-32",
+            "from": "bus-31",
+            "type": "Line",
+            "x_ohm": 0.3619,
+            "r_ohm": 0.3105
+        },
+        {
+            "status": "CLOSED",
+            "id": "br-32",
+            "rate_mva": 10,
+            "to": "bus-33",
+            "from": "bus-32",
+            "type": "Line",
+            "x_ohm": 0.5302,
+            "r_ohm": 0.341
+        },
+        {
+            "status": "OPEN",
+            "id": "br-33",
+            "rate_mva": 10,
+            "to": "bus-8",
+            "from": "bus-21",
+            "type": "Switch",
+            "x_ohm": 2,
+            "r_ohm": 2
+        },
+        {
+            "status": "OPEN",
+            "id": "br-34",
+            "rate_mva": 10,
+            "to": "bus-15",
+            "from": "bus-9",
+            "type": "Switch",
+            "x_ohm": 2,
+            "r_ohm": 2
+        },
+        {
+            "status": "OPEN",
+            "id": "br-35",
+            "rate_mva": 10,
+            "to": "bus-22",
+            "from": "bus-12",
+            "type": "Switch",
+            "x_ohm": 2,
+            "r_ohm": 2
+        },
+        {
+            "status": "OPEN",
+            "id": "br-36",
+            "rate_mva": 10,
+            "to": "bus-33",
+            "from": "bus-18",
+            "type": "Switch",
+            "x_ohm": 0.5,
+            "r_ohm": 0.5
+        },
+        {
+            "status": "OPEN",
+            "id": "br-37",
+            "rate_mva": 10,
+            "to": "bus-29",
+            "from": "bus-25",
+            "type": "Switch",
+            "x_ohm": 0.5,
+            "r_ohm": 0.5
+        }
+    ]
+}

@@ -161,7 +161,7 @@ function CircuitWorkspaceInner() {
   // Load pending project from localStorage if available
   useEffect(() => {
     try {
-      const pending = localStorage.getItem('pendingProject')
+      const pending = localStorage.getItem('slp:lab:pending-project')
       if (pending) {
         const project = JSON.parse(pending)
         const result = loadProjectFromObject(project)
@@ -169,7 +169,7 @@ function CircuitWorkspaceInner() {
           setNodes(result.nodes as Node<CircuitNodeData>[])
           setEdges(result.edges as Edge[])
         }
-        localStorage.removeItem('pendingProject')
+        localStorage.removeItem('slp:lab:pending-project')
         setWorkspaceMessage({ tone: 'info', text: '已加载示例电路' })
       }
     } catch (e) {

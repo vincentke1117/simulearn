@@ -1,0 +1,21 @@
+{
+  "meta": {
+    "baseMVA": 100.0,
+    "feeder": "Invalid-Voltage-Test",
+    "description": "电压参数错误场景 - 包含异常电压值"
+  },
+  "nodes": [
+    { "id": "bus-1", "type": "Bus", "name": "平衡节点", "kv": 0.0, "is_slack": true, "vm_pu": 1.0, "va_deg": 0.0 },
+    { "id": "bus-2", "type": "Bus", "name": "低电压节点", "kv": -10.5, "is_slack": false },
+    { "id": "bus-3", "type": "Bus", "name": "高电压节点", "kv": 1000.0, "is_slack": false },
+    { "id": "bus-4", "type": "Bus", "name": "异常vm_pu节点", "kv": 10.5, "is_slack": false, "vm_pu": 5.0 },
+    { "id": "load-1", "type": "Load", "name": "负荷1", "bus": "bus-1", "p_kw": 500, "q_kvar": 200 },
+    { "id": "load-2", "type": "Load", "name": "负荷2", "bus": "bus-2", "p_kw": 300, "q_kvar": 100 },
+    { "id": "load-3", "type": "Load", "name": "负荷3", "bus": "bus-3", "p_kw": 400, "q_kvar": 150 }
+  ],
+  "links": [
+    { "id": "line-1", "type": "Line", "from": "bus-1", "to": "bus-2", "r_ohm": 0.10, "x_ohm": 0.30, "rate_mva": 10 },
+    { "id": "line-2", "type": "Line", "from": "bus-2", "to": "bus-3", "r_ohm": 0.12, "x_ohm": 0.35, "rate_mva": 8 },
+    { "id": "line-3", "type": "Line", "from": "bus-3", "to": "bus-4", "r_ohm": 0.15, "x_ohm": 0.40, "rate_mva": 6 }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "baseMVA": 100.0,
+    "feeder": "Feeder-Multi-Node",
+    "description": "30节点径向配电网，包含负荷、分布式电源、开关重构场景"
+  },
+  "nodes": [
+    { "id": "bus-1", "type": "Bus", "name": "主变压器低压侧", "kv": 10.5, "is_slack": true, "vm_pu": 1.0, "va_deg": 0.0 },
+    { "id": "bus-2", "type": "Bus", "name": "分支点A", "kv": 10.5 },
+    { "id": "bus-3", "type": "Bus", "name": "分支点B", "kv": 10.5 },
+    { "id": "bus-4", "type": "Bus", "name": "分支点C", "kv": 10.5 },
+    { "id": "bus-5", "type": "Bus", "name": "末端节点A1", "kv": 10.5 },
+    { "id": "bus-6", "type": "Bus", "name": "末端节点A2", "kv": 10.5 },
+    { "id": "bus-7", "type": "Bus", "name": "末端节点A3", "kv": 10.5 },
+    { "id": "bus-8", "type": "Bus", "name": "末端节点B1", "kv": 10.5 },
+    { "id": "bus-9", "type": "Bus", "name": "末端节点B2", "kv": 10.5 },
+    { "id": "bus-10", "type": "Bus", "name": "末端节点B3", "kv": 10.5 },
+    { "id": "bus-11", "type": "Bus", "name": "末端节点B4", "kv": 10.5 },
+    { "id": "bus-12", "type": "Bus", "name": "末端节点C1", "kv": 10.5 },
+    { "id": "bus-13", "type": "Bus", "name": "末端节点C2", "kv": 10.5 },
+    { "id": "bus-14", "type": "Bus", "name": "末端节点C3", "kv": 10.5 },
+    { "id": "bus-15", "type": "Bus", "name": "末端节点C4", "kv": 10.5 },
+    { "id": "bus-16", "type": "Bus", "name": "末端节点C5", "kv": 10.5 },
+    { "id": "bus-17", "type": "Bus", "name": "末端节点C6", "kv": 10.5 },
+    { "id": "bus-18", "type": "Bus", "name": "负荷节点L1", "kv": 10.5 },
+    { "id": "bus-19", "type": "Bus", "name": "负荷节点L2", "kv": 10.5 },
+    { "id": "bus-20", "type": "Bus", "name": "负荷节点L3", "kv": 10.5 },
+    { "id": "bus-21", "type": "Bus", "name": "负荷节点L4", "kv": 10.5 },
+    { "id": "bus-22", "type": "Bus", "name": "负荷节点L5", "kv": 10.5 },
+    { "id": "bus-23", "type": "Bus", "name": "负荷节点L6", "kv": 10.5 },
+    { "id": "bus-24", "type": "Bus", "name": "负荷节点L7", "kv": 10.5 },
+    { "id": "bus-25", "type": "Bus", "name": "负荷节点L8", "kv": 10.5 },
+
+    { "id": "load-1", "type": "Load", "name": "商业负荷1", "bus": "bus-18", "p_kw": 500, "q_kvar": 150 },
+    { "id": "load-2", "type": "Load", "name": "工业负荷2", "bus": "bus-19", "p_kw": 1200, "q_kvar": 400 },
+    { "id": "load-3", "type": "Load", "name": "住宅负荷3", "bus": "bus-20", "p_kw": 300, "q_kvar": 100 },
+    { "id": "load-4", "type": "Load", "name": "商业负荷4", "bus": "bus-21", "p_kw": 450, "q_kvar": 180 },
+    { "id": "load-5", "type": "Load", "name": "工业负荷5", "bus": "bus-22", "p_kw": 1500, "q_kvar": 500 },
+    { "id": "load-6", "type": "Load", "name": "住宅负荷6", "bus": "bus-23", "p_kw": 280, "q_kvar": 90 },
+    { "id": "load-7", "type": "Load", "name": "商业负荷7", "bus": "bus-24", "p_kw": 600, "q_kvar": 200 },
+    { "id": "load-8", "type": "Load", "name": "住宅负荷8", "bus": "bus-25", "p_kw": 320, "q_kvar": 120 },
+
+    { "id": "grid-1", "type": "Gen", "name": "主电源", "bus": "bus-1", "p_kw": 2000, "p_max_kw": 5000, "p_min_kw": 0, "q_kvar": 500, "q_max_kvar": 1500, "q_min_kvar": -1500, "status": 1 },
+
+    { "id": "dg-1", "type": "DG", "name": "光伏电站1", "bus": "bus-8", "p_kw": 800, "p_max_kw": 1000, "p_min_kw": 0, "q_kvar": 200, "q_max_kvar": 400, "q_min_kvar": -400, "status": 1 },
+    { "id": "dg-2", "type": "DG", "name": "风机2", "bus": "bus-12", "p_kw": 1200, "p_max_kw": 1500, "p_min_kw": 0, "q_kvar": 300, "q_max_kvar": 600, "q_min_kvar": -600, "status": 1 },
+    { "id": "dg-3", "type": "DG", "name": "微型燃机3", "bus": "bus-16", "p_kw": 600, "p_max_kw": 800, "p_min_kw": 0, "q_kvar": 150, "q_max_kvar": 300, "q_min_kvar": -300, "status": 1 },
+    { "id": "dg-4", "type": "DG", "name": "储能系统4", "bus": "bus-5", "p_kw": 400, "p_max_kw": 600, "p_min_kw": -600, "q_kvar": 100, "q_max_kvar": 200, "q_min_kvar": -200, "status": 1 }
+  ],
+  "links": [
+    { "id": "line-1", "type": "Line", "from": "bus-1", "to": "bus-2", "r_ohm": 0.10, "x_ohm": 0.30, "rate_mva": 15 },
+    { "id": "line-2", "type": "Line", "from": "bus-2", "to": "bus-3", "r_ohm": 0.12, "x_ohm": 0.35, "rate_mva": 12 },
+    { "id": "line-3", "type": "Line", "from": "bus-3", "to": "bus-4", "r_ohm": 0.15, "x_ohm": 0.40, "rate_mva": 10 },
+
+    { "id": "line-4", "type": "Line", "from": "bus-2", "to": "bus-5", "r_ohm": 0.08, "x_ohm": 0.25, "rate_mva": 8 },
+    { "id": "line-5", "type": "Line", "from": "bus-5", "to": "bus-6", "r_ohm": 0.10, "x_ohm": 0.28, "rate_mva": 8 },
+    { "id": "line-6", "type": "Line", "from": "bus-6", "to": "bus-7", "r_ohm": 0.12, "x_ohm": 0.32, "rate_mva": 6 },
+
+    { "id": "line-7", "type": "Line", "from": "bus-3", "to": "bus-8", "r_ohm": 0.09, "x_ohm": 0.26, "rate_mva": 10 },
+    { "id": "line-8", "type": "Line", "from": "bus-8", "to": "bus-9", "r_ohm": 0.11, "x_ohm": 0.30, "rate_mva": 8 },
+    { "id": "line-9", "type": "Line", "from": "bus-9", "to": "bus-10", "r_ohm": 0.13, "x_ohm": 0.34, "rate_mva": 8 },
+    { "id": "line-10", "type": "Line", "from": "bus-10", "to": "bus-11", "r_ohm": 0.15, "x_ohm": 0.38, "rate_mva": 6 },
+
+    { "id": "line-11", "type": "Line", "from": "bus-4", "to": "bus-12", "r_ohm": 0.08, "x_ohm": 0.24, "rate_mva": 12 },
+    { "id": "line-12", "type": "Line", "from": "bus-12", "to": "bus-13", "r_ohm": 0.10, "x_ohm": 0.28, "rate_mva": 10 },
+    { "id": "line-13", "type": "Line", "from": "bus-13", "to": "bus-14", "r_ohm": 0.12, "x_ohm": 0.32, "rate_mva": 8 },
+    { "id": "line-14", "type": "Line", "from": "bus-14", "to": "bus-15", "r_ohm": 0.14, "x_ohm": 0.36, "rate_mva": 8 },
+    { "id": "line-15", "type": "Line", "from": "bus-15", "to": "bus-16", "r_ohm": 0.16, "x_ohm": 0.40, "rate_mva": 6 },
+    { "id": "line-16", "type": "Line", "from": "bus-16", "to": "bus-17", "r_ohm": 0.18, "x_ohm": 0.45, "rate_mva": 6 },
+
+    { "id": "line-17", "type": "Line", "from": "bus-5", "to": "bus-18", "r_ohm": 0.06, "x_ohm": 0.20, "rate_mva": 6 },
+    { "id": "line-18", "type": "Line", "from": "bus-8", "to": "bus-19", "r_ohm": 0.07, "x_ohm": 0.22, "rate_mva": 8 },
+    { "id": "line-19", "type": "Line", "from": "bus-9", "to": "bus-20", "r_ohm": 0.05, "x_ohm": 0.18, "rate_mva": 6 },
+    { "id": "line-20", "type": "Line", "from": "bus-10", "to": "bus-21", "r_ohm": 0.08, "x_ohm": 0.24, "rate_mva": 6 },
+    { "id": "line-21", "type": "Line", "from": "bus-12", "to": "bus-22", "r_ohm": 0.09, "x_ohm": 0.26, "rate_mva": 8 },
+    { "id": "line-22", "type": "Line", "from": "bus-13", "to": "bus-23", "r_ohm": 0.07, "x_ohm": 0.22, "rate_mva": 6 },
+    { "id": "line-23", "type": "Line", "from": "bus-14", "to": "bus-24", "r_ohm": 0.06, "x_ohm": 0.20, "rate_mva": 6 },
+    { "id": "line-24", "type": "Line", "from": "bus-15", "to": "bus-25", "r_ohm": 0.08, "x_ohm": 0.24, "rate_mva": 6 },
+
+    { "id": "sw-1", "type": "Switch", "from": "bus-7", "to": "bus-17", "status": "OPEN", "r_ohm": 0.05, "x_ohm": 0.15 },
+    { "id": "sw-2", "type": "Switch", "from": "bus-11", "to": "bus-12", "status": "OPEN", "r_ohm": 0.05, "x_ohm": 0.15 },
+    { "id": "sw-3", "type": "Switch", "from": "bus-6", "to": "bus-18", "status": "CLOSED", "r_ohm": 0.05, "x_ohm": 0.15 },
+    { "id": "sw-4", "type": "Switch", "from": "bus-9", "to": "bus-19", "status": "CLOSED", "r_ohm": 0.05, "x_ohm": 0.15 },
+    { "id": "sw-5", "type": "Switch", "from": "bus-16", "to": "bus-4", "status": "OPEN", "r_ohm": 0.05, "x_ohm": 0.15 }
+  ]
+}
