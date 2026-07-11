@@ -8,6 +8,7 @@ import { createNodeElement, NODE_META, styleLink } from './shapes';
 import { exportTopology, importTopology, shouldBeSlack } from './topologyio';
 import type { NodeType, ReconfigResult, Topology } from './types';
 import { validateTopology } from './validation';
+import { unwrapProjectFile, wrapGridProject } from './envelope';
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 
@@ -340,11 +341,13 @@ function bindToolbar(): void {
 
   $('#btn-export').addEventListener('click', () => {
     const topo = exportTopology(board, currentMeta());
-    const blob = new Blob([JSON.stringify(topo, null, 2)], { type: 'application/json' });
+    const stamp = new Date().toISOString().replace(/[.:]/g, '-');
+    const envelope = wrapGridProject(`grid-${stamp}`, topo);
+    const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'topology.json';
+    a.download = `simulearn-grid-${stamp}.json`;
     a.click();
     URL.revokeObjectURL(url);
   });
@@ -356,8 +359,13 @@ function bindToolbar(): void {
     input.value = '';
     if (!file) return;
     try {
+      const unwrapped = unwrapProjectFile(JSON.parse(await file.text()));
+      if (!unwrapped.ok) {
+        toast(unwrapped.error, 'error', 7000);
+        return;
+      }
       gotoEditor();
-      loadTopology(JSON.parse(await file.text()) as Topology, file.name);
+      loadTopology(unwrapped.topology, file.name);
       saveDraft();
     } catch (err) {
       reportError('导入失败', err);

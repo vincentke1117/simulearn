@@ -46,7 +46,7 @@ import { buildControlSimulationPayload } from '@/simulation/controlPayload'
 import { buildMixedSimulationPayload } from '@/simulation/mixedPayload'
 import { detectDiagramMode } from '@/simulation/diagramMode'
 import { runSimulationRequest } from '@/simulation/api'
-import { buildProjectSnapshot, loadProjectFromObject } from './project'
+import { buildProjectSnapshot, loadProjectFromObject, wrapProject } from './project'
 import { applyOverlay } from '@/simulation/mapping'
 import { EditorTopBar } from './EditorTopBar'
 import { isRunDisabled } from '@/workspace/runGuard'
@@ -334,15 +334,19 @@ function CircuitWorkspaceInner() {
 
   const handleExportProject = useCallback(() => {
     const snapshot = buildProjectSnapshot(reactFlow.getNodes() as Node<CircuitNodeData>[], reactFlow.getEdges())
-    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' })
+    const stamp = new Date().toISOString().replace(/[.:]/g, '-')
+    // DiagramMode 的 electrical/empty 在信封里统一记为 circuit
+    const kind = diagramMode === 'control' || diagramMode === 'mixed' ? diagramMode : 'circuit'
+    const envelope = wrapProject(kind, `lab-${kind}-${stamp}`, snapshot)
+    const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = url
-    anchor.download = `jcircuit-${new Date().toISOString().replace(/[.:]/g, '-')}.json`
+    anchor.download = `simulearn-${kind}-${stamp}.json`
     anchor.click()
     URL.revokeObjectURL(url)
     setWorkspaceMessage({ tone: 'info', text: '项目已导出' })
-  }, [reactFlow])
+  }, [reactFlow, diagramMode])
 
   const handleImportProject = useCallback(
     async (content: string) => {

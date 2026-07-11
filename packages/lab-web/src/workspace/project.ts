@@ -8,6 +8,30 @@ import type {
   CircuitProjectNode,
 } from '@/types/circuit'
 
+// ---- 统一工程文件信封 v1（simulearn.project/1，双实验室互认）----
+export const PROJECT_SCHEMA = 'simulearn.project/1'
+export type ProjectKind = 'circuit' | 'control' | 'mixed' | 'grid'
+
+export interface ProjectEnvelope {
+  schema: typeof PROJECT_SCHEMA
+  kind: ProjectKind
+  name: string
+  app: { module: 'lab' | 'grid' }
+  createdAt: string
+  payload: unknown
+}
+
+export function wrapProject(kind: ProjectKind, name: string, payload: unknown): ProjectEnvelope {
+  return {
+    schema: PROJECT_SCHEMA,
+    kind,
+    name,
+    app: { module: kind === 'grid' ? 'grid' : 'lab' },
+    createdAt: new Date().toISOString(),
+    payload,
+  }
+}
+
 export function buildProjectSnapshot(
   nodes: Node<CircuitNodeData>[],
   edges: Edge[],
@@ -64,6 +88,14 @@ function validateProjectEdge(edge: unknown): edge is CircuitProjectEdge {
 export function loadProjectFromObject(project: unknown): LoadProjectResult {
   if (!isRecord(project)) {
     return { ok: false, errors: ['文件格式不正确'] }
+  }
+
+  // 信封格式：拆包后递归校验原生 payload；grid 工程给出指路错误而非静默失败
+  if (project.schema === PROJECT_SCHEMA) {
+    if (project.kind === 'grid') {
+      return { ok: false, errors: ['这是配电网实验室的工程文件，请回到首页进入「配电网实验室」打开'] }
+    }
+    return loadProjectFromObject(project.payload)
   }
 
   const rawNodes = Array.isArray(project.nodes) ? project.nodes : []
