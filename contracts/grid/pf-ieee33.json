@@ -1,0 +1,12 @@
+{
+  "name": "grid-pf-ieee33-golden",
+  "endpoint": "pf",
+  "request_example": "ieee33",
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "data.summary.loss_mw", "approx": 0.202677, "atol": 0.0005 },
+    { "path": "data.summary.vmin_pu", "approx": 0.91309, "atol": 0.001 },
+    { "path": "data.summary.vmin_bus", "equals": "bus-18" },
+    { "path": "data.summary.termination_status", "equals": "LOCALLY_SOLVED" }
+  ]
+}

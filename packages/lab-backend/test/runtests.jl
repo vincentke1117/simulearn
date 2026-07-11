@@ -37,13 +37,14 @@ end
 @testset "node_voltage branch_currents" begin
     components = [
         ComponentPayload("V1", "vsource_dc", Dict("dc" => 10.0), Dict("pos" => "n1", "neg" => "gnd")),
-        ComponentPayload("R1", "resistor", Dict("value" => 1000.0), Dict("p" => "n1", "n" => "gnd")),
+        ComponentPayload("A1", "current_probe", Dict{String, Float64}(), Dict("p" => "n1", "n" => "n2")),
+        ComponentPayload("R1", "resistor", Dict("value" => 1000.0), Dict("p" => "n2", "n" => "gnd")),
         ComponentPayload("G1", "ground", Dict{String, Float64}(), Dict("gnd" => "gnd")),
-        ComponentPayload("A1", "current_probe", Dict{String, Float64}(), Dict("p" => "n1", "n" => "gnd")),
     ]
     nets = [
-        NetPayload("n1", [["V1", "pos"], ["R1", "p"], ["A1", "p"]]),
-        NetPayload("gnd", [["V1", "neg"], ["R1", "n"], ["G1", "gnd"], ["A1", "n"]]),
+        NetPayload("n1", [["V1", "pos"], ["A1", "p"]]),
+        NetPayload("n2", [["A1", "n"], ["R1", "p"]]),
+        NetPayload("gnd", [["V1", "neg"], ["R1", "n"], ["G1", "gnd"]]),
     ]
     payload = SimulationPayload(components, nets, SimulationSettings(1e-3, 10), "node_voltage", nothing, nothing)
     result = run_simulation(payload)
@@ -51,6 +52,8 @@ end
     data = result["data"]
     @test haskey(data, "branch_currents")
     @test abs(data["branch_currents"]["R1"] - 0.01) < 1e-6
+    @test abs(data["branch_currents"]["A1"] - 0.01) < 1e-6   # 探针串联电流 p→n
+    @test abs(data["branch_currents"]["V1"] + 0.01) < 1e-6   # 电压源电流 pos→neg（内部）= -0.01
 end
 
 @testset "validation" begin
@@ -67,3 +70,25 @@ end
 
 include("control_simulation.jl")
 include("mixed_simulation.jl")
+
+# ---- Golden 契约（contracts/ 双端共享，冻结跨进程契约行为）----
+using JSON3
+const CONTRACTS_DIR = normpath(joinpath(@__DIR__, "..", "..", "..", "contracts"))
+if isdir(CONTRACTS_DIR)
+    include(joinpath(CONTRACTS_DIR, "contract_checker.jl"))
+    @testset "Golden contracts (lab)" begin
+        for spec in load_contracts(joinpath(CONTRACTS_DIR, "lab"))
+            request = JSON3.write(spec[:request])
+            kind = haskey(spec[:request], :kind) ? String(spec[:request][:kind]) : "circuit"
+            payload = kind == "control" ? JSON3.read(request, ControlSimulationPayload) :
+                      kind == "mixed"   ? JSON3.read(request, MixedSimulationPayload) :
+                      JSON3.read(request, SimulationPayload)
+            response = run_simulation(payload)
+            @testset "$(spec[:name])" begin
+                check_contract(JSON3.read(JSON3.write(response)), spec[:expect])
+            end
+        end
+    end
+else
+    @info "contracts/ 不存在，跳过契约测试"
+end

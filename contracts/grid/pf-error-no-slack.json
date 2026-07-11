@@ -1,0 +1,18 @@
+{
+  "name": "grid-pf-error-no-slack",
+  "endpoint": "pf",
+  "request": {
+    "meta": { "baseMVA": 100.0 },
+    "nodes": [
+      { "id": "bus-1", "type": "Bus", "kv": 10.5 },
+      { "id": "bus-2", "type": "Bus", "kv": 10.5 }
+    ],
+    "links": [
+      { "id": "line-1", "type": "Line", "from": "bus-1", "to": "bus-2", "r_ohm": 0.1, "x_ohm": 0.3 }
+    ]
+  },
+  "expect": [
+    { "path": "status", "equals": "error" },
+    { "path": "code", "equals": "GRID_TOPOLOGY" }
+  ]
+}

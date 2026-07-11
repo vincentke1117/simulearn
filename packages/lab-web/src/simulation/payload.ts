@@ -91,9 +91,11 @@ export function isResistiveCircuit(nodes: Node<CircuitNodeData>[]): boolean {
     'voltage_probe',
     'current_probe',
     'switch',
-    // 受控电流源（VCCS）在直流稳态下属于线性关系，可用节点电压法
+    // 四种受控源在直流稳态下均为线性关系，后端 MNA 有完整戳记
     'vccs',
     'vcvs',
+    'ccvs',
+    'cccs',
   ])
   
   return nodes.every(node => resistiveComponents.has(node.type as string))
@@ -371,10 +373,9 @@ export function buildSimulationPayload(
     const isResistive = isResistiveCircuit(nodes)
     const hasDynamic = nodes.some(n => n.type === 'capacitor' || n.type === 'inductor')
     const hasAC = nodes.some(n => n.type === 'vsource_ac' || n.type === 'isource_ac')
-    const hasUnsupportedControlled = nodes.some(n => n.type === 'ccvs' || n.type === 'cccs')
 
-    if (hasDynamic || hasAC || hasUnsupportedControlled) {
-      diagnostics.push('建议：检测到动态/交流/受控源，将使用瞬态分析')
+    if (hasDynamic || hasAC) {
+      diagnostics.push('建议：检测到动态/交流元件，将使用瞬态分析')
     } else if (isResistive) {
       diagnostics.push('建议：检测到纯电阻电路，可选择节点电压法、支路电流法或网孔电流法进行分析')
     }
@@ -382,10 +383,8 @@ export function buildSimulationPayload(
 
   // 检查分析方法与电路类型的匹配性
   if (method && (method === 'node_voltage' || method === 'branch_current' || method === 'mesh_current')) {
-    const isResistive = isResistiveCircuit(nodes)
-    const hasUnsupportedControlled = nodes.some(n => n.type === 'ccvs' || n.type === 'cccs')
-    if (!isResistive || hasUnsupportedControlled) {
-      errors.push(`错误：${method === 'node_voltage' ? '节点电压法' : method === 'branch_current' ? '支路电流法' : '网孔电流法'}仅适用于纯直流线性电路（支持VCCS），检测到 VCVS/CCVS/CCCS 或动态/交流元件，请选择瞬态分析`)
+    if (!isResistiveCircuit(nodes)) {
+      errors.push(`错误：${method === 'node_voltage' ? '节点电压法' : method === 'branch_current' ? '支路电流法' : '网孔电流法'}仅适用于纯直流线性电路，检测到动态/交流元件，请选择瞬态分析`)
     }
   }
 

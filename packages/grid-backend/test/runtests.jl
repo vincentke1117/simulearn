@@ -248,3 +248,25 @@ end
         end
     end
 end
+
+# ---- Golden 契约（contracts/ 双端共享，冻结跨进程契约行为）----
+const CONTRACTS_DIR = normpath(joinpath(@__DIR__, "..", "..", "..", "contracts"))
+if isdir(CONTRACTS_DIR)
+    include(joinpath(CONTRACTS_DIR, "contract_checker.jl"))
+    @testset "Golden contracts (grid)" begin
+        for spec in load_contracts(joinpath(CONTRACTS_DIR, "grid"))
+            request = haskey(spec, :request_example) ?
+                read(joinpath(EXAMPLES_DIR, String(spec[:request_example]) * ".json"), String) :
+                JSON3.write(spec[:request])
+            endpoint = String(spec[:endpoint])
+            raw = endpoint == "pf" ? JGDO.run_pf(request) :
+                  endpoint == "reconfig" ? JGDO.run_reconfiguration_dg(request) :
+                  error("未知契约端点: " * endpoint)
+            @testset "$(spec[:name])" begin
+                check_contract(JSON3.read(raw), spec[:expect])
+            end
+        end
+    end
+else
+    @info "contracts/ 不存在，跳过契约测试（standalone 模式）"
+end

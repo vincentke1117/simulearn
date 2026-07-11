@@ -426,10 +426,10 @@ function evaluate_mixed_signal_outputs(
         feedthrough_values = try
             matrix \ rhs
         catch err
-            throw(ValidationError("混合代数方程求解失败", Dict("error" => string(err))))
+            throw(ValidationError("混合代数方程求解失败", Dict("code" => "LAB_SIM_FAILED", "error" => string(err))))
         end
         all(isfinite, feedthrough_values) ||
-            throw(ValidationError("混合代数方程求解失败", Dict("error" => "solution contains NaN/Inf")))
+            throw(ValidationError("混合代数方程求解失败", Dict("code" => "LAB_SIM_FAILED", "error" => "solution contains NaN/Inf")))
 
         for block_id in compiled.feedthrough_ids
             idx = feedthrough_index[block_id]
@@ -622,10 +622,10 @@ function run_simulation(payload::MixedSimulationPayload)
         )
     catch err
         if err isa ValidationError
-            return Dict("status" => "error", "message" => err.message, "data" => err.data)
+            return Dict("status" => "error", "code" => get(err.data, "code", "LAB_VALIDATION"), "message" => err.message, "data" => err.data)
         else
             @error "mixed simulation failed" exception = (err, catch_backtrace())
-            return Dict("status" => "error", "message" => "internal error", "data" => Dict("error" => string(err)))
+            return Dict("status" => "error", "code" => "LAB_INTERNAL", "message" => "internal error", "data" => Dict("error" => string(err)))
         end
     end
 end

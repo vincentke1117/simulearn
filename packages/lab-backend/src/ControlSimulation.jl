@@ -349,10 +349,10 @@ function evaluate_control_outputs(
         feedthrough_values = try
             matrix \ rhs
         catch err
-            throw(ValidationError("控制代数方程求解失败", Dict("error" => string(err))))
+            throw(ValidationError("控制代数方程求解失败", Dict("code" => "LAB_SIM_FAILED", "error" => string(err))))
         end
         all(isfinite, feedthrough_values) ||
-            throw(ValidationError("控制代数方程求解失败", Dict("error" => "solution contains NaN/Inf")))
+            throw(ValidationError("控制代数方程求解失败", Dict("code" => "LAB_SIM_FAILED", "error" => "solution contains NaN/Inf")))
 
         for block_id in compiled.feedthrough_ids
             idx = feedthrough_index[block_id]
@@ -428,7 +428,7 @@ function simulate_control_payload(payload::ControlSimulationPayload)
         problem = ODEProblem(rhs!, compiled.initial_state, tspan)
         solution = solve(problem, Tsit5(); saveat = time_points)
         if !SciMLBase.successful_retcode(solution)
-            throw(ValidationError("控制系统求解失败", Dict("retcode" => string(solution.retcode))))
+            throw(ValidationError("控制系统求解失败", Dict("code" => "LAB_SIM_FAILED", "retcode" => string(solution.retcode))))
         end
         for idx in eachindex(solution.u)
             state_samples[idx] = collect(Float64, solution.u[idx])
@@ -453,10 +453,10 @@ function run_simulation(payload::ControlSimulationPayload)
         )
     catch err
         if err isa ValidationError
-            return Dict("status" => "error", "message" => err.message, "data" => err.data)
+            return Dict("status" => "error", "code" => get(err.data, "code", "LAB_VALIDATION"), "message" => err.message, "data" => err.data)
         else
             @error "control simulation failed" exception = (err, catch_backtrace())
-            return Dict("status" => "error", "message" => "internal error", "data" => Dict("error" => string(err)))
+            return Dict("status" => "error", "code" => "LAB_INTERNAL", "message" => "internal error", "data" => Dict("error" => string(err)))
         end
     end
 end

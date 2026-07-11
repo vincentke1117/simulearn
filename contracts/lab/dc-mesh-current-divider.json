@@ -1,0 +1,127 @@
+{
+  "name": "lab-dc-mesh-current-divider（验证电压源电流不再硬编码 0）",
+  "endpoint": "simulate",
+  "request": {
+    "components": [
+      {
+        "id": "V1",
+        "type": "vsource_dc",
+        "parameters": {
+          "dc": 5.0
+        },
+        "connections": {
+          "pos": "n1",
+          "neg": "gnd"
+        }
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "parameters": {
+          "value": 1000.0
+        },
+        "connections": {
+          "p": "n1",
+          "n": "n2"
+        }
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "parameters": {
+          "value": 1000.0
+        },
+        "connections": {
+          "p": "n2",
+          "n": "gnd"
+        }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "parameters": {},
+        "connections": {
+          "gnd": "gnd"
+        }
+      },
+      {
+        "id": "VP1",
+        "type": "voltage_probe",
+        "parameters": {},
+        "connections": {
+          "node": "n2"
+        }
+      }
+    ],
+    "nets": [
+      {
+        "name": "n1",
+        "nodes": [
+          [
+            "V1",
+            "pos"
+          ],
+          [
+            "R1",
+            "p"
+          ]
+        ]
+      },
+      {
+        "name": "n2",
+        "nodes": [
+          [
+            "R1",
+            "n"
+          ],
+          [
+            "R2",
+            "p"
+          ],
+          [
+            "VP1",
+            "node"
+          ]
+        ]
+      },
+      {
+        "name": "gnd",
+        "nodes": [
+          [
+            "V1",
+            "neg"
+          ],
+          [
+            "R2",
+            "n"
+          ],
+          [
+            "G1",
+            "gnd"
+          ]
+        ]
+      }
+    ],
+    "sim": {
+      "t_stop": 0.001,
+      "n_samples": 10
+    },
+    "method": "mesh_current"
+  },
+  "expect": [
+    {
+      "path": "status",
+      "equals": "ok"
+    },
+    {
+      "path": "data.branch_currents.R1",
+      "approx": 0.0025,
+      "atol": 1e-09
+    },
+    {
+      "path": "data.branch_currents.V1",
+      "approx": -0.0025,
+      "atol": 1e-09
+    }
+  ]
+}

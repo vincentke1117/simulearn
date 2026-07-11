@@ -44,10 +44,10 @@ wrap_success(result_type::AbstractString, payload) = JSON3.write(Dict(
     "data" => payload,
 ))
 
-error_code(::ValidationError) = "VALIDATION_ERROR"
-error_code(::TopologyError) = "TOPOLOGY_ERROR"
-error_code(::SnapshotError) = "SNAPSHOT_ERROR"
-error_code(::Exception) = "INTERNAL_ERROR"
+error_code(::ValidationError) = "GRID_VALIDATION"
+error_code(::TopologyError) = "GRID_TOPOLOGY"
+error_code(::SnapshotError) = "GRID_SNAPSHOT"
+error_code(::Exception) = "GRID_INTERNAL"
 
 function wrap_error(err)
     payload = Dict{String,Any}(

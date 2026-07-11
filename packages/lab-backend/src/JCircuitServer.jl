@@ -669,7 +669,15 @@ function solve_by_node_voltage(payload::SimulationPayload)
         end
     end
 
-    vsrc_rows = vcat(vs_ind, vcvs_list, ccvs_list, sense_ccvs_vsrc, sense_cccs_vsrc)
+    # 电流探针：与瞬态路径 CurrentSensor 统一为「串联理想电流表」= 0V 电压源，
+    # 其支路电流即 MNA 扩展变量，方向 p→n（与前端元件文档一致）
+    probe_vsrc = ComponentPayload[]
+    for c in payload.components
+        if c.type == "current_probe"
+            push!(probe_vsrc, ComponentPayload(c.id, "vsource_dc", Dict("dc" => 0.0), Dict("pos" => c.connections["p"], "neg" => c.connections["n"])))
+        end
+    end
+    vsrc_rows = vcat(vs_ind, vcvs_list, ccvs_list, sense_ccvs_vsrc, sense_cccs_vsrc, probe_vsrc)
     vsrc_index = Dict{String, Int}()
     for (i, v) in enumerate(vsrc_rows)
         vsrc_index[v.id] = i
@@ -1000,7 +1008,7 @@ function compute_thevenin_equivalent(payload::SimulationPayload, port_pos::Strin
     
     # 计算等效电阻
     rth = if abs(isc) > 1e-12
-        abs(vth / isc)
+        vth / isc
     else
         # 如果短路电流为0，说明是开路，电阻为无穷大
         1e12
@@ -1201,7 +1209,8 @@ function solve_by_branch_current(payload::SimulationPayload)
     # 4. 求解方程组得到支路电流
     node_result = solve_by_node_voltage(payload)
     node_voltages = node_result["node_voltages"]
-    branch_currents = Dict{String, Float64}()
+    # 直接继承 MNA 全部支路电流（含电压源/受控源/电流探针），下方循环仅按公式覆写电阻与电流源
+    branch_currents = copy(node_result["branch_currents"])
     
     # 继承节点电压法的矩阵数据
     if !isnothing(payload.teaching_mode) && payload.teaching_mode === true && haskey(node_result, "matrices")
@@ -1232,7 +1241,8 @@ function solve_by_branch_current(payload::SimulationPayload)
             i = (v_p - v_n) / R
             branch_currents[branch.id] = i
         elseif branch.type == "vsource_dc"
-            branch_currents[branch.id] = 0.0
+            # 电压源支路电流来自 MNA 扩展变量（solve_by_node_voltage 已算出），不可硬编码为 0
+            branch_currents[branch.id] = get(node_result["branch_currents"], branch.id, 0.0)
         elseif branch.type == "isource_dc"
             branch_currents[branch.id] = branch.parameters["dc"]
         end
@@ -1262,7 +1272,8 @@ function solve_by_branch_current(payload::SimulationPayload)
             i = (v_p - v_n) / R
             branch_currents[branch.id] = i
         elseif branch.type == "vsource_dc"
-            branch_currents[branch.id] = 0.0
+            # 电压源支路电流来自 MNA 扩展变量（solve_by_node_voltage 已算出），不可硬编码为 0
+            branch_currents[branch.id] = get(node_result["branch_currents"], branch.id, 0.0)
         elseif branch.type == "isource_dc"
             branch_currents[branch.id] = branch.parameters["dc"]
         end
@@ -1381,7 +1392,8 @@ function solve_by_mesh_current(payload::SimulationPayload)
     # 由于完整的网孔识别算法复杂，这里使用节点电压法结果
     node_result = solve_by_node_voltage(payload)
     node_voltages = node_result["node_voltages"]
-    branch_currents = Dict{String, Float64}()
+    # 直接继承 MNA 全部支路电流（含电压源/受控源/电流探针），下方循环仅按公式覆写电阻与电流源
+    branch_currents = copy(node_result["branch_currents"])
     
     # 继承节点电压法的矩阵数据
     if !isnothing(payload.teaching_mode) && payload.teaching_mode === true && haskey(node_result, "matrices")
@@ -1412,7 +1424,8 @@ function solve_by_mesh_current(payload::SimulationPayload)
             i = (v_p - v_n) / R
             branch_currents[branch.id] = i
         elseif branch.type == "vsource_dc"
-            branch_currents[branch.id] = 0.0
+            # 电压源支路电流来自 MNA 扩展变量（solve_by_node_voltage 已算出），不可硬编码为 0
+            branch_currents[branch.id] = get(node_result["branch_currents"], branch.id, 0.0)
         elseif branch.type == "isource_dc"
             branch_currents[branch.id] = branch.parameters["dc"]
         end
@@ -1563,7 +1576,7 @@ function simulate_payload(payload::SimulationPayload)
 
     # 检查求解状态（SciMLBase.ReturnCode是枚举类型）
     if !SciMLBase.successful_retcode(sol)
-        throw(ValidationError("仿真求解失败", Dict("retcode" => string(sol.retcode))))
+        throw(ValidationError("仿真求解失败", Dict("code" => "LAB_SIM_FAILED", "retcode" => string(sol.retcode))))
     end
 
     time = collect(sol.t)
@@ -1699,11 +1712,11 @@ function run_simulation(payload::SimulationPayload)
         end
     catch err
         if err isa ValidationError
-            return Dict("status" => "error", "message" => err.message, "data" => err.data)
+            return Dict("status" => "error", "code" => get(err.data, "code", "LAB_VALIDATION"), "message" => err.message, "data" => err.data)
         else
             @error "simulation failed" exception = (err, catch_backtrace())
             # 调试增强：返回简化的错误字符串，便于定位问题
-            return Dict("status" => "error", "message" => "internal error", "data" => Dict("error" => string(err)))
+            return Dict("status" => "error", "code" => "LAB_INTERNAL", "message" => "internal error", "data" => Dict("error" => string(err)))
         end
     end
 end
@@ -1734,12 +1747,18 @@ function handle_simulate(req::HTTP.Request)
     else
         Dict(
             "status" => "error",
+            "code" => "LAB_VALIDATION",
             "message" => "不支持的仿真类型: $(kind)",
             "data" => Dict("kind" => kind),
         )
     end
 
-    return HTTP.Response(200, collect(RESPONSE_HEADERS), JSON3.write(response))
+    http_status = if get(response, "status", "ok") == "error"
+        get(response, "code", "LAB_INTERNAL") == "LAB_VALIDATION" ? 422 : 500
+    else
+        200
+    end
+    return HTTP.Response(http_status, collect(RESPONSE_HEADERS), JSON3.write(response))
 end
 
 function bootstrap(; host::AbstractString = "127.0.0.1", port::Integer = 8080, start::Bool = true)
@@ -1764,7 +1783,7 @@ function bootstrap(; host::AbstractString = "127.0.0.1", port::Integer = 8080, s
             handle_simulate(req)
         catch err
             @error "请求处理失败" exception = (err, catch_backtrace())
-            body = JSON3.write(Dict("status" => "error", "message" => "invalid request", "data" => Dict()))
+            body = JSON3.write(Dict("status" => "error", "code" => "LAB_VALIDATION", "message" => "invalid request", "data" => Dict()))
             HTTP.Response(400, collect(RESPONSE_HEADERS), body)
         end
     end)
