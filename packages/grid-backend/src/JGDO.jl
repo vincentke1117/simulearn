@@ -1,7 +1,7 @@
 module JGDO
 
 export run_pf, run_reconfiguration_dg, run_n1, run_timeseries, topology_to_powermodels, write_run_snapshot, default_optimizer, default_reconfiguration_optimizer
-export run_transient, run_shortcircuit
+export run_transient, run_shortcircuit, run_opf, http_status
 
 using JSON3
 using Dates
@@ -11,6 +11,7 @@ include("errors.jl")
 include("types.jl")
 include("topology.jl")
 include("powerflow.jl")
+include("opf.jl")
 include("optimization.jl")
 include("analysis.jl")
 include("dynamics.jl")
@@ -60,13 +61,43 @@ Runs an N-1 single-branch outage screening over every in-service branch of the
 provided topology JSON payload. Returns a JSON string with the unified response
 envelope: islanding contingencies report the islanded buses and lost load,
 connected contingencies report the AC power flow outcome (`ok`/`diverged`).
+
+The request body is either the bare topology (backwards compatible) or
+`{"topology": <topology>, "restore": true}`; `restore` (also accepted as a
+top-level key on the bare topology) additionally attempts service restoration of
+every islanded contingency by closing one normally-open tie switch, subject to
+the network not gaining any loop it did not already have. A `max_ties` key is
+rejected with GRID_VALIDATION — see `Analysis.attempt_restoration` for why a
+single tie switch is necessary *and sufficient*.
 """
 function run_n1(topo_json::AbstractString; optimizer=default_optimizer())
     try
         request = JSON3.read(topo_json, Dict{String,Any})
-        pm_data = topology_to_powermodels(request)
-        payload = execute_n1(pm_data; optimizer)
+        topology, restore = parse_n1_request(request)
+        pm_data = topology_to_powermodels(topology)
+        payload = execute_n1(pm_data; optimizer, restore)
         return wrap_success("n1_analysis", payload)
+    catch err
+        return wrap_error(err)
+    end
+end
+
+"""
+    run_opf(json::AbstractString; optimizer=default_optimizer())
+
+Runs an AC optimal power flow (economic dispatch) on the provided topology.
+The request body is either the bare topology or `{"topology": <topology>}`.
+Returns the unified envelope; `data` carries the objective (元/h), the
+per-generator dispatch with binding limits, per-bus voltages and LMPs
+(元/MWh), branch flows and a summary.
+"""
+function run_opf(json::AbstractString; optimizer=default_optimizer())
+    try
+        request = JSON3.read(json, Dict{String,Any})
+        topology = parse_opf_request(request)
+        pm_data = topology_to_powermodels(topology)
+        payload = execute_opf(pm_data; optimizer)
+        return wrap_success("optimal_power_flow", payload)
     catch err
         return wrap_error(err)
     end

@@ -1,0 +1,43 @@
+{
+  "name": "grid-n1-restore-ring4",
+  "endpoint": "n1",
+  "request_topology_example": "ring4",
+  "request_extra": {
+    "restore": true
+  },
+  "notes": "环网基态的转供恢复 —— 这条契约是「回路判据」修复的回归钉子。\n\n拓扑：bus-1(slack) — bus-2 — bus-3 — bus-1 构成环（line-12 / line-23 / line-13），bus-3 — bus-4 是支线（line-34），另有常开联络开关 sw-24（bus-2 ↔ bus-4）。基态 4 母线 / 4 条闭合支路 / 连通 → n_loops_base = 4 − 4 + 1 = 1，**不是辐射状**。\n\nN-1：line-12 / line-23 / line-13 任一开断后网络仍连通（环网的意义就在这里）→ n_ok = 3；只有 line-34 开断会把 bus-4（0.5 MW）孤岛化 → n_islanding = 1。\n\n关键：闭合 sw-24 显然能把 bus-4 完全复电。旧实现的准入判据是绝对辐射状「闭合支路数 == 母线数 − 1」，恢复后闭合支路数 = 4 ≠ 3，于是**这条转供被误判为 restorable=false**（假阴性），reason 还会甩锅给「保持辐射状」。新判据是 loop_count(candidate) ≤ loop_count(base)：恢复后 4 − 4 + 1 = 1 ≤ 1 → 通过。断言 restorable=true / closed_ties=[sw-24] / fully_restored=true / n_loops_after=1 / n_closed_branches=4 / radial=false —— radial=false 且 restorable=true 同时成立，正是「辐射状不是转供的必要条件，不新增回路才是」的实证。",
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "data.type", "equals": "n1_analysis" },
+    { "path": "data.summary.n_branches", "equals": 4 },
+    { "path": "data.summary.n_islanding", "equals": 1 },
+    { "path": "data.summary.n_ok", "equals": 3 },
+    { "path": "data.summary.n_diverged", "equals": 0 },
+    { "path": "data.summary.n_restorable", "equals": 1 },
+    { "path": "data.summary.n_unrestorable", "equals": 0 },
+    { "path": "data.summary.n_loops_base", "equals": 1 },
+    { "path": "data.summary.max_search_depth", "equals": 1 },
+    { "path": "data.summary.worst_branch", "equals": "line-34" },
+    { "path": "data.summary.max_lost_load_mw", "approx": 0.5, "atol": 1e-09 },
+
+    { "path": "data.restoration.1.branch", "equals": "line-34" },
+    { "path": "data.restoration.1.restorable", "equals": true },
+    { "path": "data.restoration.1.fully_restored", "equals": true },
+    { "path": "data.restoration.1.closed_ties.1", "equals": "sw-24" },
+    { "path": "data.restoration.1.candidate_ties.1", "equals": "sw-24" },
+    { "path": "data.restoration.1.n_candidates_evaluated", "equals": 1 },
+    { "path": "data.restoration.1.search_depth", "equals": 1 },
+    { "path": "data.restoration.1.islanded_buses.1", "equals": "bus-4" },
+    { "path": "data.restoration.1.lost_load_before_mw", "approx": 0.5, "atol": 1e-09 },
+    { "path": "data.restoration.1.lost_load_after_mw", "approx": 0.0, "atol": 1e-09 },
+    { "path": "data.restoration.1.n_bus", "equals": 4 },
+    { "path": "data.restoration.1.n_closed_branches", "equals": 4 },
+    { "path": "data.restoration.1.n_loops_base", "equals": 1 },
+    { "path": "data.restoration.1.n_loops_after", "equals": 1 },
+    { "path": "data.restoration.1.radial", "equals": false },
+    { "path": "data.restoration.1.violated", "equals": false },
+    { "path": "data.restoration.1.vmin_pu", "approx": 0.995239, "atol": 0.001 },
+    { "path": "data.restoration.1.vmin_bus", "equals": "bus-4" },
+    { "path": "data.restoration.1.loss_mw", "approx": 0.004009, "atol": 0.0005 }
+  ]
+}

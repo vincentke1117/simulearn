@@ -1,0 +1,29 @@
+{
+  "name": "grid-opf-ieee33",
+  "endpoint": "opf",
+  "request_example": "ieee33",
+  "notes": "IEEE33 只有一台电源（grid-1，在 slack 母线 bus-1，未给成本字段 → 默认二次曲线 [c2,c1,c0] = [0, 1, 0]，即 1 元/MWh 线性成本）。单机无阻塞：系统边际成本 = c1 = 1 元/MWh，故 slack 母线 LMP 必须精确等于 1；其余母线 LMP > 1，差额就是边际网损分量（bus-18 最远 → LMP 最高 1.147）。总成本 = 1 元/MWh × 总发电 = 总发电（MW）= 负荷 3.715 + 网损 0.2027 = 3.9177 元/h —— 这同时把 OPF 的发电量与 pf 金标准（loss_mw = 0.202677）对上了（此拓扑 OPF 只有一个自由度：电压，且 bus-1 的 vmin=vmax=1 把它锁死，所以 OPF 的潮流解 = pf 的潮流解）。",
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "data.type", "equals": "opf" },
+    { "path": "data.objective.termination_status", "equals": "LOCALLY_SOLVED" },
+    { "path": "data.objective.cost_total_yuan_per_h", "approx": 3.917677, "atol": 0.001 },
+    { "path": "data.summary.load_total_mw", "approx": 3.715, "atol": 1e-6 },
+    { "path": "data.summary.gen_total_mw", "approx": 3.917677, "atol": 0.001 },
+    { "path": "data.summary.loss_mw", "approx": 0.202677, "atol": 0.0005 },
+    { "path": "data.summary.vmin_bus", "equals": "bus-18" },
+    { "path": "data.summary.vmin_pu", "approx": 0.91309, "atol": 0.001 },
+    { "path": "data.gens.1.id", "equals": "grid-1" },
+    { "path": "data.gens.1.cost_c1", "approx": 1.0, "atol": 1e-9 },
+    { "path": "data.gens.1.marginal_cost_yuan_per_mwh", "approx": 1.0, "atol": 1e-9 },
+    { "path": "data.gens.1.at_pmax", "equals": false },
+    { "path": "data.buses.1.id", "equals": "bus-1" },
+    { "path": "data.buses.1.lmp_yuan_per_mwh", "approx": 1.0, "atol": 1e-6 },
+    { "path": "data.buses.18.id", "equals": "bus-18" },
+    { "path": "data.buses.18.lmp_yuan_per_mwh", "approx": 1.14719, "atol": 0.002 },
+    { "path": "data.summary.lmp_min_bus", "equals": "bus-1" },
+    { "path": "data.summary.lmp_max_bus", "equals": "bus-18" },
+    { "path": "data.summary.lmp_min_yuan_per_mwh", "approx": 1.0, "atol": 1e-6 },
+    { "path": "data.summary.lmp_max_yuan_per_mwh", "approx": 1.14719, "atol": 0.002 }
+  ]
+}

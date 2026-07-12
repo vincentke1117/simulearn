@@ -19,7 +19,7 @@ const _SIMPLIFY_CACHE_LIMIT = 32
 const _STATE_LOCK = ReentrantLock()
 const _METRICS = Dict{String, Int}("simulate_calls" => 0, "simplify_hits" => 0, "simplify_misses" => 0)
 
-export bootstrap, run_simulation, SimulationPayload, ComponentPayload, NetPayload, SimulationSettings, SweepSettings, ControlBlockPayload, ControlEdgePayload, ControlOutputPayload, ControlSimulationPayload, MixedBridgeBindingPayload, MixedCircuitPayload, MixedSimulationPayload
+export bootstrap, warmup!, run_simulation, SimulationPayload, ComponentPayload, NetPayload, SimulationSettings, SweepSettings, ControlBlockPayload, ControlEdgePayload, ControlOutputPayload, ControlSimulationPayload, MixedBridgeBindingPayload, MixedCircuitPayload, MixedSimulationPayload
 
 struct SimulationSettings
     t_stop::Float64
@@ -2223,7 +2223,117 @@ function handle_simulate(req::HTTP.Request)
     return HTTP.Response(http_status, collect(RESPONSE_HEADERS), JSON3.write(response))
 end
 
-function bootstrap(; host::AbstractString = "127.0.0.1", port::Integer = 8080, start::Bool = true)
+"""
+    warmup!()
+
+启动预热：在开始监听之前，把每条求解路径各跑一遍，把首次请求的 JIT 代价挪到服务启动期。
+
+实测背景：服务重启后的**第一次** frequency_sweep 请求往返 30.3 s，而同一路径第二次只要 0.2 s。
+这 30 s 不是 ModelingToolkit 建模的锅（频率扫描走的是手写复数 MNA，根本不碰 MTK），
+而是请求链路本身的首次 JIT——JSON3 解析、StructTypes 构造、MNA 求解、响应序列化。
+这类代价可以被预热吃掉；而 MTK 为每个新电路生成 ODE 右端函数用的是 RuntimeGeneratedFunctions，
+按定义无法预编译，所以瞬态分析的"新电路首次"仍会慢，这条预热管不了（也没人管得了）。
+
+预热用的是自带的极小电路，不依赖 contracts/ 或 examples/ 目录，部署时可以只带 src/。
+任何一条失败都只记日志、不阻断启动：预热是优化，不是正确性前提。
+"""
+function warmup!()
+    # RC 低通：交流源 → 电阻 → 节点 n2（电容对地）+ 电压探针
+    rc() = Dict{String,Any}(
+        "components" => [
+            Dict("id" => "V1", "type" => "vsource_ac",
+                 "parameters" => Dict("amplitude" => 1.0, "frequency" => 1000.0),
+                 "connections" => Dict("pos" => "n1", "neg" => "gnd")),
+            Dict("id" => "R1", "type" => "resistor",
+                 "parameters" => Dict("value" => 1000.0),
+                 "connections" => Dict("p" => "n1", "n" => "n2")),
+            Dict("id" => "C1", "type" => "capacitor",
+                 "parameters" => Dict("value" => 1.0e-7),
+                 "connections" => Dict("p" => "n2", "n" => "gnd")),
+            Dict("id" => "VP1", "type" => "voltage_probe",
+                 "parameters" => Dict(), "connections" => Dict("node" => "n2")),
+            Dict("id" => "G1", "type" => "ground",
+                 "parameters" => Dict(), "connections" => Dict("gnd" => "gnd")),
+        ],
+        "nets" => [
+            Dict("name" => "n1", "nodes" => [["V1", "pos"], ["R1", "p"]]),
+            Dict("name" => "n2", "nodes" => [["R1", "n"], ["C1", "p"], ["VP1", "node"]]),
+            Dict("name" => "gnd", "nodes" => [["V1", "neg"], ["C1", "n"], ["G1", "gnd"]]),
+        ],
+        "sim" => Dict("t_stop" => 0.001, "n_samples" => 16),
+    )
+
+    # 纯电阻分压：直流教学解法用
+    divider() = Dict{String,Any}(
+        "components" => [
+            Dict("id" => "V1", "type" => "vsource_dc",
+                 "parameters" => Dict("dc" => 10.0),  # 直流源的参数名是 dc（见 COMPONENT_SPECS）
+                 "connections" => Dict("pos" => "n1", "neg" => "gnd")),
+            Dict("id" => "R1", "type" => "resistor",
+                 "parameters" => Dict("value" => 1000.0),
+                 "connections" => Dict("p" => "n1", "n" => "n2")),
+            Dict("id" => "R2", "type" => "resistor",
+                 "parameters" => Dict("value" => 1000.0),
+                 "connections" => Dict("p" => "n2", "n" => "gnd")),
+            Dict("id" => "G1", "type" => "ground",
+                 "parameters" => Dict(), "connections" => Dict("gnd" => "gnd")),
+        ],
+        "nets" => [
+            Dict("name" => "n1", "nodes" => [["V1", "pos"], ["R1", "p"]]),
+            Dict("name" => "n2", "nodes" => [["R1", "n"], ["R2", "p"]]),
+            Dict("name" => "gnd", "nodes" => [["V1", "neg"], ["R2", "n"], ["G1", "gnd"]]),
+        ],
+        "sim" => Dict("t_stop" => 0.01, "n_samples" => 16),
+    )
+
+    with(base, extra) = merge(base, extra)
+
+    jobs = [
+        # 复数 MNA 链路（相量 / 扫频）——实测就是这条吃掉了 30 s 的首请求
+        ("ac_phasor", with(rc(), Dict("method" => "ac_phasor"))),
+        ("frequency_sweep", with(rc(), Dict(
+            "method" => "frequency_sweep",
+            "sweep" => Dict("f_start_hz" => 100.0, "f_stop_hz" => 10000.0, "n_points" => 3, "scale" => "log"),
+        ))),
+        # 实数 MNA 链路（直流教学解法 / 工作点）
+        ("node_voltage", with(divider(), Dict("method" => "node_voltage", "teaching_mode" => true))),
+        ("dc_op", with(rc(), Dict("method" => "dc_op"))),
+        # MTK / DiffEq 链路：热的是包与通用求解器，新电路的 RGF 代码生成仍要现做
+        ("transient", with(rc(), Dict("method" => "transient"))),
+    ]
+
+    t0 = time()
+    for (name, spec) in jobs
+        try
+            # 走完整链路：JSON3.write → JSON3.read(::SimulationPayload) → 求解 → 序列化，
+            # 和真实请求经过的是同一批方法，这样才热得到点子上。
+            response = run_simulation(JSON3.read(JSON3.write(spec), SimulationPayload))
+            JSON3.write(response)
+        catch err
+            @warn "预热失败（不影响启动）" method = name exception = err
+        end
+    end
+
+    # HTTP 层单独热一遍：只热 run_simulation 的话，首请求实测仍要 9.7 s——
+    # 剩下的时间全花在 handle_simulate 的请求解析、封套映射、HTTP.Response 构造上。
+    # 这里直接合成一个 HTTP.Request 喂给 handle_simulate，不经过网络。
+    for (name, spec) in (("http:" * jobs[1][1], jobs[1][2]), ("http:" * jobs[3][1], jobs[3][2]))
+        try
+            req = HTTP.Request("POST", "/simulate", ["Content-Type" => "application/json"], JSON3.write(spec))
+            handle_simulate(req)
+        catch err
+            @warn "预热失败（不影响启动）" method = name exception = err
+        end
+    end
+
+    @info "预热完成" seconds = round(time() - t0; digits = 1) paths = length(jobs) + 2
+    return nothing
+end
+
+function bootstrap(; host::AbstractString = "127.0.0.1", port::Integer = 8080, start::Bool = true, warmup::Bool = true)
+    # 先预热再监听：端口一开、/health 一绿，服务就该是快的。
+    # start-all.ps1 的 Wait-Health 本来就在等，这段等待对用户是免费的。
+    start && warmup && warmup!()
     router = HTTP.Router()
     HTTP.register!(router, "GET", "/health", _ -> begin
         body = JSON3.write(Dict("status" => "ok"))

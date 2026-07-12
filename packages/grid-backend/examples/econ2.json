@@ -1,0 +1,94 @@
+{
+    "meta": {
+        "baseMVA": 100,
+        "feeder": "ECON2",
+        "description": "Two-generator economic dispatch fixture: line impedance is deliberately tiny (r=0.01 ohm, x=0.05 ohm on a 100 kV / 100 ohm base -> 1e-4 pu) so losses are negligible and the equal-incremental-cost solution holds analytically. Load 100 MW at bus-2, gen-1 (c2=0.02, c1=10, c0=100) at bus-1, gen-2 (c2=0.05, c1=8, c0=50) at bus-3."
+    },
+    "nodes": [
+        {
+            "id": "bus-1",
+            "type": "Bus",
+            "kv": 100.0,
+            "is_slack": true,
+            "vm_pu": 1.0,
+            "va_deg": 0.0,
+            "vmin_pu": 0.95,
+            "vmax_pu": 1.05
+        },
+        {
+            "id": "bus-2",
+            "type": "Bus",
+            "kv": 100.0,
+            "vm_pu": 1.0,
+            "va_deg": 0.0,
+            "vmin_pu": 0.95,
+            "vmax_pu": 1.05
+        },
+        {
+            "id": "bus-3",
+            "type": "Bus",
+            "kv": 100.0,
+            "vm_pu": 1.0,
+            "va_deg": 0.0,
+            "vmin_pu": 0.95,
+            "vmax_pu": 1.05
+        },
+        {
+            "id": "gen-1",
+            "type": "Gen",
+            "bus": "bus-1",
+            "p_kw": 50000.0,
+            "p_min_kw": 0.0,
+            "p_max_kw": 100000.0,
+            "q_kvar": 0.0,
+            "q_max_kvar": 50000.0,
+            "q_min_kvar": -50000.0,
+            "cost_c2": 0.02,
+            "cost_c1": 10.0,
+            "cost_c0": 100.0
+        },
+        {
+            "id": "gen-2",
+            "type": "Gen",
+            "bus": "bus-3",
+            "p_kw": 50000.0,
+            "p_min_kw": 0.0,
+            "p_max_kw": 100000.0,
+            "q_kvar": 0.0,
+            "q_max_kvar": 50000.0,
+            "q_min_kvar": -50000.0,
+            "cost_c2": 0.05,
+            "cost_c1": 8.0,
+            "cost_c0": 50.0
+        },
+        {
+            "id": "load-1",
+            "type": "Load",
+            "bus": "bus-2",
+            "p_kw": 100000.0,
+            "q_kvar": 0.0
+        }
+    ],
+    "links": [
+        {
+            "id": "line-12",
+            "type": "Line",
+            "from": "bus-1",
+            "to": "bus-2",
+            "r_ohm": 0.01,
+            "x_ohm": 0.05,
+            "rate_mva": 200.0,
+            "status": "CLOSED"
+        },
+        {
+            "id": "line-23",
+            "type": "Line",
+            "from": "bus-2",
+            "to": "bus-3",
+            "r_ohm": 0.01,
+            "x_ohm": 0.05,
+            "rate_mva": 200.0,
+            "status": "CLOSED"
+        }
+    ]
+}

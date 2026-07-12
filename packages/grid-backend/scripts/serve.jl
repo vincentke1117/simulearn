@@ -27,6 +27,10 @@ const MIME_TYPES = Dict(
 
 json_response(body; status=200) = HTTP.Response(status, ["Content-Type" => "application/json; charset=utf-8"], body)
 
+# 封套错误码 → HTTP 状态码（与 lab 内核一致：422 用户输入 / 500 服务端）。
+# 映射本体在 JGDO.http_status（src/errors.jl），测试与契约夹具直接对它断言。
+envelope_response(body::AbstractString) = json_response(body; status=JGDO.http_status(body))
+
 function file_response(path)
     isfile(path) || return HTTP.Response(404, "not found")
     mime = get(MIME_TYPES, lowercase(splitext(path)[2]), "application/octet-stream")
@@ -58,37 +62,43 @@ end
 @post "/api/grid/pf" function (req::HTTP.Request)
     response = JGDO.run_pf(String(req.body))
     snapshot_if_ok(response)
-    return json_response(response)
+    return envelope_response(response)
 end
 
 @post "/api/grid/reconfig" function (req::HTTP.Request)
     response = JGDO.run_reconfiguration_dg(String(req.body))
     snapshot_if_ok(response)
-    return json_response(response)
+    return envelope_response(response)
 end
 
 @post "/api/grid/n1" function (req::HTTP.Request)
     response = JGDO.run_n1(String(req.body))
     snapshot_if_ok(response)
-    return json_response(response)
+    return envelope_response(response)
 end
 
 @post "/api/grid/timeseries" function (req::HTTP.Request)
     response = JGDO.run_timeseries(String(req.body))
     snapshot_if_ok(response)
-    return json_response(response)
+    return envelope_response(response)
 end
 
 @post "/api/grid/transient" function (req::HTTP.Request)
     response = JGDO.run_transient(String(req.body))
     snapshot_if_ok(response)
-    return json_response(response)
+    return envelope_response(response)
 end
 
 @post "/api/grid/shortcircuit" function (req::HTTP.Request)
     response = JGDO.run_shortcircuit(String(req.body))
     snapshot_if_ok(response)
-    return json_response(response)
+    return envelope_response(response)
+end
+
+@post "/api/grid/opf" function (req::HTTP.Request)
+    response = JGDO.run_opf(String(req.body))
+    snapshot_if_ok(response)
+    return envelope_response(response)
 end
 
 @get "/api/grid/examples" function (req::HTTP.Request)

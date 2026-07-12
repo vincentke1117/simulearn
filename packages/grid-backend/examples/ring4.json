@@ -1,0 +1,24 @@
+{
+  "meta": {
+    "baseMVA": 100.0,
+    "feeder": "RING4",
+    "description": "4 母线环网 + 1 条支线 + 1 条常开联络开关。基态回路数 = 1（非辐射状），用于证明转供搜索在环网/双电源基态上不再假阴性。"
+  },
+  "nodes": [
+    { "id": "bus-1", "type": "Bus", "kv": 12.66, "is_slack": true, "vm_pu": 1.0, "va_deg": 0.0 },
+    { "id": "bus-2", "type": "Bus", "kv": 12.66, "vm_pu": 1.0, "va_deg": 0.0 },
+    { "id": "bus-3", "type": "Bus", "kv": 12.66, "vm_pu": 1.0, "va_deg": 0.0 },
+    { "id": "bus-4", "type": "Bus", "kv": 12.66, "vm_pu": 1.0, "va_deg": 0.0 },
+    { "id": "grid-1", "type": "Gen", "bus": "bus-1", "p_kw": 1600.0, "p_max_kw": 5000.0, "q_kvar": 400.0, "q_max_kvar": 2000.0 },
+    { "id": "load-2", "type": "Load", "bus": "bus-2", "p_kw": 500.0, "q_kvar": 100.0 },
+    { "id": "load-3", "type": "Load", "bus": "bus-3", "p_kw": 600.0, "q_kvar": 150.0 },
+    { "id": "load-4", "type": "Load", "bus": "bus-4", "p_kw": 500.0, "q_kvar": 120.0 }
+  ],
+  "links": [
+    { "id": "line-12", "type": "Line", "from": "bus-1", "to": "bus-2", "r_ohm": 0.3, "x_ohm": 0.5, "rate_mva": 5.0, "status": "CLOSED" },
+    { "id": "line-23", "type": "Line", "from": "bus-2", "to": "bus-3", "r_ohm": 0.3, "x_ohm": 0.5, "rate_mva": 5.0, "status": "CLOSED" },
+    { "id": "line-13", "type": "Line", "from": "bus-1", "to": "bus-3", "r_ohm": 0.5, "x_ohm": 0.8, "rate_mva": 5.0, "status": "CLOSED" },
+    { "id": "line-34", "type": "Line", "from": "bus-3", "to": "bus-4", "r_ohm": 0.4, "x_ohm": 0.6, "rate_mva": 5.0, "status": "CLOSED" },
+    { "id": "sw-24", "type": "Switch", "from": "bus-2", "to": "bus-4", "r_ohm": 0.5, "x_ohm": 0.8, "rate_mva": 5.0, "status": "OPEN" }
+  ]
+}

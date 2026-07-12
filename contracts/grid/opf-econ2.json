@@ -1,0 +1,138 @@
+{
+  "name": "grid-opf-econ2-economic-dispatch",
+  "endpoint": "opf",
+  "expect_http": 200,
+  "request_example": "econ2",
+  "notes": "两机经济调度解析解（等微增率）。算例 econ2：baseMVA=100，kv=100 → z_base=100 Ω，线路 r=0.01 Ω / x=0.05 Ω → 1e-4 / 5e-4 pu，网损可忽略（实测 4.63 kW，占负荷 0.005%）。负荷 D=100 MW（Q=0）。成本曲线（MATPOWER 约定，P 单位 MW）：C1(P)=0.02P²+10P+100，C2(P)=0.05P²+8P+50。\n推导：等微增率 λ = dC1/dP1 = 0.04·P1 + 10 = dC2/dP2 = 0.10·P2 + 8，且 P1+P2 = D = 100（无损）。\n  0.04·P1 + 10 = 0.10·(100 − P1) + 8 = 18 − 0.10·P1  →  0.14·P1 = 8  →  P1* = 8/0.14 = 400/7 = 57.142857 MW\n  P2* = 100 − P1* = 300/7 = 42.857143 MW\n  λ* = 0.04·(400/7) + 10 = 16/7 + 10 = 86/7 = 12.285714 元/MWh（用 gen-2 校验：0.10·300/7 + 8 = 30/7 + 8 = 86/7 ✓）\n  总成本 C* = 0.02·(400/7)² + 10·(400/7) + 100 + 0.05·(300/7)² + 8·(300/7) + 50\n            = 3200/49 + 4000/7 + 4500/49 + 2400/7 + 150 = 7700/49 + 6400/7 + 150 = 8550/7 = 1221.428571 元/h\n两机出力都不顶界（0 ≤ P ≤ 100 MW），故 at_pmax/at_pmin 均为 false。\nLMP 判据：无阻塞、网损≈0 时全网 LMP 相等且等于系统边际成本 λ*。实测 LMP = -lam_kcl_r/baseMVA = 12.2858 / 12.2870 / 12.2861（bus-1/2/3），三者与 λ*=12.285714 的偏差 < 0.002 元/MWh，且负荷母线 bus-2 最高（边际网损为正）—— 这既证明 LMP 的换算方向（除以 baseMVA 并取负号）正确，也证明成本系数按 MW 解释正确（若按 pu 解释，λ 会差 baseMVA=100 倍）。\n实测偏差来源：真实网损 4.63 kW 使 P1+P2 = 100.0046 MW，故 objective 比解析解高 ≈ λ·0.0046 = 0.057 元/h，容差按此设定。",
+  "expect": [
+    {
+      "path": "status",
+      "equals": "ok"
+    },
+    {
+      "path": "data.type",
+      "equals": "opf"
+    },
+    {
+      "path": "data.objective.termination_status",
+      "equals": "LOCALLY_SOLVED"
+    },
+    {
+      "path": "data.objective.cost_total_yuan_per_h",
+      "approx": 1221.428571,
+      "atol": 0.1
+    },
+    {
+      "path": "data.summary.cost_total_yuan_per_h",
+      "approx": 1221.428571,
+      "atol": 0.1
+    },
+    {
+      "path": "data.summary.load_total_mw",
+      "approx": 100.0,
+      "atol": 1e-06
+    },
+    {
+      "path": "data.summary.gen_total_mw",
+      "approx": 100.0,
+      "atol": 0.02
+    },
+    {
+      "path": "data.summary.loss_mw",
+      "approx": 0.0046,
+      "atol": 0.002
+    },
+    {
+      "path": "data.gens.1.id",
+      "equals": "gen-1"
+    },
+    {
+      "path": "data.gens.1.pg_mw",
+      "approx": 57.142857,
+      "atol": 0.05
+    },
+    {
+      "path": "data.gens.1.marginal_cost_yuan_per_mwh",
+      "approx": 12.285714,
+      "atol": 0.02
+    },
+    {
+      "path": "data.gens.1.cost_yuan_per_h",
+      "approx": 736.734694,
+      "atol": 0.1
+    },
+    {
+      "path": "data.gens.1.at_pmax",
+      "equals": false
+    },
+    {
+      "path": "data.gens.1.at_pmin",
+      "equals": false
+    },
+    {
+      "path": "data.gens.2.id",
+      "equals": "gen-2"
+    },
+    {
+      "path": "data.gens.2.pg_mw",
+      "approx": 42.857143,
+      "atol": 0.05
+    },
+    {
+      "path": "data.gens.2.marginal_cost_yuan_per_mwh",
+      "approx": 12.285714,
+      "atol": 0.02
+    },
+    {
+      "path": "data.gens.2.cost_yuan_per_h",
+      "approx": 484.693878,
+      "atol": 0.1
+    },
+    {
+      "path": "data.gens.2.at_pmax",
+      "equals": false
+    },
+    {
+      "path": "data.buses.1.id",
+      "equals": "bus-1"
+    },
+    {
+      "path": "data.buses.1.lmp_yuan_per_mwh",
+      "approx": 12.285714,
+      "atol": 0.02
+    },
+    {
+      "path": "data.buses.2.lmp_yuan_per_mwh",
+      "approx": 12.285714,
+      "atol": 0.02
+    },
+    {
+      "path": "data.buses.3.lmp_yuan_per_mwh",
+      "approx": 12.285714,
+      "atol": 0.02
+    },
+    {
+      "path": "data.summary.lmp_min_yuan_per_mwh",
+      "approx": 12.285714,
+      "atol": 0.02
+    },
+    {
+      "path": "data.summary.lmp_max_yuan_per_mwh",
+      "approx": 12.285714,
+      "atol": 0.02
+    },
+    {
+      "path": "data.summary.lmp_max_bus",
+      "equals": "bus-2"
+    },
+    {
+      "path": "data.branches.1.id",
+      "equals": "line-12"
+    },
+    {
+      "path": "data.branches.1.p_mw",
+      "approx": 57.142857,
+      "atol": 0.05
+    }
+  ]
+}

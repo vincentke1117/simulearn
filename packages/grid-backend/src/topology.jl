@@ -167,6 +167,15 @@ function convert_topology(obj::AbstractDict)
             qmax = qmax_kvar / 1000
             qmin = parse_float(node.data, "q_min_kvar"; default=-qmax_kvar, path=[node.id]) / 1000
             status = get(node.data, "status", 1)
+            # 二次成本曲线（MATPOWER 约定）：model=2 多项式、ncost=3 项、cost=[c2, c1, c0]，
+            # Cost(P) = c2·P² + c1·P + c0，**P 的单位是 MW**（不是 pu）。
+            # make_per_unit! 会调 _rescale_cost_model!(gen, baseMVA)，把 cost[i] 乘以
+            # baseMVA^(ncost-i)，于是内部以 pu 求解时目标函数值仍是 元/h。
+            # 默认 [0, 1, 0] = 1 元/MWh 线性成本：pf/reconfig/n1/transient/shortcircuit
+            # 都不读 cost 键，故此默认对既有行为零影响。
+            c2 = parse_float(node.data, "cost_c2"; default=0.0, path=[node.id])
+            c1 = parse_float(node.data, "cost_c1"; default=1.0, path=[node.id])
+            c0 = parse_float(node.data, "cost_c0"; default=0.0, path=[node.id])
             gens[string(gen_idx)] = Dict(
                 "index" => gen_idx,
                 "gen_bus" => bus_idx,
@@ -179,7 +188,9 @@ function convert_topology(obj::AbstractDict)
                 "gen_status" => status,
                 "status" => status,
                 "name" => node.id,
-                "cost" => [0.0, 1.0],
+                "model" => 2,
+                "ncost" => 3,
+                "cost" => [c2, c1, c0],
             )
             # 机电暂态动态参数（可选，系统基准，直接透传）：h_s 惯性常数 [s]、
             # xd1_pu 暂态电抗 X'd [pu]、d_pu 阻尼系数。仅在节点携带时新增键，

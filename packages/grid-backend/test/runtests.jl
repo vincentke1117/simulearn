@@ -470,11 +470,336 @@ end
     @test no_topo["code"] == "GRID_VALIDATION"
 end
 
+# ---- 最优潮流 / 经济调度（等微增率解析解对拍）----
+
+@testset "Generator cost curve (MATPOWER units)" begin
+    # 缺省：model=2 / ncost=3 / cost=[0, 1, 0]（1 元/MWh 线性），make_per_unit! 不改变
+    # 零和一次项的 baseMVA^0 / baseMVA^1 缩放语义 —— c1=1 → 1*100 = 100。
+    pm = topology_to_powermodels(base_topology())
+    g = pm["gen"]["1"]
+    @test g["model"] == 2
+    @test g["ncost"] == 3
+    @test g["cost"] == [0.0, 100.0, 0.0]   # [c2·S², c1·S, c0]，S = baseMVA = 100
+
+    # 显式二次成本：cost 的 P 单位是 MW（MATPOWER 约定）。make_per_unit! 调
+    # _rescale_cost_model!(gen, baseMVA)，把 cost[i] 乘 baseMVA^(ncost-i)，于是在 pu 上
+    # 求解时目标函数仍是 元/h：c2·S²·(P_pu)² + c1·S·P_pu + c0 = c2·P_MW² + c1·P_MW + c0。
+    topo = base_topology()
+    for node in topo["nodes"]
+        if node["id"] == "grid-1"
+            node["cost_c2"] = 0.02
+            node["cost_c1"] = 10.0
+            node["cost_c0"] = 100.0
+        end
+    end
+    pm2 = topology_to_powermodels(topo)
+    @test pm2["gen"]["1"]["cost"] == [0.02 * 100^2, 10.0 * 100, 100.0]
+    @test pm2["gen"]["1"]["cost"] == [200.0, 1000.0, 100.0]
+end
+
+@testset "OPF economic dispatch econ2 (analytic cross-check)" begin
+    # 解析解（等微增率）：λ = 0.04·P1 + 10 = 0.10·P2 + 8，P1 + P2 = 100（网损可忽略）
+    #   → P1* = 400/7 = 57.142857 MW，P2* = 300/7 = 42.857143 MW，λ* = 86/7 = 12.285714 元/MWh
+    #   → C* = 8550/7 = 1221.428571 元/h
+    p1 = 400 / 7
+    p2 = 300 / 7
+    lambda = 86 / 7
+    cost_star = 0.02p1^2 + 10p1 + 100 + 0.05p2^2 + 8p2 + 50
+    @test isapprox(lambda, 12.285714; atol=1e-6)
+    @test isapprox(cost_star, 1221.428571; atol=1e-5)
+
+    topo_json = read(joinpath(EXAMPLES_DIR, "econ2.json"), String)
+    response = JSON3.read(JGDO.run_opf(topo_json))
+    @test response["status"] == "ok"
+    data = response["data"]
+    @test data["type"] == "opf"
+    @test data["objective"]["termination_status"] == "LOCALLY_SOLVED"
+    @test data["objective"]["solve_time_s"] >= 0.0
+
+    g1 = only(filter(g -> g["id"] == "gen-1", data["gens"]))
+    g2 = only(filter(g -> g["id"] == "gen-2", data["gens"]))
+    @test isapprox(g1["pg_mw"], p1; atol=0.05)
+    @test isapprox(g2["pg_mw"], p2; atol=0.05)
+    # 等微增率：两台机的边际成本必须相等（且等于 λ*）
+    @test isapprox(g1["marginal_cost_yuan_per_mwh"], g2["marginal_cost_yuan_per_mwh"]; atol=0.01)
+    @test isapprox(g1["marginal_cost_yuan_per_mwh"], lambda; atol=0.02)
+    @test !g1["at_pmax"] && !g1["at_pmin"] && !g2["at_pmax"] && !g2["at_pmin"]
+    @test !g1["binding"] && !g2["binding"]
+    @test isapprox(g1["cost_yuan_per_h"] + g2["cost_yuan_per_h"], cost_star; atol=0.1)
+    @test isapprox(data["objective"]["cost_total_yuan_per_h"], cost_star; atol=0.1)
+
+    # LMP：无阻塞、网损≈0 → 全网 LMP 相等且 = λ*（这是 LMP 换算方向正确的硬证据；
+    # 若漏掉 /baseMVA 会得到 1228.6，若符号搞反会得到 −12.29）
+    lmps = [Float64(bus["lmp_yuan_per_mwh"]) for bus in data["buses"]]
+    @test all(isfinite, lmps)
+    @test all(l -> isapprox(l, lambda; atol=0.02), lmps)
+    @test maximum(lmps) - minimum(lmps) < 0.01
+    # 负荷母线的 LMP 最高（边际网损为正）
+    @test data["summary"]["lmp_max_bus"] == "bus-2"
+
+    # 网损可忽略 → 总发电 ≈ 总负荷；两者之差就是网损
+    @test isapprox(data["summary"]["load_total_mw"], 100.0; atol=1e-9)
+    @test data["summary"]["loss_mw"] < 0.01
+    @test isapprox(data["summary"]["gen_total_mw"] - data["summary"]["load_total_mw"],
+                   data["summary"]["loss_mw"]; atol=1e-3)
+    @test length(data["branches"]) == 2
+    line12 = only(filter(b -> b["id"] == "line-12", data["branches"]))
+    @test isapprox(line12["p_mw"], p1; atol=0.05)
+end
+
+@testset "OPF IEEE33 (single source, LMP = marginal cost + loss component)" begin
+    topo_json = read(joinpath(EXAMPLES_DIR, "ieee33.json"), String)
+    response = JSON3.read(JGDO.run_opf(topo_json))
+    @test response["status"] == "ok"
+    data = response["data"]
+    @test data["objective"]["termination_status"] == "LOCALLY_SOLVED"
+    @test data["objective"]["cost_total_yuan_per_h"] > 0
+
+    # 单机、默认成本 [0, 1, 0] → 边际成本 1 元/MWh；总成本 = 总发电（MW）
+    gen = only(data["gens"])
+    @test gen["id"] == "grid-1"
+    @test isapprox(gen["marginal_cost_yuan_per_mwh"], 1.0; atol=1e-9)
+    @test isapprox(gen["cost_yuan_per_h"], gen["pg_mw"]; atol=1e-9)
+    # OPF 的潮流解必须与 pf 金标准一致（bus-1 的 vmin=vmax=1 锁死了唯一的电压自由度）
+    @test isapprox(data["summary"]["loss_mw"], 0.202677; atol=5e-4)
+    @test isapprox(gen["pg_mw"], 3.715 + 0.202677; atol=5e-4)
+
+    lmps = [Float64(bus["lmp_yuan_per_mwh"]) for bus in data["buses"]]
+    @test length(lmps) == 33
+    @test all(isfinite, lmps)
+    @test all(l -> l > 0, lmps)
+    # slack 母线 LMP = 系统边际成本（该处无网损分量）；其余母线因边际网损更贵
+    @test isapprox(lmps[1], 1.0; atol=1e-6)
+    @test all(l -> l >= 1.0 - 1e-6, lmps)
+    @test data["summary"]["lmp_min_bus"] == "bus-1"
+    @test data["summary"]["lmp_max_bus"] == "bus-18"   # 主馈线末端，网损分量最大
+end
+
+@testset "OPF validation" begin
+    no_slack = base_topology()
+    no_slack["nodes"][1]["is_slack"] = false
+    bad = JSON3.read(JGDO.run_opf(JSON3.write(no_slack)))
+    @test bad["status"] == "error"
+    @test bad["code"] == "GRID_TOPOLOGY"
+
+    empty_req = JSON3.read(JGDO.run_opf("{}"))
+    @test empty_req["status"] == "error"
+    @test empty_req["code"] == "GRID_VALIDATION"
+
+    # {"topology": ...} 包装与裸拓扑等价
+    wrapped = JSON3.read(JGDO.run_opf(JSON3.write(Dict("topology" => JSON3.read(read(joinpath(EXAMPLES_DIR, "econ2.json"), String))))))
+    @test wrapped["status"] == "ok"
+    @test wrapped["data"]["type"] == "opf"
+end
+
+# ---- N-1 转供恢复 ----
+
+@testset "N-1 restoration (ieee33 tie switches)" begin
+    topo = JSON3.read(read(joinpath(EXAMPLES_DIR, "ieee33.json"), String))
+    request = JSON3.write(Dict("topology" => topo, "restore" => true))
+    response = JSON3.read(JGDO.run_n1(request))
+    @test response["status"] == "ok"
+    data = response["data"]
+
+    # 基础 N-1 行为不变
+    @test data["summary"]["n_branches"] == 32
+    @test data["summary"]["n_islanding"] == 32
+    @test data["summary"]["n_ok"] == 0
+    @test isapprox(data["summary"]["max_lost_load_mw"], 3.715; atol=1e-9)
+
+    @test data["summary"]["n_restorable"] == 31
+    @test data["summary"]["n_unrestorable"] == 1
+    @test length(data["restoration"]) == 32
+
+    # br-1 是电源出线：所有联络开关两端都在孤岛内 → 不可恢复，且给出原因
+    r1 = only(filter(r -> r["branch"] == "br-1", data["restoration"]))
+    @test r1["restorable"] === false
+    @test occursin("both ends inside the island", r1["reason"])
+    @test isapprox(r1["lost_load_after_mw"], 3.715; atol=1e-9)
+    @test isempty(r1["closed_ties"])
+
+    # br-17 只带 bus-18：由联络开关 br-36（bus-18 ↔ bus-33）单条恢复
+    r17 = only(filter(r -> r["branch"] == "br-17", data["restoration"]))
+    @test r17["restorable"] === true
+    @test String.(r17["closed_ties"]) == ["br-36"]
+    @test r17["search_depth"] == 1
+    @test isapprox(r17["lost_load_before_mw"], 0.09; atol=1e-9)
+    @test isapprox(r17["lost_load_after_mw"], 0.0; atol=1e-9)
+    @test 0.0 < r17["loss_mw"] < 1.0                 # 恢复后网损为有限正值
+    @test isfinite(r17["loss_mw"])
+    @test r17["vmin_pu"] > 0.9                        # 不越限
+    @test r17["violated"] === false
+
+    # br-2 转供成功但严重越限：可带电 ≠ 运行合格
+    r2 = only(filter(r -> r["branch"] == "br-2", data["restoration"]))
+    @test r2["restorable"] === true
+    @test String.(r2["closed_ties"]) == ["br-33"]
+    @test r2["vmin_pu"] < 0.9
+    @test r2["violated"] === true
+
+    # 辐射状不变量：ieee33 基态是树（n_loops_base=0）→ 每条恢复方案仍必须是树
+    @test data["summary"]["n_loops_base"] == 0
+    for entry in data["restoration"]
+        entry["restorable"] === true || continue
+        @test entry["radial"] === true
+        @test entry["n_bus"] == 33
+        @test entry["n_closed_branches"] == entry["n_bus"] - 1
+        @test entry["n_loops_after"] == 0
+        @test length(entry["closed_ties"]) == entry["search_depth"]
+        @test entry["lost_load_after_mw"] < entry["lost_load_before_mw"]
+        @test isfinite(entry["loss_mw"]) && entry["loss_mw"] > 0
+    end
+
+    # 深度定理：单条支路开断最多切出 2 个连通分量 → 恢复连通当且仅当闭合一条跨界联络
+    # 开关。内核只搜深度 1，且这不是能力缺失 —— 每条可恢复条目都恰好闭 1 条开关且完
+    # 全复电（restorable ⇒ fully_restored），不存在需要更深搜索的残余孤岛。
+    @test data["summary"]["max_search_depth"] == 1
+    for entry in data["restoration"]
+        entry["restorable"] === true || continue
+        @test entry["search_depth"] == 1
+        @test length(entry["closed_ties"]) == 1
+        @test entry["fully_restored"] === true
+        @test isempty(entry["islanded_buses_after"])
+    end
+
+    # 5 条联络开关每条开断都被实际枚举检查过（包括 br-1 那条不可恢复的）
+    for entry in data["restoration"]
+        @test entry["n_candidates_evaluated"] == 5
+        @test length(entry["candidate_ties"]) == 5
+    end
+
+    # 条目形状一致性：可恢复 / 不可恢复两个分支必须返回**同一套键**（前端不能拿到 undefined）
+    restorable_keys = sort(String.(keys(only(filter(r -> r["branch"] == "br-17", data["restoration"])))))
+    unrestorable_keys = sort(String.(keys(r1)))
+    @test restorable_keys == unrestorable_keys
+    for k in ["loss_mw", "vmin_pu", "vmin_bus", "violated", "radial", "n_closed_branches", "n_loops_after"]
+        @test r1[k] === nothing            # 恢复后才有意义的字段 → null，而不是缺键
+    end
+    @test isempty(r1["violation_buses"])
+    @test isempty(r1["overloaded_branches"])
+    @test String.(r1["islanded_buses_after"]) == String.(r1["islanded_buses"])
+    @test r1["n_bus"] == 33
+    @test r1["n_loops_base"] == 0
+end
+
+@testset "N-1 restoration on a MESHED base (环网不再假阴性)" begin
+    # bus1—bus2—bus3—bus1 成环 + bus3—bus4 支线 + 常开联络 sw-24(bus2↔bus4)。
+    # 基态回路数 = 4 − 4 + 1 = 1（非辐射状）。旧实现的准入判据是绝对辐射状
+    # 「闭合支路数 == 母线数 − 1」，恢复后是 4 ≠ 3 → 一律 restorable=false（假阴性）。
+    topo = JSON3.read(read(joinpath(EXAMPLES_DIR, "ring4.json"), String))
+    response = JSON3.read(JGDO.run_n1(JSON3.write(Dict("topology" => topo, "restore" => true))))
+    @test response["status"] == "ok"
+    data = response["data"]
+
+    @test data["summary"]["n_loops_base"] == 1        # 基态就不是树
+    @test data["summary"]["n_branches"] == 4
+    @test data["summary"]["n_ok"] == 3                # 环上三条支路开断都不孤岛
+    @test data["summary"]["n_islanding"] == 1
+    @test data["summary"]["n_restorable"] == 1
+    @test data["summary"]["n_unrestorable"] == 0
+
+    entry = only(data["restoration"])
+    @test entry["branch"] == "line-34"
+    @test String.(entry["islanded_buses"]) == ["bus-4"]
+    @test entry["restorable"] === true                # ← 旧内核在这里返回 false
+    @test entry["fully_restored"] === true
+    @test String.(entry["closed_ties"]) == ["sw-24"]
+    @test isapprox(entry["lost_load_before_mw"], 0.5; atol=1e-9)
+    @test isapprox(entry["lost_load_after_mw"], 0.0; atol=1e-9)
+    @test entry["n_closed_branches"] == 4             # 4 母线 4 支路 —— 不是树，但也没多出回路
+    @test entry["n_loops_base"] == 1
+    @test entry["n_loops_after"] == 1                 # 回路数不增 = 真正的准入判据
+    @test entry["radial"] === false                   # 且 restorable=true —— 辐射状不是必要条件
+    @test entry["violated"] === false
+    @test entry["vmin_pu"] > 0.9
+    @test isfinite(entry["loss_mw"]) && entry["loss_mw"] > 0
+end
+
+@testset "N-1 restoration is opt-in (default payload unchanged)" begin
+    # 裸拓扑（历史请求形状）→ 没有 restoration 块，summary 不含 n_restorable
+    response = JSON3.read(JGDO.run_n1(JSON3.write(base_topology())))
+    @test response["status"] == "ok"
+    @test !haskey(response["data"], "restoration")
+    @test !haskey(response["data"]["summary"], "n_restorable")
+
+    # 3 母线算例：sw-13（bus-1 ↔ bus-3，switchable & OPEN）两条开断都能救 ——
+    # line-12 断 → 闭 sw-13 后 bus-1→bus-3→bus-2 供电（失负荷 0.8 → 0）；
+    # line-23 断 → 闭 sw-13 后 bus-3 复电（该孤岛失负荷本来就是 0，但挂着 dg-1，
+    # 判据是「失电母线数严格下降」而不是「失负荷严格下降」）。
+    request = JSON3.write(Dict("topology" => base_topology(), "restore" => true))
+    resp = JSON3.read(JGDO.run_n1(request))
+    data = resp["data"]
+    @test data["summary"]["n_restorable"] == 2
+    @test data["summary"]["n_unrestorable"] == 0
+    @test data["summary"]["max_search_depth"] == 1
+
+    r12 = only(filter(r -> r["branch"] == "line-12", data["restoration"]))
+    @test r12["restorable"] === true
+    @test r12["fully_restored"] === true
+    @test String.(r12["closed_ties"]) == ["sw-13"]
+    @test isapprox(r12["lost_load_before_mw"], 0.8; atol=1e-9)
+    @test isapprox(r12["lost_load_after_mw"], 0.0; atol=1e-9)
+    @test r12["n_closed_branches"] == 2      # 3 母线 → 2 条闭合支路，仍是树
+    @test r12["radial"] === true
+    @test isempty(r12["islanded_buses_after"])
+
+    r23 = only(filter(r -> r["branch"] == "line-23", data["restoration"]))
+    @test r23["restorable"] === true
+    @test String.(r23["closed_ties"]) == ["sw-13"]
+    @test isapprox(r23["lost_load_before_mw"], 0.0; atol=1e-9)
+    @test r23["n_closed_branches"] == 2
+end
+
+@testset "N-1 restore request validation" begin
+    bad_restore = JSON3.read(JGDO.run_n1(JSON3.write(Dict("topology" => base_topology(), "restore" => 3))))
+    @test bad_restore["status"] == "error"
+    @test bad_restore["code"] == "GRID_VALIDATION"
+
+    # max_ties 已被删除：任何取值（包括「合法」的 1/2）都必须显式拒绝，而不是被静默忽略 ——
+    # 深度 ≥ 2 的联络开关组合搜索在数学上不可能恢复单条搜索恢复不了的负荷（见 attempt_restoration）。
+    for value in (1, 2, 9)
+        bad_ties = JSON3.read(JGDO.run_n1(JSON3.write(
+            Dict("topology" => base_topology(), "restore" => true, "max_ties" => value))))
+        @test bad_ties["status"] == "error"
+        @test bad_ties["code"] == "GRID_VALIDATION"
+        @test occursin("max_ties", bad_ties["message"]) || occursin("max_ties", JSON3.write(bad_ties))
+    end
+end
+
 @testset "Error envelope" begin
     bad = JSON3.read(JGDO.run_pf("{\"meta\":{},\"nodes\":[],\"links\":[]}"))
     @test bad["status"] == "error"
     @test haskey(bad, "code")
     @test bad["data"] === nothing
+end
+
+@testset "Envelope → HTTP status (serve.jl 的映射源)" begin
+    # 成功 → 200
+    @test JGDO.http_status(JGDO.run_pf(JSON3.write(base_topology()))) == 200
+    @test JGDO.http_status(JGDO.run_opf(read(joinpath(EXAMPLES_DIR, "econ2.json"), String))) == 200
+
+    # 用户输入问题 → 422
+    no_slack = base_topology()
+    no_slack["nodes"][1]["is_slack"] = false
+    topo_err = JGDO.run_pf(JSON3.write(no_slack))
+    @test JSON3.read(topo_err)["code"] == "GRID_TOPOLOGY"
+    @test JGDO.http_status(topo_err) == 422
+
+    validation_err = JGDO.run_timeseries(JSON3.write(Dict("topology" => base_topology(), "load_scale" => Any[])))
+    @test JSON3.read(validation_err)["code"] == "GRID_VALIDATION"
+    @test JGDO.http_status(validation_err) == 422
+
+    # 服务端问题 → 500
+    snapshot_err = JGDO.Errors.wrap_error(SnapshotError("failed to write snapshot"; path="/nope"))
+    @test JSON3.read(snapshot_err)["code"] == "GRID_SNAPSHOT"
+    @test JGDO.http_status(snapshot_err) == 500
+
+    internal_err = JGDO.Errors.wrap_error(ErrorException("boom"))
+    @test JSON3.read(internal_err)["code"] == "GRID_INTERNAL"
+    @test JGDO.http_status(internal_err) == 500
+
+    # 不可解析的 body 保守归 500
+    @test JGDO.http_status("not json at all") == 500
 end
 
 @testset "Snapshot persistence" begin
@@ -530,9 +855,15 @@ if isdir(CONTRACTS_DIR)
                   endpoint == "timeseries" ? JGDO.run_timeseries(request) :
                   endpoint == "transient" ? JGDO.run_transient(request) :
                   endpoint == "shortcircuit" ? JGDO.run_shortcircuit(request) :
+                  endpoint == "opf" ? JGDO.run_opf(request) :
                   error("未知契约端点: " * endpoint)
             @testset "$(spec[:name])" begin
                 check_contract(JSON3.read(raw), spec[:expect])
+                # HTTP 状态码这一层：contract_checker 只看 body，所以夹具用可选的
+                # expect_http 字段直接对 JGDO.http_status（serve.jl 的 HTTP 码来源）断言。
+                if haskey(spec, :expect_http)
+                    @test JGDO.http_status(raw) == Int(spec[:expect_http])
+                end
             end
         end
     end

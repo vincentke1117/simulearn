@@ -1,18 +1,43 @@
 {
   "name": "grid-pf-error-no-slack",
   "endpoint": "pf",
+  "expect_http": 422,
   "request": {
-    "meta": { "baseMVA": 100.0 },
+    "meta": {
+      "baseMVA": 100.0
+    },
     "nodes": [
-      { "id": "bus-1", "type": "Bus", "kv": 10.5 },
-      { "id": "bus-2", "type": "Bus", "kv": 10.5 }
+      {
+        "id": "bus-1",
+        "type": "Bus",
+        "kv": 10.5
+      },
+      {
+        "id": "bus-2",
+        "type": "Bus",
+        "kv": 10.5
+      }
     ],
     "links": [
-      { "id": "line-1", "type": "Line", "from": "bus-1", "to": "bus-2", "r_ohm": 0.1, "x_ohm": 0.3 }
+      {
+        "id": "line-1",
+        "type": "Line",
+        "from": "bus-1",
+        "to": "bus-2",
+        "r_ohm": 0.1,
+        "x_ohm": 0.3
+      }
     ]
   },
   "expect": [
-    { "path": "status", "equals": "error" },
-    { "path": "code", "equals": "GRID_TOPOLOGY" }
-  ]
+    {
+      "path": "status",
+      "equals": "error"
+    },
+    {
+      "path": "code",
+      "equals": "GRID_TOPOLOGY"
+    }
+  ],
+  "notes": "无 slack 母线 → TopologyError → 封套 code=GRID_TOPOLOGY。HTTP 层：GRID_VALIDATION / GRID_TOPOLOGY 属用户输入问题 → 422（与 lab 内核统一）；GRID_SNAPSHOT / GRID_INTERNAL 属服务端问题 → 500。expect_http 直接断言 JGDO.http_status（serve.jl 的 HTTP 码就取自它），body 保持不变。"
 }
