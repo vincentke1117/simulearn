@@ -215,6 +215,72 @@ end
     @test data["summary"]["improvement_pct"] > 0
 end
 
+@testset "N-1 analysis (3-bus)" begin
+    response = JSON3.read(JGDO.run_n1(JSON3.write(base_topology())))
+    @test response["status"] == "ok"
+    data = response["data"]
+    @test data["type"] == "n1_analysis"
+    # sw-13 is OPEN → only the two closed lines are screened
+    @test data["summary"]["n_branches"] == 2
+    @test data["summary"]["n_islanding"] == 2
+    @test data["summary"]["n_ok"] == 0
+    @test data["summary"]["n_diverged"] == 0
+
+    r12 = only(filter(r -> r["branch"] == "line-12", data["results"]))
+    @test r12["outcome"] == "islanding"
+    @test sort(String.(r12["islanded_buses"])) == ["bus-2", "bus-3"]
+    @test isapprox(r12["lost_load_mw"], 0.8; atol=1e-9)
+
+    r23 = only(filter(r -> r["branch"] == "line-23", data["results"]))
+    @test r23["outcome"] == "islanding"
+    @test String.(r23["islanded_buses"]) == ["bus-3"]
+    @test isapprox(r23["lost_load_mw"], 0.0; atol=1e-9)
+
+    @test isapprox(data["summary"]["max_lost_load_mw"], 0.8; atol=1e-9)
+    @test data["summary"]["worst_branch"] == "line-12"
+end
+
+@testset "Timeseries power flow (3-bus)" begin
+    # Drop the DG: its fixed injection dominates at light load (reverse flow) and its
+    # PV bus pins vmin at the setpoint, which would mask the load-scaling physics.
+    topo = base_topology()
+    topo["nodes"] = filter(n -> n["id"] != "dg-1", topo["nodes"])
+    request = Dict("topology" => topo, "load_scale" => [0.5, 1.0])
+    response = JSON3.read(JGDO.run_timeseries(JSON3.write(request)))
+    @test response["status"] == "ok"
+    data = response["data"]
+    @test data["type"] == "timeseries_pf"
+    @test data["summary"]["n_points"] == 2
+    @test length(data["points"]) == 2
+    p_half, p_full = data["points"][1], data["points"][2]
+    @test p_half["outcome"] == "ok"
+    @test p_full["outcome"] == "ok"
+    @test p_half["vmin_pu"] > p_full["vmin_pu"]      # lighter load → higher voltage
+    @test p_half["loss_mw"] < p_full["loss_mw"]      # lighter load → lower loss
+    @test data["summary"]["max_loss_mw"] == maximum(p["loss_mw"] for p in data["points"])
+    @test data["summary"]["min_vmin_pu"] == minimum(p["vmin_pu"] for p in data["points"])
+end
+
+@testset "Timeseries validation" begin
+    topo = base_topology()
+
+    no_topo = JSON3.read(JGDO.run_timeseries(JSON3.write(Dict("load_scale" => [1.0]))))
+    @test no_topo["status"] == "error"
+    @test no_topo["code"] == "GRID_VALIDATION"
+
+    empty_scale = JSON3.read(JGDO.run_timeseries(JSON3.write(Dict("topology" => topo, "load_scale" => Any[]))))
+    @test empty_scale["status"] == "error"
+    @test empty_scale["code"] == "GRID_VALIDATION"
+
+    negative = JSON3.read(JGDO.run_timeseries(JSON3.write(Dict("topology" => topo, "load_scale" => [1.0, -0.5]))))
+    @test negative["status"] == "error"
+    @test negative["code"] == "GRID_VALIDATION"
+
+    too_many = JSON3.read(JGDO.run_timeseries(JSON3.write(Dict("topology" => topo, "load_scale" => fill(1.0, 97)))))
+    @test too_many["status"] == "error"
+    @test too_many["code"] == "GRID_VALIDATION"
+end
+
 @testset "Error envelope" begin
     bad = JSON3.read(JGDO.run_pf("{\"meta\":{},\"nodes\":[],\"links\":[]}"))
     @test bad["status"] == "error"
@@ -255,12 +321,24 @@ if isdir(CONTRACTS_DIR)
     include(joinpath(CONTRACTS_DIR, "contract_checker.jl"))
     @testset "Golden contracts (grid)" begin
         for spec in load_contracts(joinpath(CONTRACTS_DIR, "grid"))
-            request = haskey(spec, :request_example) ?
-                read(joinpath(EXAMPLES_DIR, String(spec[:request_example]) * ".json"), String) :
+            request = if haskey(spec, :request_example)
+                read(joinpath(EXAMPLES_DIR, String(spec[:request_example]) * ".json"), String)
+            elseif haskey(spec, :request_topology_example)
+                # 组合请求：{"topology": <examples/<名>.json>, ...request_extra}
+                topo = JSON3.read(read(joinpath(EXAMPLES_DIR, String(spec[:request_topology_example]) * ".json"), String))
+                body = Dict{String,Any}("topology" => topo)
+                for (key, value) in pairs(get(spec, :request_extra, Dict{Symbol,Any}()))
+                    body[String(key)] = value
+                end
+                JSON3.write(body)
+            else
                 JSON3.write(spec[:request])
+            end
             endpoint = String(spec[:endpoint])
             raw = endpoint == "pf" ? JGDO.run_pf(request) :
                   endpoint == "reconfig" ? JGDO.run_reconfiguration_dg(request) :
+                  endpoint == "n1" ? JGDO.run_n1(request) :
+                  endpoint == "timeseries" ? JGDO.run_timeseries(request) :
                   error("未知契约端点: " * endpoint)
             @testset "$(spec[:name])" begin
                 check_contract(JSON3.read(raw), spec[:expect])

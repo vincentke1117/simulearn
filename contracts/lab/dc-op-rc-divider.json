@@ -1,0 +1,47 @@
+{
+  "name": "lab-dc-op-rc-divider",
+  "endpoint": "simulate",
+  "request": {
+    "components": [
+      {
+        "id": "V1",
+        "type": "vsource_dc",
+        "parameters": { "dc": 5.0 },
+        "connections": { "pos": "n1", "neg": "gnd" }
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "parameters": { "value": 1000.0 },
+        "connections": { "p": "n1", "n": "n2" }
+      },
+      {
+        "id": "C1",
+        "type": "capacitor",
+        "parameters": { "value": 1e-06 },
+        "connections": { "p": "n2", "n": "gnd" }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "parameters": {},
+        "connections": { "gnd": "gnd" }
+      }
+    ],
+    "nets": [
+      { "name": "n1", "nodes": [["V1", "pos"], ["R1", "p"]] },
+      { "name": "n2", "nodes": [["R1", "n"], ["C1", "p"]] },
+      { "name": "gnd", "nodes": [["V1", "neg"], ["C1", "n"], ["G1", "gnd"]] }
+    ],
+    "sim": { "t_stop": 0.001, "n_samples": 10 },
+    "method": "dc_op"
+  },
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "method", "equals": "dc_op" },
+    { "path": "data.node_voltages.n1", "approx": 5.0, "atol": 1e-09 },
+    { "path": "data.node_voltages.n2", "approx": 5.0, "atol": 1e-09 },
+    { "path": "data.branch_currents.R1", "approx": 0.0, "atol": 1e-09 },
+    { "path": "data.branch_currents.V1", "approx": 0.0, "atol": 1e-09 }
+  ]
+}

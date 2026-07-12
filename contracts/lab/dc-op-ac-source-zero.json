@@ -1,0 +1,39 @@
+{
+  "name": "lab-dc-op-ac-source-zero",
+  "endpoint": "simulate",
+  "request": {
+    "components": [
+      {
+        "id": "VAC1",
+        "type": "vsource_ac",
+        "parameters": { "amplitude": 5.0, "frequency": 1000.0 },
+        "connections": { "pos": "n1", "neg": "gnd" }
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "parameters": { "value": 1000.0 },
+        "connections": { "p": "n1", "n": "gnd" }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "parameters": {},
+        "connections": { "gnd": "gnd" }
+      }
+    ],
+    "nets": [
+      { "name": "n1", "nodes": [["VAC1", "pos"], ["R1", "p"]] },
+      { "name": "gnd", "nodes": [["VAC1", "neg"], ["R1", "n"], ["G1", "gnd"]] }
+    ],
+    "sim": { "t_stop": 0.001, "n_samples": 10 },
+    "method": "dc_op"
+  },
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "method", "equals": "dc_op" },
+    { "path": "data.node_voltages.n1", "approx": 0.0, "atol": 1e-09 },
+    { "path": "data.branch_currents.R1", "approx": 0.0, "atol": 1e-09 },
+    { "path": "data.branch_currents.VAC1", "approx": 0.0, "atol": 1e-09 }
+  ]
+}

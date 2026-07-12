@@ -67,6 +67,18 @@ end
     return json_response(response)
 end
 
+@post "/api/grid/n1" function (req::HTTP.Request)
+    response = JGDO.run_n1(String(req.body))
+    snapshot_if_ok(response)
+    return json_response(response)
+end
+
+@post "/api/grid/timeseries" function (req::HTTP.Request)
+    response = JGDO.run_timeseries(String(req.body))
+    snapshot_if_ok(response)
+    return json_response(response)
+end
+
 @get "/api/grid/examples" function (req::HTTP.Request)
     entries = Vector{Dict{String,Any}}()
     for file in sort(readdir(EXAMPLES_DIR))

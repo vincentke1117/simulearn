@@ -1,6 +1,6 @@
 module JGDO
 
-export run_pf, run_reconfiguration_dg, topology_to_powermodels, write_run_snapshot, default_optimizer, default_reconfiguration_optimizer
+export run_pf, run_reconfiguration_dg, run_n1, run_timeseries, topology_to_powermodels, write_run_snapshot, default_optimizer, default_reconfiguration_optimizer
 
 using JSON3
 using Dates
@@ -11,6 +11,7 @@ include("types.jl")
 include("topology.jl")
 include("powerflow.jl")
 include("optimization.jl")
+include("analysis.jl")
 
 const DEFAULT_RUNS_DIR = joinpath(@__DIR__, "..", "runs")
 
@@ -44,6 +45,44 @@ function run_reconfiguration_dg(topo_json::AbstractString; optimizer=default_rec
         pm_data = topology_to_powermodels(request)
         payload = execute_reconfiguration(pm_data; optimizer=optimizer, pf_optimizer=pf_optimizer)
         return wrap_success("Topology reconfiguration completed", payload)
+    catch err
+        return wrap_error(err)
+    end
+end
+
+"""
+    run_n1(topo_json::AbstractString; optimizer=default_optimizer())
+
+Runs an N-1 single-branch outage screening over every in-service branch of the
+provided topology JSON payload. Returns a JSON string with the unified response
+envelope: islanding contingencies report the islanded buses and lost load,
+connected contingencies report the AC power flow outcome (`ok`/`diverged`).
+"""
+function run_n1(topo_json::AbstractString; optimizer=default_optimizer())
+    try
+        request = JSON3.read(topo_json, Dict{String,Any})
+        pm_data = topology_to_powermodels(request)
+        payload = execute_n1(pm_data; optimizer)
+        return wrap_success("n1_analysis", payload)
+    catch err
+        return wrap_error(err)
+    end
+end
+
+"""
+    run_timeseries(json::AbstractString; optimizer=default_optimizer())
+
+Runs sequential power flows for `{"topology": ..., "load_scale": [...]}` where
+every scale factor uniformly multiplies all loads. Returns a JSON string with
+one point per scale factor plus an aggregate summary.
+"""
+function run_timeseries(json::AbstractString; optimizer=default_optimizer())
+    try
+        request = JSON3.read(json, Dict{String,Any})
+        topology, scales = parse_timeseries_request(request)
+        pm_data = topology_to_powermodels(topology)
+        payload = execute_timeseries(pm_data, scales; optimizer)
+        return wrap_success("timeseries_pf", payload)
     catch err
         return wrap_error(err)
     end

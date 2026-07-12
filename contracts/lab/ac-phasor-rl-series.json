@@ -1,0 +1,50 @@
+{
+  "name": "lab-ac-phasor-rl-series",
+  "endpoint": "simulate",
+  "request": {
+    "components": [
+      {
+        "id": "VAC1",
+        "type": "vsource_ac",
+        "parameters": { "amplitude": 10.0, "frequency": 1000.0 },
+        "connections": { "pos": "n1", "neg": "gnd" }
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "parameters": { "value": 1000.0 },
+        "connections": { "p": "n1", "n": "n2" }
+      },
+      {
+        "id": "L1",
+        "type": "inductor",
+        "parameters": { "value": 0.15915494309189535 },
+        "connections": { "p": "n2", "n": "gnd" }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "parameters": {},
+        "connections": { "gnd": "gnd" }
+      }
+    ],
+    "nets": [
+      { "name": "n1", "nodes": [["VAC1", "pos"], ["R1", "p"]] },
+      { "name": "n2", "nodes": [["R1", "n"], ["L1", "p"]] },
+      { "name": "gnd", "nodes": [["VAC1", "neg"], ["L1", "n"], ["G1", "gnd"]] }
+    ],
+    "sim": { "t_stop": 0.001, "n_samples": 10 },
+    "method": "ac_phasor"
+  },
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "method", "equals": "ac_phasor" },
+    { "path": "data.frequency_hz", "approx": 1000.0, "atol": 1e-09 },
+    { "path": "data.branch_currents.R1", "approx": 0.007071067811865475, "atol": 1e-12 },
+    { "path": "data.branch_phases_deg.R1", "approx": -45.0, "atol": 1e-06 },
+    { "path": "data.branch_currents.L1", "approx": 0.007071067811865475, "atol": 1e-12 },
+    { "path": "data.branch_phases_deg.L1", "approx": -45.0, "atol": 1e-06 },
+    { "path": "data.node_voltages.n2", "approx": 7.0710678118654755, "atol": 1e-09 },
+    { "path": "data.node_phases_deg.n2", "approx": 45.0, "atol": 1e-06 }
+  ]
+}

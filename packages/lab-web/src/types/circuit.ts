@@ -2,12 +2,14 @@ import type { CircuitComponentType } from '@/circuit/components'
 import type { ControlOutputPayload, ControlSimulationPayload, MixedBlockPayload } from '@/types/control'
 
 // 分析方法枚举
-export type AnalysisMethod = 
+export type AnalysisMethod =
   | 'transient'           // 瞬态分析（时域仿真）
   | 'node_voltage'        // 节点电压法（直流稳态）
   | 'branch_current'      // 支路电流法
   | 'mesh_current'        // 网孔电流法
   | 'thevenin'           // 戴维南等效
+  | 'dc_op'              // 直流工作点（电容开路、电感短路、交流源置直流分量）
+  | 'ac_phasor'          // 交流相量分析（单频正弦稳态）
 
 export interface CircuitNodeData {
   label: string

@@ -1,0 +1,22 @@
+{
+  "name": "grid-timeseries-ieee33-golden",
+  "endpoint": "timeseries",
+  "request_topology_example": "ieee33",
+  "request_extra": { "load_scale": [0.5, 1.0] },
+  "notes": "Request is assembled by the test harness as {\"topology\": <examples/ieee33.json>, \"load_scale\": [0.5, 1.0]}. scale=1.0 must reproduce the pf golden loss (202.677 kW) and vmin (0.91309 @ bus-18). scale=0.5 loss measured at 0.047071 MW (47.07 kW), consistent with the quadratic law: 202.677 kW x 0.25 = 50.67 kW, slightly lower because half load lifts voltages (vmin 0.95826 > 0.91309), reducing I^2 R losses. The two frozen vmin values also encode vmin(0.5) > vmin(1.0).",
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "data.type", "equals": "timeseries_pf" },
+    { "path": "data.summary.n_points", "equals": 2 },
+    { "path": "data.points.1.outcome", "equals": "ok" },
+    { "path": "data.points.1.loss_mw", "approx": 0.047071, "atol": 0.0005 },
+    { "path": "data.points.1.vmin_pu", "approx": 0.95826, "atol": 0.001 },
+    { "path": "data.points.1.vmin_bus", "equals": "bus-18" },
+    { "path": "data.points.2.outcome", "equals": "ok" },
+    { "path": "data.points.2.loss_mw", "approx": 0.202677, "atol": 0.0005 },
+    { "path": "data.points.2.vmin_pu", "approx": 0.91309, "atol": 0.001 },
+    { "path": "data.points.2.vmin_bus", "equals": "bus-18" },
+    { "path": "data.summary.max_loss_mw", "approx": 0.202677, "atol": 0.0005 },
+    { "path": "data.summary.min_vmin_pu", "approx": 0.91309, "atol": 0.001 }
+  ]
+}

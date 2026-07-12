@@ -958,6 +958,257 @@ function solve_by_node_voltage(payload::SimulationPayload)
 end
 
 """
+    transform_payload_for_dc_op(payload::SimulationPayload)
+
+直流工作点（DC OP）的 payload 变换：
+- 电容开路：直接从元件列表移除；
+- 电感短路：替换为同 id 的 0V 直流电压源，其支路电流即电感直流电流
+  （经 MNA 扩展变量自然出现在 branch_currents[原id]，方向 p→n）；
+- 交流源置于直流分量：vsource_ac → vsource_dc（dc = 可选参数 offset，缺省 0），
+  isource_ac → isource_dc 同理；
+- 其余元件（电阻/直流源/受控源/探针/地）原样保留（受控源是线性的，MNA 已支持）。
+变换后的 payload 可直接交给 solve_by_node_voltage 求解。
+"""
+function transform_payload_for_dc_op(payload::SimulationPayload)
+    dc_supported = Set([
+        "resistor", "vsource_dc", "isource_dc", "ground", "voltage_probe", "current_probe",
+        "vccs", "vcvs", "ccvs", "cccs", "capacitor", "inductor", "vsource_ac", "isource_ac",
+    ])
+    for comp in payload.components
+        comp.type in dc_supported ||
+            throw(ValidationError("直流工作点分析暂不支持元件类型: $(comp.type)", Dict("component" => comp.id, "type" => comp.type)))
+    end
+
+    transformed = ComponentPayload[]
+    for comp in payload.components
+        if comp.type == "capacitor"
+            require_connections(comp, ["p", "n"])
+            continue  # 电容开路：移除
+        elseif comp.type == "inductor"
+            require_connections(comp, ["p", "n"])
+            push!(transformed, ComponentPayload(
+                comp.id, "vsource_dc", Dict("dc" => 0.0),
+                Dict("pos" => comp.connections["p"], "neg" => comp.connections["n"]),
+            ))
+        elseif comp.type == "vsource_ac"
+            require_connections(comp, ["pos", "neg"])
+            dc = Float64(get(comp.parameters, "offset", 0.0))
+            push!(transformed, ComponentPayload(comp.id, "vsource_dc", Dict("dc" => dc), copy(comp.connections)))
+        elseif comp.type == "isource_ac"
+            require_connections(comp, ["pos", "neg"])
+            dc = Float64(get(comp.parameters, "offset", 0.0))
+            push!(transformed, ComponentPayload(comp.id, "isource_dc", Dict("dc" => dc), copy(comp.connections)))
+        else
+            push!(transformed, comp)
+        end
+    end
+    return SimulationPayload(transformed, payload.nets, payload.sim, "node_voltage", payload.thevenin_port, payload.teaching_mode)
+end
+
+"""
+    solve_by_dc_op(payload::SimulationPayload)
+
+直流工作点分析：电容开路、电感短路、交流源置于其直流分量后，
+复用节点电压法（MNA）求解。响应形状与 node_voltage 完全一致。
+"""
+function solve_by_dc_op(payload::SimulationPayload)
+    return solve_by_node_voltage(transform_payload_for_dc_op(payload))
+end
+
+"""
+    solve_by_ac_phasor(payload::SimulationPayload)
+
+单频正弦稳态相量分析（独立的复数 MNA，不复用/不修改 solve_by_node_voltage）：
+- 导纳：R → 1/R，C → jωC，L → 1/(jωL)；
+- vsource_ac 相量 = amplitude∠phase（可选参数 phase，单位为度，缺省 0）；isource_ac 同理；
+- 直流源按叠加原理置零：vsource_dc → 0V 短路（保留支路电流扩展变量），isource_dc → 开路；
+- 电压探针不改变电路；电流探针 = 0V 复数电压源（支路电流为 MNA 扩展变量，方向 p→n）；
+- 所有交流源频率必须一致；受控源（vcvs/vccs/ccvs/cccs）暂不支持；
+- 输出：节点电压/支路电流的幅值（node_voltages/branch_currents）与相角（度，
+  node_phases_deg/branch_phases_deg），外加 frequency_hz。
+"""
+function solve_by_ac_phasor(payload::SimulationPayload)
+    for comp in payload.components
+        if comp.type in ("vcvs", "vccs", "ccvs", "cccs")
+            throw(ValidationError("AC 相量分析暂不支持受控源", Dict("component" => comp.id, "type" => comp.type)))
+        end
+    end
+    supported = Set([
+        "resistor", "capacitor", "inductor", "vsource_dc", "isource_dc",
+        "vsource_ac", "isource_ac", "ground", "voltage_probe", "current_probe",
+    ])
+    for comp in payload.components
+        comp.type in supported ||
+            throw(ValidationError("AC 相量分析暂不支持元件类型: $(comp.type)", Dict("component" => comp.id, "type" => comp.type)))
+        schema = COMPONENT_SCHEMAS[comp.type]
+        require_connections(comp, schema.handles)
+    end
+
+    # 频率校验：至少一个交流源，且全部频率一致
+    ac_sources = [c for c in payload.components if c.type in ("vsource_ac", "isource_ac")]
+    isempty(ac_sources) &&
+        throw(ValidationError("AC 相量分析需要至少一个交流源（vsource_ac / isource_ac）", Dict()))
+    freqs = [require_parameter(c, "frequency") for c in ac_sources]
+    f = freqs[1]
+    all(x -> x == f, freqs) ||
+        throw(ValidationError("交流源频率不一致：AC 相量分析要求所有交流源频率相同", Dict("frequencies" => freqs)))
+    f > 0.0 ||
+        throw(ValidationError("交流源频率必须大于 0", Dict("frequency" => f)))
+    omega = 2.0 * pi * f
+
+    # 地节点识别（与 solve_by_node_voltage 保持一致的规则）
+    ground_nets = Set{String}()
+    for comp in payload.components
+        if comp.type == "ground" && haskey(comp.connections, "gnd")
+            push!(ground_nets, comp.connections["gnd"])
+        end
+    end
+    declared_gnd = any(net.name == "gnd" for net in payload.nets)
+    ground_name = declared_gnd ? "gnd" : (isempty(ground_nets) ? nothing : first(ground_nets))
+    if ground_name === nothing
+        throw(ValidationError("缺少地线节点", Dict()))
+    end
+    if length(ground_nets) > 1 && !declared_gnd
+        throw(ValidationError("存在多个地线且连接到不同网络", Dict("ground_nets" => collect(ground_nets))))
+    end
+
+    all_nodes = Set{String}()
+    for net in payload.nets
+        net.name != ground_name && push!(all_nodes, net.name)
+    end
+    nodes = sort(collect(all_nodes))
+    n = length(nodes)
+    node_index = Dict(node => i for (i, node) in enumerate(nodes))
+
+    # 交流源相量：amplitude∠phase（phase 单位为度，缺省 0）
+    function ac_source_phasor(comp::ComponentPayload)
+        amplitude = require_parameter(comp, "amplitude")
+        phase_deg = Float64(get(comp.parameters, "phase", 0.0))
+        return amplitude * cis(deg2rad(phase_deg))
+    end
+
+    # R/C/L 复导纳
+    function rcl_admittance(comp::ComponentPayload)
+        value = require_parameter(comp, "value")
+        if comp.type == "resistor"
+            return ComplexF64(1.0 / value)
+        elseif comp.type == "capacitor"
+            return im * omega * value
+        else  # inductor
+            return 1.0 / (im * omega * value)
+        end
+    end
+
+    # 电压源行：vsource_ac（相量值）、vsource_dc（置零 → 0V 短路）、current_probe（0V 理想电流表）
+    vsrc_rows = Tuple{String, String, String, ComplexF64}[]
+    for comp in payload.components
+        if comp.type == "vsource_ac"
+            push!(vsrc_rows, (comp.id, comp.connections["pos"], comp.connections["neg"], ac_source_phasor(comp)))
+        elseif comp.type == "vsource_dc"
+            push!(vsrc_rows, (comp.id, comp.connections["pos"], comp.connections["neg"], ComplexF64(0.0)))
+        elseif comp.type == "current_probe"
+            push!(vsrc_rows, (comp.id, comp.connections["p"], comp.connections["n"], ComplexF64(0.0)))
+        end
+    end
+    m = length(vsrc_rows)
+
+    A = zeros(ComplexF64, n + m, n + m)
+    b = zeros(ComplexF64, n + m)
+
+    # R/C/L 导纳戳记
+    for comp in payload.components
+        comp.type in ("resistor", "capacitor", "inductor") || continue
+        y = rcl_admittance(comp)
+        p = comp.connections["p"]
+        q = comp.connections["n"]
+        if p != ground_name
+            A[node_index[p], node_index[p]] += y
+        end
+        if q != ground_name
+            A[node_index[q], node_index[q]] += y
+        end
+        if p != ground_name && q != ground_name
+            A[node_index[p], node_index[q]] -= y
+            A[node_index[q], node_index[p]] -= y
+        end
+    end
+
+    # 交流电流源：方向 pos → neg（isource_dc 置零 → 开路，不参与）
+    for comp in payload.components
+        comp.type == "isource_ac" || continue
+        Iph = ac_source_phasor(comp)
+        p = comp.connections["pos"]
+        q = comp.connections["neg"]
+        p != ground_name && (b[node_index[p]] -= Iph)
+        q != ground_name && (b[node_index[q]] += Iph)
+    end
+
+    # 电压源扩展变量：KCL 中 pos 行 +Iv、neg 行 -Iv；约束行 V(pos) - V(neg) = 相量值
+    for (k, (_, p, q, value)) in enumerate(vsrc_rows)
+        row = n + k
+        if p != ground_name
+            A[node_index[p], row] += 1.0
+            A[row, node_index[p]] += 1.0
+        end
+        if q != ground_name
+            A[node_index[q], row] -= 1.0
+            A[row, node_index[q]] -= 1.0
+        end
+        b[row] = value
+    end
+
+    x = try
+        A \ b
+    catch err
+        throw(ValidationError(
+            "交流相量分析求解失败（电路矩阵奇异或病态）",
+            Dict("code" => "LAB_SIM_FAILED", "error" => string(err)),
+        ))
+    end
+    all(isfinite, x) ||
+        throw(ValidationError("交流相量分析求解失败（结果包含 NaN/Inf）", Dict("code" => "LAB_SIM_FAILED")))
+
+    # 整理结果：节点电压相量
+    voltage_phasors = Dict{String, ComplexF64}("gnd" => 0.0)
+    if ground_name != "gnd"
+        voltage_phasors[ground_name] = 0.0
+    end
+    for (i, node) in enumerate(nodes)
+        voltage_phasors[node] = x[i]
+    end
+
+    # 支路电流相量（方向约定与 DC 路径一致：R/C/L 为 p→n，源为 pos→neg）
+    current_phasors = Dict{String, ComplexF64}()
+    for comp in payload.components
+        if comp.type in ("resistor", "capacitor", "inductor")
+            vp = get(voltage_phasors, comp.connections["p"], ComplexF64(0.0))
+            vq = get(voltage_phasors, comp.connections["n"], ComplexF64(0.0))
+            current_phasors[comp.id] = (vp - vq) * rcl_admittance(comp)
+        elseif comp.type == "isource_ac"
+            current_phasors[comp.id] = ac_source_phasor(comp)
+        elseif comp.type == "isource_dc"
+            current_phasors[comp.id] = ComplexF64(0.0)
+        end
+    end
+    for (k, (id, _, _, _)) in enumerate(vsrc_rows)
+        current_phasors[id] = x[n + k]
+    end
+
+    node_voltages = Dict{String, Float64}(node => abs(v) for (node, v) in voltage_phasors)
+    node_phases = Dict{String, Float64}(node => rad2deg(angle(v)) for (node, v) in voltage_phasors)
+    branch_currents = Dict{String, Float64}(id => abs(i) for (id, i) in current_phasors)
+    branch_phases = Dict{String, Float64}(id => rad2deg(angle(i)) for (id, i) in current_phasors)
+
+    return Dict{String, Any}(
+        "frequency_hz" => f,
+        "node_voltages" => node_voltages,
+        "branch_currents" => branch_currents,
+        "node_phases_deg" => node_phases,
+        "branch_phases_deg" => branch_phases,
+    )
+end
+
+"""
     compute_thevenin_equivalent(payload::SimulationPayload, port_pos::String, port_neg::String)
 
 计算戴维南等效电路
@@ -1706,6 +1957,22 @@ function run_simulation(payload::SimulationPayload)
             return Dict(
                 "status" => "ok",
                 "message" => "戴维南等效分析完成",
+                "method" => method,
+                "data" => data
+            )
+        elseif method == "dc_op"
+            data = solve_by_dc_op(payload)
+            return Dict(
+                "status" => "ok",
+                "message" => "直流工作点分析完成",
+                "method" => method,
+                "data" => data
+            )
+        elseif method == "ac_phasor"
+            data = solve_by_ac_phasor(payload)
+            return Dict(
+                "status" => "ok",
+                "message" => "交流相量分析完成",
                 "method" => method,
                 "data" => data
             )

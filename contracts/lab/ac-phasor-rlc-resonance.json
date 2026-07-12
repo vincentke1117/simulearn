@@ -1,0 +1,56 @@
+{
+  "name": "lab-ac-phasor-rlc-series-resonance",
+  "endpoint": "simulate",
+  "request": {
+    "components": [
+      {
+        "id": "VAC1",
+        "type": "vsource_ac",
+        "parameters": { "amplitude": 10.0, "frequency": 1000.0 },
+        "connections": { "pos": "n1", "neg": "gnd" }
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "parameters": { "value": 100.0 },
+        "connections": { "p": "n1", "n": "n2" }
+      },
+      {
+        "id": "L1",
+        "type": "inductor",
+        "parameters": { "value": 0.1 },
+        "connections": { "p": "n2", "n": "n3" }
+      },
+      {
+        "id": "C1",
+        "type": "capacitor",
+        "parameters": { "value": 2.5330295910584445e-07 },
+        "connections": { "p": "n3", "n": "gnd" }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "parameters": {},
+        "connections": { "gnd": "gnd" }
+      }
+    ],
+    "nets": [
+      { "name": "n1", "nodes": [["VAC1", "pos"], ["R1", "p"]] },
+      { "name": "n2", "nodes": [["R1", "n"], ["L1", "p"]] },
+      { "name": "n3", "nodes": [["L1", "n"], ["C1", "p"]] },
+      { "name": "gnd", "nodes": [["VAC1", "neg"], ["C1", "n"], ["G1", "gnd"]] }
+    ],
+    "sim": { "t_stop": 0.001, "n_samples": 10 },
+    "method": "ac_phasor"
+  },
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "method", "equals": "ac_phasor" },
+    { "path": "data.frequency_hz", "approx": 1000.0, "atol": 1e-09 },
+    { "path": "data.branch_currents.R1", "approx": 0.1, "atol": 1e-09 },
+    { "path": "data.branch_phases_deg.R1", "approx": 0.0, "atol": 1e-06 },
+    { "path": "data.node_voltages.n2", "approx": 0.0, "atol": 1e-06 },
+    { "path": "data.node_voltages.n3", "approx": 62.83185307179587, "atol": 1e-06 },
+    { "path": "data.node_phases_deg.n3", "approx": -90.0, "atol": 1e-06 }
+  ]
+}

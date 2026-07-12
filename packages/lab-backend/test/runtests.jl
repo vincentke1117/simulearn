@@ -68,6 +68,7 @@ end
     @test occursin("ground", result["message"]) || occursin("地线", result["message"])
 end
 
+include("dc_op_ac_phasor.jl")
 include("control_simulation.jl")
 include("mixed_simulation.jl")
 

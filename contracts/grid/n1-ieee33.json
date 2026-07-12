@@ -1,0 +1,22 @@
+{
+  "name": "grid-n1-ieee33-golden",
+  "endpoint": "n1",
+  "request_example": "ieee33",
+  "notes": "Radial Baran & Wu 33-bus: opening any of the 32 in-service lines islands the downstream feeder section, so all contingencies classify as islanding and no power flow is attempted. br-17 feeds only bus-18 (load 90 kW = 0.09 MW); br-1 feeds the whole network (total load 3715 kW = 3.715 MW). Tie switches br-33..br-37 are OPEN and therefore not screened. results are ordered by branch index, so results[17] is br-17.",
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "data.type", "equals": "n1_analysis" },
+    { "path": "data.summary.n_branches", "equals": 32 },
+    { "path": "data.summary.n_islanding", "equals": 32 },
+    { "path": "data.summary.n_ok", "equals": 0 },
+    { "path": "data.summary.n_diverged", "equals": 0 },
+    { "path": "data.summary.max_lost_load_mw", "approx": 3.715, "atol": 1e-6 },
+    { "path": "data.summary.worst_branch", "equals": "br-1" },
+    { "path": "data.results.17.branch", "equals": "br-17" },
+    { "path": "data.results.17.outcome", "equals": "islanding" },
+    { "path": "data.results.17.lost_load_mw", "approx": 0.09, "atol": 1e-6 },
+    { "path": "data.results.17.islanded_buses.1", "equals": "bus-18" },
+    { "path": "data.results.1.branch", "equals": "br-1" },
+    { "path": "data.results.1.lost_load_mw", "approx": 3.715, "atol": 1e-6 }
+  ]
+}

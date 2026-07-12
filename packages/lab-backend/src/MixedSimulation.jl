@@ -593,6 +593,10 @@ function simulate_mixed_payload(payload::MixedSimulationPayload)
             @inbounds for state_index in eachindex(control_state)
                 control_state[state_index] = control_state[state_index] + dt * du[state_index]
             end
+            # 显式欧拉即本路径的 ODE 求解：状态发散（NaN/Inf）等价于求解失败，
+            # 与 ControlSimulation 的 successful_retcode 检查保持一致的错误封套。
+            all(isfinite, control_state) ||
+                throw(ValidationError("混合仿真求解失败", Dict("code" => "LAB_SIM_FAILED", "retcode" => "Divergence", "t" => t)))
         end
     end
 

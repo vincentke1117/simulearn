@@ -10,6 +10,7 @@ import {
   ChevronDown
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useStore } from '@xyflow/react'
 import type { SimulationSettings, AnalysisMethod, TheveninPortConfig } from '@/types/circuit'
 import type { DiagramMode } from '@/types/control'
 
@@ -20,6 +21,8 @@ const ANALYSIS_METHOD_LABELS: Record<AnalysisMethod, string> = {
   branch_current: '支路电流法 (Branch Current)',
   mesh_current: '网孔电流法 (Mesh Current)',
   thevenin: '戴维南等效 (Thevenin)',
+  dc_op: '直流工作点',
+  ac_phasor: '交流相量分析',
 }
 
 export interface EditorTopBarProps {
@@ -104,12 +107,20 @@ export function EditorTopBar({
     reader.readAsText(file)
   }
 
-  // 根据电路类型可用的分析方法
+  // 是否存在交流源（与 payload.ts 读取 nodes 判断元件类型的模式一致；
+  // EditorTopBar 处于 ReactFlowProvider 内，直接从 store 读取 nodes）
+  const hasAcSource = useStore((state) =>
+    state.nodes.some((node) => node.type === 'vsource_ac' || node.type === 'isource_ac'),
+  )
+
+  // 根据电路类型可用的分析方法（dc_op 在任何电气电路下可选；ac_phasor 仅当存在交流源时可选）
   const availableMethods: AnalysisMethod[] = diagramMode === 'control' || diagramMode === 'mixed'
     ? ['transient']
     : isResistive
-      ? ['node_voltage', 'branch_current', 'mesh_current', 'thevenin', 'transient']
-      : ['transient']
+      ? ['node_voltage', 'branch_current', 'mesh_current', 'thevenin', 'transient', 'dc_op']
+      : hasAcSource
+        ? ['transient', 'dc_op', 'ac_phasor']
+        : ['transient', 'dc_op']
   
   const currentMethod: AnalysisMethod = diagramMode === 'control' || diagramMode === 'mixed'
     ? 'transient'
