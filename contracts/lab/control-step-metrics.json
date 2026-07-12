@@ -1,0 +1,42 @@
+{
+  "name": "lab-control-step-metrics（一阶 K=2 τ=0.2：rise=τ·ln9≈0.43944s，settle2%=τ·ln50≈0.78240s）",
+  "endpoint": "simulate",
+  "notes": "step(1)→plant_1st(K=2, τ=0.2)→scope，y(t)=2(1-e^(-t/τ))。解析解：final=2，单调无超调 overshoot≈0，rise(10%→90%)=τ·ln9=0.4394449s，settling(±2%)=τ·ln50=0.7824046s，peak≈2。atol 含 5ms 采样步长的量化误差与 ODE 求解容差；单调响应的 peak_time_s 受求解器微小波动支配（不适定），仅断言存在性。",
+  "request": {
+    "kind": "control",
+    "blocks": [
+      {
+        "id": "STEP1",
+        "type": "control_step",
+        "parameters": { "amplitude": 1.0, "offset": 0.0, "startTime": 0.0 }
+      },
+      {
+        "id": "P1",
+        "type": "control_plant_1st",
+        "parameters": { "gain": 2.0, "timeConstant": 0.2, "initialValue": 0.0 }
+      },
+      {
+        "id": "SCOPE1",
+        "type": "control_scope",
+        "parameters": {}
+      }
+    ],
+    "edges": [
+      { "id": "e1", "source": "STEP1", "target": "P1", "sourceHandle": "out", "targetHandle": "in" },
+      { "id": "e2", "source": "P1", "target": "SCOPE1", "sourceHandle": "out", "targetHandle": "in" }
+    ],
+    "outputs": [
+      { "id": "scope:SCOPE1", "blockId": "SCOPE1", "handle": "in", "label": "Scope SCOPE1" }
+    ],
+    "sim": { "t_stop": 3.0, "n_samples": 601 }
+  },
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "data.metrics.scope:SCOPE1.final_value", "approx": 2.0, "atol": 0.001 },
+    { "path": "data.metrics.scope:SCOPE1.overshoot_pct", "approx": 0.0, "atol": 0.05 },
+    { "path": "data.metrics.scope:SCOPE1.rise_time_s", "approx": 0.4394449154672439, "atol": 0.005 },
+    { "path": "data.metrics.scope:SCOPE1.settling_time_s", "approx": 0.7824046010856292, "atol": 0.008 },
+    { "path": "data.metrics.scope:SCOPE1.peak_value", "approx": 2.0, "atol": 0.001 },
+    { "path": "data.metrics.scope:SCOPE1.peak_time_s", "exists": true }
+  ]
+}

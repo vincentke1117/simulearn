@@ -1,0 +1,20 @@
+{
+  "name": "grid-shortcircuit-smib-golden",
+  "endpoint": "shortcircuit",
+  "request_topology_example": "smib",
+  "request_extra": { "fault_bus": "bus-2", "zf_pu": 0.0 },
+  "notes": "SMIB 手算对拍（examples/smib.json：baseMVA=100，kv=10→z_base=1Ω，x_line=0.2 pu，X'd=0.3 pu）。建模：slack（bus-1）并入源阻抗 j·1e-6 pu，机组在 bus-2 并入 jX'd=j0.3，负荷忽略。Z_th(bus-2) = j[(x_line + x_src) ∥ X'd] = j[(0.2+1e-6)·0.3/(0.2+1e-6+0.3)] = j0.1200004 pu（纯电抗，r=0）。V_pre(bus-2)=1.0（PV 设定）→ I_f = 1.0/0.1200004 = 8.33331 pu；S_sc = I_f×baseMVA = 833.331 MVA；I_ka = S_sc/(√3×10 kV) = 48.1124 kA。实测 zth.x=0.12000036、i_f_pu=8.333308、s_sc=833.3308、i_f_ka=48.11238，与手算一致。",
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "data.type", "equals": "short_circuit" },
+    { "path": "data.results.1.bus", "equals": "bus-2" },
+    { "path": "data.results.1.v_prefault_pu", "approx": 1.0, "atol": 1e-4 },
+    { "path": "data.results.1.zth_pu.r", "approx": 0.0, "atol": 1e-6 },
+    { "path": "data.results.1.zth_pu.x", "approx": 0.1200004, "atol": 1e-5 },
+    { "path": "data.results.1.i_f_pu", "approx": 8.33331, "atol": 0.001 },
+    { "path": "data.results.1.s_sc_mva", "approx": 833.331, "atol": 0.1 },
+    { "path": "data.results.1.i_f_ka", "approx": 48.1124, "atol": 0.01 },
+    { "path": "data.summary.max_bus", "equals": "bus-2" },
+    { "path": "data.summary.min_bus", "equals": "bus-2" }
+  ]
+}

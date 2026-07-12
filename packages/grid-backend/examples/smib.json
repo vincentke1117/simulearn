@@ -1,0 +1,65 @@
+{
+    "meta": {
+        "baseMVA": 100,
+        "feeder": "SMIB",
+        "description": "Single machine vs infinite bus, classical transient-stability fixture: kv=10 -> z_base=1 ohm, x_line=0.2 pu, machine H=5 s / X'd=0.3 pu / Pm=0.8 pu, no load"
+    },
+    "nodes": [
+        {
+            "id": "bus-1",
+            "type": "Bus",
+            "kv": 10.0,
+            "is_slack": true,
+            "vm_pu": 1.0,
+            "va_deg": 0.0,
+            "vmin_pu": 0.5,
+            "vmax_pu": 1.5
+        },
+        {
+            "id": "bus-2",
+            "type": "Bus",
+            "kv": 10.0,
+            "vm_pu": 1.0,
+            "va_deg": 0.0,
+            "vmin_pu": 0.5,
+            "vmax_pu": 1.5
+        },
+        {
+            "id": "grid-1",
+            "type": "Gen",
+            "bus": "bus-1",
+            "p_kw": 0.0,
+            "p_max_kw": 200000.0,
+            "p_min_kw": -200000.0,
+            "q_kvar": 0.0,
+            "q_max_kvar": 100000.0,
+            "q_min_kvar": -100000.0
+        },
+        {
+            "id": "gen-1",
+            "type": "Gen",
+            "bus": "bus-2",
+            "p_kw": 80000.0,
+            "p_max_kw": 100000.0,
+            "p_min_kw": 0.0,
+            "q_kvar": 0.0,
+            "q_max_kvar": 100000.0,
+            "q_min_kvar": -100000.0,
+            "h_s": 5.0,
+            "xd1_pu": 0.3,
+            "d_pu": 0.0
+        }
+    ],
+    "links": [
+        {
+            "id": "line-12",
+            "type": "Line",
+            "from": "bus-1",
+            "to": "bus-2",
+            "r_ohm": 0.0,
+            "x_ohm": 0.2,
+            "rate_mva": 100.0,
+            "status": "CLOSED"
+        }
+    ]
+}

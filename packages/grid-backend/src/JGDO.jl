@@ -1,6 +1,7 @@
 module JGDO
 
 export run_pf, run_reconfiguration_dg, run_n1, run_timeseries, topology_to_powermodels, write_run_snapshot, default_optimizer, default_reconfiguration_optimizer
+export run_transient, run_shortcircuit
 
 using JSON3
 using Dates
@@ -12,6 +13,8 @@ include("topology.jl")
 include("powerflow.jl")
 include("optimization.jl")
 include("analysis.jl")
+include("dynamics.jl")
+include("shortcircuit.jl")
 
 const DEFAULT_RUNS_DIR = joinpath(@__DIR__, "..", "runs")
 
@@ -83,6 +86,44 @@ function run_timeseries(json::AbstractString; optimizer=default_optimizer())
         pm_data = topology_to_powermodels(topology)
         payload = execute_timeseries(pm_data, scales; optimizer)
         return wrap_success("timeseries_pf", payload)
+    catch err
+        return wrap_error(err)
+    end
+end
+
+"""
+    run_transient(json::AbstractString; optimizer=default_optimizer())
+
+Runs a classical-model electromechanical transient stability simulation for
+`{"topology": ..., "fault": {...}, "sim": {...}, "f_hz": 50, "find_cct": false}`.
+Returns a JSON string with the unified response envelope.
+"""
+function run_transient(json::AbstractString; optimizer=default_optimizer())
+    try
+        request = JSON3.read(json, Dict{String,Any})
+        topology, fault, sim, f_hz, find_cct = parse_transient_request(request)
+        pm_data = topology_to_powermodels(topology)
+        payload = execute_transient(pm_data, fault, sim, f_hz, find_cct; optimizer)
+        return wrap_success("transient_stability", payload)
+    catch err
+        return wrap_error(err)
+    end
+end
+
+"""
+    run_shortcircuit(json::AbstractString; optimizer=default_optimizer())
+
+Runs a balanced three-phase short-circuit study for
+`{"topology": ..., "fault_bus": "bus-5"|null, "zf_pu": 0.0}`. A `null`
+`fault_bus` scans every bus. Returns a JSON string with the unified envelope.
+"""
+function run_shortcircuit(json::AbstractString; optimizer=default_optimizer())
+    try
+        request = JSON3.read(json, Dict{String,Any})
+        topology, fault_bus, zf = parse_shortcircuit_request(request)
+        pm_data = topology_to_powermodels(topology)
+        payload = execute_shortcircuit(pm_data, fault_bus, zf; optimizer)
+        return wrap_success("short_circuit", payload)
     catch err
         return wrap_error(err)
     end

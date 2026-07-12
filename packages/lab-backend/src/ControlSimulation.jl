@@ -436,15 +436,113 @@ function simulate_control_payload(payload::ControlSimulationPayload)
     end
 
     signals = build_control_signals(time_points, state_samples, compiled)
-    return Dict(
+    return Dict{String, Any}(
         "time" => time_points,
         "signals" => signals,
+    )
+end
+
+"""
+    compute_step_metrics(time_points, values)
+
+阶跃响应指标（对单条 scope 信号；数值细节：穿越时刻一律线性插值）：
+- `final_value`：末段 5% 样本（至少 1 个）的均值；
+- `peak_value` / `peak_time_s`：响应方向（final 相对首样本的符号）上最大偏移的极值及其首次时刻；
+- `overshoot_pct`：(peak − final)·dir / |final| × 100，下限截断为 0（单调无超调 → 0）；
+  |final| ≈ 0 时无定义，置 null；
+- `rise_time_s`：从初值到终值的 10% → 90% 首次穿越时刻之差；任一阈值未穿越 → null；
+- `settling_time_s`：最后一次离开 ±2%·|final| 带的带边界穿越时刻（其后恒在带内）；
+  全程在带内 → 0.0；末样本仍在带外或 |final| ≈ 0 → null。
+"""
+function compute_step_metrics(time_points::Vector{Float64}, values::Vector{Float64})
+    n = length(values)
+    n >= 2 || throw(ValidationError("阶跃指标至少需要 2 个采样点", Dict("n_samples" => n)))
+
+    tail_count = max(1, round(Int, 0.05 * n))
+    final_value = sum(@view values[(n - tail_count + 1):n]) / tail_count
+
+    y0 = values[1]
+    direction = final_value >= y0 ? 1.0 : -1.0
+
+    # 峰值：响应方向上最大偏移（首次出现）
+    peak_idx = 1
+    peak_metric = direction * values[1]
+    for i in 2:n
+        metric = direction * values[i]
+        if metric > peak_metric
+            peak_metric = metric
+            peak_idx = i
+        end
+    end
+    peak_value = values[peak_idx]
+    peak_time = time_points[peak_idx]
+
+    final_is_zero = abs(final_value) < 1e-12
+
+    overshoot = if final_is_zero
+        nothing
+    else
+        max(0.0, direction * (peak_value - final_value) / abs(final_value) * 100.0)
+    end
+
+    # 首次穿越 level 的时刻（线性插值；首样本已达阈值 → t[1]）
+    function first_crossing(level::Float64)
+        for i in 1:n
+            direction * (values[i] - level) >= 0.0 || continue
+            i == 1 && return time_points[1]
+            denom = values[i] - values[i - 1]
+            frac = abs(denom) < eps(Float64) ? 0.0 : (level - values[i - 1]) / denom
+            return time_points[i - 1] + frac * (time_points[i] - time_points[i - 1])
+        end
+        return nothing
+    end
+    t_lo = first_crossing(y0 + 0.10 * (final_value - y0))
+    t_hi = first_crossing(y0 + 0.90 * (final_value - y0))
+    rise_time = (t_lo === nothing || t_hi === nothing) ? nothing : t_hi - t_lo
+
+    # 稳定时间：最后一次离开 ±2%|final| 带的带边界穿越时刻
+    settling_time = if final_is_zero
+        nothing
+    else
+        band = 0.02 * abs(final_value)
+        last_outside = 0
+        for i in n:-1:1
+            if abs(values[i] - final_value) > band
+                last_outside = i
+                break
+            end
+        end
+        if last_outside == 0
+            0.0  # 全程在带内
+        elseif last_outside == n
+            nothing  # 末样本仍在带外：未稳定
+        else
+            i = last_outside
+            boundary = values[i] > final_value + band ? final_value + band : final_value - band
+            denom = values[i + 1] - values[i]
+            frac = abs(denom) < eps(Float64) ? 1.0 : (boundary - values[i]) / denom
+            time_points[i] + frac * (time_points[i + 1] - time_points[i])
+        end
+    end
+
+    return Dict{String, Any}(
+        "final_value" => final_value,
+        "overshoot_pct" => overshoot,
+        "rise_time_s" => rise_time,
+        "settling_time_s" => settling_time,
+        "peak_value" => peak_value,
+        "peak_time_s" => peak_time,
     )
 end
 
 function run_simulation(payload::ControlSimulationPayload)
     try
         data = simulate_control_payload(payload)
+        metrics = Dict{String, Any}()
+        for signal in data["signals"]
+            metrics[signal["id"]] = compute_step_metrics(data["time"], signal["values"])
+        end
+        data["metrics"] = metrics
         return Dict(
             "status" => "ok",
             "message" => "控制系统时域仿真完成",

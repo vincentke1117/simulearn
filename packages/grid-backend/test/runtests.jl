@@ -281,6 +281,195 @@ end
     @test too_many["code"] == "GRID_VALIDATION"
 end
 
+# ---- 机电暂态稳定（SMIB 解析解对拍）----
+
+@testset "Transient dynamic params passthrough (topology)" begin
+    topo = JSON3.read(read(joinpath(EXAMPLES_DIR, "smib.json"), String), Dict{String,Any})
+    pm = topology_to_powermodels(topo)
+    gen1 = only(filter(g -> g["name"] == "gen-1", collect(values(pm["gen"]))))
+    @test gen1["h_s"] == 5.0
+    @test gen1["xd1_pu"] == 0.3
+    @test gen1["d_pu"] == 0.0
+    grid1 = only(filter(g -> g["name"] == "grid-1", collect(values(pm["gen"]))))
+    @test !haskey(grid1, "h_s")
+    @test !haskey(grid1, "xd1_pu")
+end
+
+@testset "Transient stability SMIB (analytic cross-check)" begin
+    # 解析推导（经典模型；故障置于机端 zf=0 → 故障期间 Pe≈0；post=pre 网络）：
+    #   预故障：V1=V2=1，sinθ2 = Pm·x_line → θ2 = asin(0.16)
+    #   Ē' = V̄2 + jX'd·Ī，δ0 = angle(Ē')；X_total = x_line + X'd
+    #   δ_cr = acos[(π−2δ0)·sinδ0 − cosδ0]
+    #   CCT = sqrt(4H(δ_cr−δ0)/(ωs·Pm))
+    pm_pu = 0.8; x_line = 0.2; xd1 = 0.3; h = 5.0; f = 50.0
+    theta2 = asin(pm_pu * x_line)
+    V2 = cis(theta2)
+    I2 = (V2 - 1.0) / (im * x_line)
+    E = V2 + im * xd1 * I2
+    delta0 = angle(E)
+    delta_cr = acos((pi - 2 * delta0) * sin(delta0) - cos(delta0))
+    ws = 2 * pi * f
+    cct = sqrt(4 * h * (delta_cr - delta0) / (ws * pm_pu))
+    @test isapprox(delta0, 0.391929; atol=1e-5)      # 22.4559°
+    @test isapprox(delta_cr, 1.594384; atol=1e-5)    # 91.3515°
+    @test isapprox(cct, 0.309335; atol=1e-5)
+
+    topo = JSON3.read(read(joinpath(EXAMPLES_DIR, "smib.json"), String))
+    t_fault = 0.1
+    make_request(t_clear; find_cct=false) = JSON3.write(Dict(
+        "topology" => topo,
+        "fault" => Dict("bus" => "bus-2", "t_fault_s" => t_fault, "t_clear_s" => t_clear,
+                        "zf_pu" => 0.0, "trip_branch" => nothing),
+        "sim" => Dict("t_stop_s" => 3.0, "dt_s" => 0.001),
+        "f_hz" => 50,
+        "find_cct" => find_cct,
+    ))
+
+    # ① t_clear = 0.9×CCT → 稳定
+    stable = JSON3.read(JGDO.run_transient(make_request(t_fault + 0.9 * cct)))
+    @test stable["status"] == "ok"
+    data = stable["data"]
+    @test data["type"] == "transient_stability"
+    @test data["stable"] === true
+    @test data["t_unstable_s"] === nothing
+    @test data["cct_s"] === nothing
+    mach = only(data["machines"])
+    @test mach["id"] == "gen-1"
+    @test isapprox(mach["delta0_deg"], rad2deg(delta0); atol=0.05)
+    @test isapprox(mach["pm_pu"], 0.8; atol=1e-6)
+    @test length(data["series"]["t_s"]) <= 500
+    @test length(data["series"]["delta_deg"]["gen-1"]) == length(data["series"]["t_s"])
+    @test isapprox(data["series"]["omega_pu"]["gen-1"][1], 1.0; atol=1e-9)
+    # 稳定摇摆的最大角必须低于 180°（等面积极限 π−δ0 ≈ 157.5°）
+    @test maximum(data["series"]["delta_deg"]["gen-1"]) < 180.0
+    @test data["fault"]["bus"] == "bus-2"
+
+    # ② t_clear = 1.2×CCT → 失稳，t_unstable 在切除之后
+    unstable = JSON3.read(JGDO.run_transient(make_request(t_fault + 1.2 * cct)))
+    @test unstable["status"] == "ok"
+    @test unstable["data"]["stable"] === false
+    @test unstable["data"]["t_unstable_s"] > t_fault + 1.2 * cct
+
+    # ③ find_cct：二分结果对拍解析 CCT（容差取解析值 5% 与 5 ms 中较大者）
+    cct_resp = JSON3.read(JGDO.run_transient(make_request(t_fault + 0.9 * cct; find_cct=true)))
+    @test cct_resp["status"] == "ok"
+    @test cct_resp["data"]["stable"] === true
+    @test isapprox(cct_resp["data"]["cct_s"], cct; atol=max(0.05 * cct, 0.005))
+end
+
+@testset "Transient validation" begin
+    # 无任何机组带 h_s → GRID_VALIDATION
+    no_dyn = JSON3.read(JGDO.run_transient(JSON3.write(Dict(
+        "topology" => base_topology(),
+        "fault" => Dict("bus" => "bus-2", "t_fault_s" => 0.1, "t_clear_s" => 0.2)))))
+    @test no_dyn["status"] == "error"
+    @test no_dyn["code"] == "GRID_VALIDATION"
+
+    smib = JSON3.read(read(joinpath(EXAMPLES_DIR, "smib.json"), String))
+
+    bad_bus = JSON3.read(JGDO.run_transient(JSON3.write(Dict(
+        "topology" => smib,
+        "fault" => Dict("bus" => "bus-99", "t_fault_s" => 0.1, "t_clear_s" => 0.2)))))
+    @test bad_bus["status"] == "error"
+    @test bad_bus["code"] == "GRID_VALIDATION"
+
+    bad_order = JSON3.read(JGDO.run_transient(JSON3.write(Dict(
+        "topology" => smib,
+        "fault" => Dict("bus" => "bus-2", "t_fault_s" => 0.3, "t_clear_s" => 0.2)))))
+    @test bad_order["status"] == "error"
+    @test bad_order["code"] == "GRID_VALIDATION"
+
+    bad_trip = JSON3.read(JGDO.run_transient(JSON3.write(Dict(
+        "topology" => smib,
+        "fault" => Dict("bus" => "bus-2", "t_fault_s" => 0.1, "t_clear_s" => 0.2,
+                        "trip_branch" => "line-99")))))
+    @test bad_trip["status"] == "error"
+    @test bad_trip["code"] == "GRID_VALIDATION"
+end
+
+# ---- 三相对称短路（手算对拍 + IEEE33 全扫）----
+
+@testset "Short circuit SMIB (hand calc)" begin
+    # 手算：Zth(bus-2) = j[(x_line + x_src) ∥ X'd] = j[(0.2+1e-6)·0.3/0.500001] = j0.1200004 pu
+    #      I_f = |V_pre|/|Zth| = 8.33331 pu；S_sc = 833.331 MVA；I_ka = S_sc/(√3·10 kV) = 48.1124 kA
+    topo = JSON3.read(read(joinpath(EXAMPLES_DIR, "smib.json"), String))
+    resp = JSON3.read(JGDO.run_shortcircuit(JSON3.write(Dict(
+        "topology" => topo, "fault_bus" => "bus-2", "zf_pu" => 0.0))))
+    @test resp["status"] == "ok"
+    data = resp["data"]
+    @test data["type"] == "short_circuit"
+    entry = only(data["results"])
+    x_expected = (0.2 + 1e-6) * 0.3 / (0.2 + 1e-6 + 0.3)
+    @test entry["bus"] == "bus-2"
+    @test isapprox(entry["v_prefault_pu"], 1.0; atol=1e-6)
+    @test isapprox(entry["zth_pu"]["r"], 0.0; atol=1e-9)
+    @test isapprox(entry["zth_pu"]["x"], x_expected; atol=1e-9)
+    @test isapprox(entry["i_f_pu"], 1.0 / x_expected; atol=1e-4)
+    @test isapprox(entry["s_sc_mva"], 100.0 / x_expected; atol=0.01)
+    @test isapprox(entry["i_f_ka"], 100.0 / x_expected / (sqrt(3.0) * 10.0); atol=1e-3)
+    @test data["summary"]["max_bus"] == "bus-2"
+    @test data["summary"]["min_bus"] == "bus-2"
+
+    # 经故障阻抗 zf=0.1：I_f = |V|/|Zth + zf|
+    resp_zf = JSON3.read(JGDO.run_shortcircuit(JSON3.write(Dict(
+        "topology" => topo, "fault_bus" => "bus-2", "zf_pu" => 0.1))))
+    entry_zf = only(resp_zf["data"]["results"])
+    @test isapprox(entry_zf["i_f_pu"], 1.0 / abs(0.1 + im * x_expected); atol=1e-4)
+end
+
+@testset "Short circuit IEEE33 (full scan)" begin
+    topo = JSON3.read(read(joinpath(EXAMPLES_DIR, "ieee33.json"), String))
+    resp = JSON3.read(JGDO.run_shortcircuit(JSON3.write(Dict(
+        "topology" => topo, "fault_bus" => nothing, "zf_pu" => 0.0))))
+    @test resp["status"] == "ok"
+    data = resp["data"]
+    @test length(data["results"]) == 33
+    @test data["summary"]["max_bus"] == "bus-1"   # 理想源母线短路容量最大
+    @test data["summary"]["min_bus"] == "bus-18"  # 主馈线末端阻抗累计最大
+
+    # 自证 Z_th 随馈线深度单调：主干 bus-1..bus-18 电流逐点单调下降
+    main = [data["results"][k]["i_f_pu"] for k in 1:18]
+    @test all(diff(main) .< 0)
+
+    # bus-18 的 Z_th ≈ 源阻抗 j1e-6 + br-1..17 累计阻抗（独立按 r_ohm/x_ohm 换算 pu 复核）
+    z_base = 12.66^2 / 10.0
+    rsum = 0.0
+    xsum = 0.0
+    for link in topo["links"]
+        idx = parse(Int, split(String(link["id"]), "-")[2])
+        if idx <= 17
+            rsum += link["r_ohm"]
+            xsum += link["x_ohm"]
+        end
+    end
+    e18 = data["results"][18]
+    @test e18["bus"] == "bus-18"
+    @test isapprox(e18["zth_pu"]["r"], rsum / z_base; atol=1e-6)
+    @test isapprox(e18["zth_pu"]["x"], xsum / z_base + 1e-6; atol=1e-6)
+    @test isapprox(e18["v_prefault_pu"], 0.91309; atol=1e-3)   # 潮流金标准 vmin
+    @test isapprox(e18["i_f_pu"], 1.0197; atol=0.01)
+    # slack 母线：理想源假设 → I_f ≈ |V|/1e-6
+    @test isapprox(data["results"][1]["i_f_pu"], 1.0e6; atol=1.0)
+end
+
+@testset "Short circuit validation" begin
+    topo = JSON3.read(read(joinpath(EXAMPLES_DIR, "smib.json"), String))
+
+    bad_bus = JSON3.read(JGDO.run_shortcircuit(JSON3.write(Dict(
+        "topology" => topo, "fault_bus" => "bus-99", "zf_pu" => 0.0))))
+    @test bad_bus["status"] == "error"
+    @test bad_bus["code"] == "GRID_VALIDATION"
+
+    bad_zf = JSON3.read(JGDO.run_shortcircuit(JSON3.write(Dict(
+        "topology" => topo, "fault_bus" => "bus-2", "zf_pu" => -1.0))))
+    @test bad_zf["status"] == "error"
+    @test bad_zf["code"] == "GRID_VALIDATION"
+
+    no_topo = JSON3.read(JGDO.run_shortcircuit(JSON3.write(Dict("fault_bus" => "bus-2"))))
+    @test no_topo["status"] == "error"
+    @test no_topo["code"] == "GRID_VALIDATION"
+end
+
 @testset "Error envelope" begin
     bad = JSON3.read(JGDO.run_pf("{\"meta\":{},\"nodes\":[],\"links\":[]}"))
     @test bad["status"] == "error"
@@ -339,6 +528,8 @@ if isdir(CONTRACTS_DIR)
                   endpoint == "reconfig" ? JGDO.run_reconfiguration_dg(request) :
                   endpoint == "n1" ? JGDO.run_n1(request) :
                   endpoint == "timeseries" ? JGDO.run_timeseries(request) :
+                  endpoint == "transient" ? JGDO.run_transient(request) :
+                  endpoint == "shortcircuit" ? JGDO.run_shortcircuit(request) :
                   error("未知契约端点: " * endpoint)
             @testset "$(spec[:name])" begin
                 check_contract(JSON3.read(raw), spec[:expect])

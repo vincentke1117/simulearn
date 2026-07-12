@@ -79,6 +79,18 @@ end
     return json_response(response)
 end
 
+@post "/api/grid/transient" function (req::HTTP.Request)
+    response = JGDO.run_transient(String(req.body))
+    snapshot_if_ok(response)
+    return json_response(response)
+end
+
+@post "/api/grid/shortcircuit" function (req::HTTP.Request)
+    response = JGDO.run_shortcircuit(String(req.body))
+    snapshot_if_ok(response)
+    return json_response(response)
+end
+
 @get "/api/grid/examples" function (req::HTTP.Request)
     entries = Vector{Dict{String,Any}}()
     for file in sort(readdir(EXAMPLES_DIR))

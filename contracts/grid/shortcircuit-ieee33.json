@@ -1,0 +1,20 @@
+{
+  "name": "grid-shortcircuit-ieee33-golden",
+  "endpoint": "shortcircuit",
+  "request_topology_example": "ieee33",
+  "request_extra": { "fault_bus": null, "zf_pu": 0.0 },
+  "notes": "IEEE33 逐母线全扫（仅 slack 理想源，无动态机组）。z_base=12.66²/10=16.02756 Ω。bus-1 为 slack：Z_th≈j1e-6（源阻抗）→ i_f_pu≈|V|/1e-6=1e6（理想源假设，仅具教学意义）。bus-18 位于主馈线末端：Z_th ≈ j1e-6 + Σ(br-1..17 的 r_ohm+jx_ohm)/z_base = 0.690236 + j0.570406 pu（|Z|=0.895427），已先以 examples 的 r_ohm/x_ohm 换算 pu 独立复核后冻结；V_pre(18)=0.91309（潮流金标准）→ i_f_pu = 0.91309/0.895427 = 1.01973，i_f_ka = 1.01973×10/(√3×12.66) = 0.465039 kA。主干 bus-1..18 的 Z_th 随馈线深度单调增，故 bus-1 电流最大、bus-18 最小（runtests 中逐点断言单调性）。",
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "data.type", "equals": "short_circuit" },
+    { "path": "data.summary.max_bus", "equals": "bus-1" },
+    { "path": "data.summary.min_bus", "equals": "bus-18" },
+    { "path": "data.summary.min_i_f_ka", "approx": 0.465039, "atol": 0.005 },
+    { "path": "data.results.1.bus", "equals": "bus-1" },
+    { "path": "data.results.1.i_f_pu", "approx": 1.0e6, "atol": 100 },
+    { "path": "data.results.18.bus", "equals": "bus-18" },
+    { "path": "data.results.18.zth_pu.r", "approx": 0.690236, "atol": 0.001 },
+    { "path": "data.results.18.zth_pu.x", "approx": 0.570406, "atol": 0.001 },
+    { "path": "data.results.18.i_f_pu", "approx": 1.01973, "atol": 0.01 }
+  ]
+}

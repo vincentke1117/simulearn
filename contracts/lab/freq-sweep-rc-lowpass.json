@@ -1,0 +1,61 @@
+{
+  "name": "lab-freq-sweep-rc-lowpass（解析解 |H|=1/√(1+(f/fc)²)，fc=1kHz）",
+  "endpoint": "simulate",
+  "notes": "RC 低通 R=1kΩ、C=1/(2π·10⁶) F → fc=1000Hz。对数扫 [100,10000] 共 3 点（100/1000/10000Hz）。源幅值 1V（峰值）→ VP1 的 mag 即 |H|=1/√(1+(f/fc)²)，phase=-atan(f/fc)，中点 mag_db=20·log10(1/√2)≈-3.0103。",
+  "request": {
+    "components": [
+      {
+        "id": "VAC1",
+        "type": "vsource_ac",
+        "parameters": { "amplitude": 1.0, "frequency": 1000.0 },
+        "connections": { "pos": "n1", "neg": "gnd" }
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "parameters": { "value": 1000.0 },
+        "connections": { "p": "n1", "n": "n2" }
+      },
+      {
+        "id": "C1",
+        "type": "capacitor",
+        "parameters": { "value": 1.5915494309189535e-07 },
+        "connections": { "p": "n2", "n": "gnd" }
+      },
+      {
+        "id": "VP1",
+        "type": "voltage_probe",
+        "parameters": {},
+        "connections": { "node": "n2" }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "parameters": {},
+        "connections": { "gnd": "gnd" }
+      }
+    ],
+    "nets": [
+      { "name": "n1", "nodes": [["VAC1", "pos"], ["R1", "p"]] },
+      { "name": "n2", "nodes": [["R1", "n"], ["C1", "p"], ["VP1", "node"]] },
+      { "name": "gnd", "nodes": [["VAC1", "neg"], ["C1", "n"], ["G1", "gnd"]] }
+    ],
+    "sim": { "t_stop": 0.001, "n_samples": 10 },
+    "method": "frequency_sweep",
+    "sweep": { "f_start_hz": 100.0, "f_stop_hz": 10000.0, "n_points": 3, "scale": "log" }
+  },
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "method", "equals": "frequency_sweep" },
+    { "path": "data.freq_hz.1", "approx": 100.0, "atol": 1e-06 },
+    { "path": "data.freq_hz.2", "approx": 1000.0, "atol": 1e-06 },
+    { "path": "data.freq_hz.3", "approx": 10000.0, "atol": 1e-06 },
+    { "path": "data.probes.VP1.mag.1", "approx": 0.9950371902099892, "atol": 0.001 },
+    { "path": "data.probes.VP1.mag.2", "approx": 0.7071067811865476, "atol": 0.001 },
+    { "path": "data.probes.VP1.mag.3", "approx": 0.09950371902099892, "atol": 0.001 },
+    { "path": "data.probes.VP1.phase_deg.1", "approx": -5.710593137499643, "atol": 0.001 },
+    { "path": "data.probes.VP1.phase_deg.2", "approx": -45.0, "atol": 0.001 },
+    { "path": "data.probes.VP1.phase_deg.3", "approx": -84.28940686250037, "atol": 0.001 },
+    { "path": "data.probes.VP1.mag_db.2", "approx": -3.010299956639812, "atol": 0.001 }
+  ]
+}

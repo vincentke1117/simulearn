@@ -1,0 +1,27 @@
+{
+  "name": "grid-transient-smib-golden",
+  "endpoint": "transient",
+  "request_topology_example": "smib",
+  "request_extra": {
+    "fault": { "bus": "bus-2", "t_fault_s": 0.1, "t_clear_s": 0.378402, "zf_pu": 0.0, "trip_branch": null },
+    "sim": { "t_stop_s": 3.0, "dt_s": 0.001 },
+    "f_hz": 50,
+    "find_cct": true
+  },
+  "notes": "SMIB 经典模型解析对拍（examples/smib.json：baseMVA=100，kv=10→z_base=1Ω，x_line=0.2 pu，机组 H=5s、X'd=0.3 pu、Pm=0.8 pu，无负荷；故障置于机端 bus-2、zf=0 → 故障期间 Pe≈0，post=pre 网络）。推导：预故障 PV 潮流 sinθ2=Pm·x_line=0.16 → θ2=0.160691 rad，V̄2=0.987117+j0.16，Ī=(V̄2−1)/(j0.2)=0.8+j0.064415，Ē'=V̄2+jX'd·Ī=0.967793+j0.4 → |E'|=1.047197、δ0=0.391929 rad=22.4559°。X_total=x_line+X'd=0.5 → Pmax=|E'|·1/0.5=2.094395（校验 Pm/Pmax=sinδ0=0.381972）。等面积临界角 δ_cr=acos[(π−2δ0)sinδ0−cosδ0]=1.594384 rad=91.3515°；CCT=sqrt(4H(δ_cr−δ0)/(ωs·Pm))=sqrt(4·5·1.202455/(100π·0.8))=0.309335 s。请求 t_clear=0.1+0.9×CCT=0.378402 → stable=true；find_cct 二分（容差 1ms）实测 cct_s=0.308594，与解析差 0.74 ms（0.24%）。cct_s 容差取 max(5%×0.309335, 5ms)=0.0155。",
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "data.type", "equals": "transient_stability" },
+    { "path": "data.stable", "equals": true },
+    { "path": "data.cct_s", "approx": 0.309335, "atol": 0.0155 },
+    { "path": "data.machines.1.id", "equals": "gen-1" },
+    { "path": "data.machines.1.delta0_deg", "approx": 22.4559, "atol": 0.25 },
+    { "path": "data.machines.1.h_s", "approx": 5.0, "atol": 1e-9 },
+    { "path": "data.machines.1.xd1_pu", "approx": 0.3, "atol": 1e-9 },
+    { "path": "data.machines.1.pm_pu", "approx": 0.8, "atol": 0.001 },
+    { "path": "data.series.t_s", "exists": true },
+    { "path": "data.series.delta_deg.gen-1.1", "approx": 22.4559, "atol": 0.25 },
+    { "path": "data.series.omega_pu.gen-1.1", "approx": 1.0, "atol": 1e-6 },
+    { "path": "data.fault.bus", "equals": "bus-2" }
+  ]
+}

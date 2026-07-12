@@ -19,13 +19,33 @@ const _SIMPLIFY_CACHE_LIMIT = 32
 const _STATE_LOCK = ReentrantLock()
 const _METRICS = Dict{String, Int}("simulate_calls" => 0, "simplify_hits" => 0, "simplify_misses" => 0)
 
-export bootstrap, run_simulation, SimulationPayload, ComponentPayload, NetPayload, SimulationSettings, ControlBlockPayload, ControlEdgePayload, ControlOutputPayload, ControlSimulationPayload, MixedBridgeBindingPayload, MixedCircuitPayload, MixedSimulationPayload
+export bootstrap, run_simulation, SimulationPayload, ComponentPayload, NetPayload, SimulationSettings, SweepSettings, ControlBlockPayload, ControlEdgePayload, ControlOutputPayload, ControlSimulationPayload, MixedBridgeBindingPayload, MixedCircuitPayload, MixedSimulationPayload
 
 struct SimulationSettings
     t_stop::Float64
     n_samples::Int
 end
 StructTypes.StructType(::Type{SimulationSettings}) = StructTypes.Struct()
+
+"""
+    SweepSettings
+
+频率扫描（frequency_sweep）参数：
+- `f_start_hz` / `f_stop_hz`：起止频率（Hz），要求 `f_start_hz > 0` 且 `f_stop_hz > f_start_hz`；
+- `n_points`：采样点数，2 ≤ n_points ≤ 401；
+- `scale`：刻度，v1 仅支持 `"log"`（对数网格），缺省视为 `"log"`。
+"""
+struct SweepSettings
+    f_start_hz::Float64
+    f_stop_hz::Float64
+    n_points::Int
+    scale::Union{String, Nothing}
+end
+StructTypes.StructType(::Type{SweepSettings}) = StructTypes.Struct()
+StructTypes.omitempties(::Type{SweepSettings}) = (:scale,)
+
+SweepSettings(f_start_hz::Real, f_stop_hz::Real, n_points::Integer) =
+    SweepSettings(Float64(f_start_hz), Float64(f_stop_hz), Int(n_points), nothing)
 
 include("ControlPayloads.jl")
 
@@ -50,22 +70,33 @@ struct SimulationPayload
     method::Union{String, Nothing}
     thevenin_port::Union{Dict{String, String}, Nothing}  # 戴维南端口配置: {"positive" => 节点名, "negative" => 节点名}
     teaching_mode::Union{Bool, Nothing}  # 教学模式：是否返回求解步骤
+    sweep::Union{SweepSettings, Nothing}  # 频率扫描参数（仅 method == "frequency_sweep" 使用）
 end
 StructTypes.StructType(::Type{SimulationPayload}) = StructTypes.Struct()
-StructTypes.omitempties(::Type{SimulationPayload}) = (:method, :thevenin_port, :teaching_mode)
+StructTypes.omitempties(::Type{SimulationPayload}) = (:method, :thevenin_port, :teaching_mode, :sweep)
 
 SimulationPayload(
     components::Vector{ComponentPayload},
     nets::Vector{NetPayload},
     sim::SimulationSettings,
-) = SimulationPayload(components, nets, sim, nothing, nothing, nothing)
+) = SimulationPayload(components, nets, sim, nothing, nothing, nothing, nothing)
 
 SimulationPayload(
     components::Vector{ComponentPayload},
     nets::Vector{NetPayload},
     sim::SimulationSettings,
     method::Union{String, Nothing},
-) = SimulationPayload(components, nets, sim, method, nothing, nothing)
+) = SimulationPayload(components, nets, sim, method, nothing, nothing, nothing)
+
+# 兼容旧 6 参构造（thevenin_port / teaching_mode 之后无 sweep）：sweep 缺省 nothing
+SimulationPayload(
+    components::Vector{ComponentPayload},
+    nets::Vector{NetPayload},
+    sim::SimulationSettings,
+    method::Union{String, Nothing},
+    thevenin_port::Union{Dict{String, String}, Nothing},
+    teaching_mode::Union{Bool, Nothing},
+) = SimulationPayload(components, nets, sim, method, thevenin_port, teaching_mode, nothing)
 
 include("MixedPayloads.jl")
 
@@ -1016,18 +1047,13 @@ function solve_by_dc_op(payload::SimulationPayload)
 end
 
 """
-    solve_by_ac_phasor(payload::SimulationPayload)
+    validate_ac_phasor_payload(payload::SimulationPayload)
 
-单频正弦稳态相量分析（独立的复数 MNA，不复用/不修改 solve_by_node_voltage）：
-- 导纳：R → 1/R，C → jωC，L → 1/(jωL)；
-- vsource_ac 相量 = amplitude∠phase（可选参数 phase，单位为度，缺省 0）；isource_ac 同理；
-- 直流源按叠加原理置零：vsource_dc → 0V 短路（保留支路电流扩展变量），isource_dc → 开路；
-- 电压探针不改变电路；电流探针 = 0V 复数电压源（支路电流为 MNA 扩展变量，方向 p→n）；
-- 所有交流源频率必须一致；受控源（vcvs/vccs/ccvs/cccs）暂不支持；
-- 输出：节点电压/支路电流的幅值（node_voltages/branch_currents）与相角（度，
-  node_phases_deg/branch_phases_deg），外加 frequency_hz。
+AC 相量类分析（ac_phasor / frequency_sweep）共用的校验：
+受控源拒绝、元件类型白名单、端子连接完整性、交流源存在性、
+频率一致性与 f > 0。返回交流源的公共频率 f（Hz）。
 """
-function solve_by_ac_phasor(payload::SimulationPayload)
+function validate_ac_phasor_payload(payload::SimulationPayload)
     for comp in payload.components
         if comp.type in ("vcvs", "vccs", "ccvs", "cccs")
             throw(ValidationError("AC 相量分析暂不支持受控源", Dict("component" => comp.id, "type" => comp.type)))
@@ -1054,8 +1080,21 @@ function solve_by_ac_phasor(payload::SimulationPayload)
         throw(ValidationError("交流源频率不一致：AC 相量分析要求所有交流源频率相同", Dict("frequencies" => freqs)))
     f > 0.0 ||
         throw(ValidationError("交流源频率必须大于 0", Dict("frequency" => f)))
-    omega = 2.0 * pi * f
+    return f
+end
 
+"""
+    solve_ac_phasor_core(payload::SimulationPayload, omega::Float64)
+
+给定角频率 ω 的复数 MNA 组装与求解核心（payload 需已通过
+`validate_ac_phasor_payload`；ac_phasor 与 frequency_sweep 共用）。
+交流源相量 = amplitude∠phase，与 ω 无关（幅频特性输入恒定）。
+返回 `(voltage_phasors, current_phasors)`：
+- voltage_phasors：节点电压相量（地节点为 0）；
+- current_phasors：支路电流相量（R/C/L 方向 p→n；电压源/电流探针为
+  MNA 扩展变量，方向 pos→neg / p→n，即“内部”电流）。
+"""
+function solve_ac_phasor_core(payload::SimulationPayload, omega::Float64)
     # 地节点识别（与 solve_by_node_voltage 保持一致的规则）
     ground_nets = Set{String}()
     for comp in payload.components
@@ -1194,10 +1233,60 @@ function solve_by_ac_phasor(payload::SimulationPayload)
         current_phasors[id] = x[n + k]
     end
 
+    return voltage_phasors, current_phasors
+end
+
+"""
+    solve_by_ac_phasor(payload::SimulationPayload)
+
+单频正弦稳态相量分析（独立的复数 MNA，不复用/不修改 solve_by_node_voltage）：
+- 导纳：R → 1/R，C → jωC，L → 1/(jωL)；
+- vsource_ac 相量 = amplitude∠phase（可选参数 phase，单位为度，缺省 0）；isource_ac 同理；
+- 直流源按叠加原理置零：vsource_dc → 0V 短路（保留支路电流扩展变量），isource_dc → 开路；
+- 电压探针不改变电路；电流探针 = 0V 复数电压源（支路电流为 MNA 扩展变量，方向 p→n）；
+- 所有交流源频率必须一致；受控源（vcvs/vccs/ccvs/cccs）暂不支持；
+- 输出：节点电压/支路电流的幅值（node_voltages/branch_currents）与相角（度，
+  node_phases_deg/branch_phases_deg），外加 frequency_hz 与 power。
+
+功率约定（`power` 键）：amplitude 为峰值，功率为平均值（复功率 S̄ = V̄·Ī*/2，带 1/2 因子）。
+- `power.sources`（vsource_ac / isource_ac）：`p_w`/`q_var`/`s_va`/`pf`。
+  源电流相量为 MNA“内部”方向 pos→neg，故源输出复功率取 S̄ = -V̄·Ī*/2，
+  源对外输出有功时 p_w 为正；Q > 0 为感性负载（电流滞后电压），Q < 0 为容性（电流超前电压）；
+  直流源在相量分析中已置零，其平均功率恒为 0，不列出。
+- `power.elements`（电阻）：`p_w` = |Ī_R|²·R/2。
+"""
+function solve_by_ac_phasor(payload::SimulationPayload)
+    f = validate_ac_phasor_payload(payload)
+    voltage_phasors, current_phasors = solve_ac_phasor_core(payload, 2.0 * pi * f)
+
     node_voltages = Dict{String, Float64}(node => abs(v) for (node, v) in voltage_phasors)
     node_phases = Dict{String, Float64}(node => rad2deg(angle(v)) for (node, v) in voltage_phasors)
     branch_currents = Dict{String, Float64}(id => abs(i) for (id, i) in current_phasors)
     branch_phases = Dict{String, Float64}(id => rad2deg(angle(i)) for (id, i) in current_phasors)
+
+    # 平均功率（约定见 docstring：amplitude 为峰值 → 1/2 因子；源输出为正；Q<0 容性）
+    power_sources = Dict{String, Any}()
+    for comp in payload.components
+        comp.type in ("vsource_ac", "isource_ac") || continue
+        vp = get(voltage_phasors, comp.connections["pos"], ComplexF64(0.0))
+        vn = get(voltage_phasors, comp.connections["neg"], ComplexF64(0.0))
+        # current_phasors[id] 为“内部”pos→neg 电流（吸收约定），取负号 → 源输出复功率
+        s_out = -0.5 * (vp - vn) * conj(current_phasors[comp.id])
+        p_w = real(s_out)
+        s_va = abs(s_out)
+        power_sources[comp.id] = Dict{String, Any}(
+            "p_w" => p_w,
+            "q_var" => imag(s_out),
+            "s_va" => s_va,
+            "pf" => s_va > 0.0 ? p_w / s_va : nothing,
+        )
+    end
+    power_elements = Dict{String, Any}()
+    for comp in payload.components
+        comp.type == "resistor" || continue
+        r = require_parameter(comp, "value")
+        power_elements[comp.id] = Dict{String, Any}("p_w" => 0.5 * abs2(current_phasors[comp.id]) * r)
+    end
 
     return Dict{String, Any}(
         "frequency_hz" => f,
@@ -1205,6 +1294,81 @@ function solve_by_ac_phasor(payload::SimulationPayload)
         "branch_currents" => branch_currents,
         "node_phases_deg" => node_phases,
         "branch_phases_deg" => branch_phases,
+        "power" => Dict{String, Any}(
+            "convention" => "amplitude 为峰值，功率为平均值；源输出功率为正；Q>0 为感性（电流滞后电压），Q<0 为容性（电流超前电压）",
+            "sources" => power_sources,
+            "elements" => power_elements,
+        ),
+    )
+end
+
+"""
+    solve_by_frequency_sweep(payload::SimulationPayload)
+
+频率扫描（Bode 数据）：在对数频率网格上逐点复用单频相量核心求解。
+- 请求需携带顶层可选字段 `sweep`（见 [`SweepSettings`](@ref)），v1 仅支持对数刻度；
+- 交流源幅值/相位不随频率变化（幅频特性输入恒定）；源参数 frequency 不参与网格生成；
+- 元件校验沿用 ac_phasor（受控源拒绝、类型白名单等）；
+- 仅输出探针：voltage_probe → 所在节点电压，current_probe → 支路电流（方向 p→n）；
+  无任何探针时抛 ValidationError；
+- 响应 data：`freq_hz`（Hz 数组）+ `probes`（探针 id → mag / phase_deg / mag_db）；
+  mag_db = 20·log10(mag)，mag 以 1e-300 为下限保护，避免 -Inf 无法序列化。
+"""
+function solve_by_frequency_sweep(payload::SimulationPayload)
+    sweep = payload.sweep
+    sweep === nothing &&
+        throw(ValidationError("频率扫描需要 sweep 参数（f_start_hz / f_stop_hz / n_points / scale）", Dict()))
+    scale = sweep.scale === nothing ? "log" : sweep.scale
+    scale == "log" ||
+        throw(ValidationError("频率扫描 v1 仅支持对数刻度（scale = \"log\"）", Dict("scale" => scale)))
+    sweep.f_start_hz > 0.0 ||
+        throw(ValidationError("频率扫描起始频率必须大于 0", Dict("f_start_hz" => sweep.f_start_hz)))
+    sweep.f_stop_hz > sweep.f_start_hz ||
+        throw(ValidationError(
+            "频率扫描终止频率必须大于起始频率",
+            Dict("f_start_hz" => sweep.f_start_hz, "f_stop_hz" => sweep.f_stop_hz),
+        ))
+    2 <= sweep.n_points <= 401 ||
+        throw(ValidationError("频率扫描点数必须在 2..401 之间", Dict("n_points" => sweep.n_points)))
+
+    validate_ac_phasor_payload(payload)
+
+    voltage_probes = [c for c in payload.components if c.type == "voltage_probe"]
+    current_probes = [c for c in payload.components if c.type == "current_probe"]
+    (isempty(voltage_probes) && isempty(current_probes)) &&
+        throw(ValidationError("频率扫描需要至少一个探针", Dict()))
+
+    freqs = collect(exp10.(range(log10(sweep.f_start_hz), log10(sweep.f_stop_hz), length = sweep.n_points)))
+
+    probes = Dict{String, Any}()
+    for probe in vcat(voltage_probes, current_probes)
+        probes[probe.id] = Dict{String, Any}(
+            "mag" => Float64[],
+            "phase_deg" => Float64[],
+            "mag_db" => Float64[],
+        )
+    end
+    push_sample! = (series, phasor) -> begin
+        magnitude = abs(phasor)
+        push!(series["mag"], magnitude)
+        push!(series["phase_deg"], rad2deg(angle(phasor)))
+        push!(series["mag_db"], 20.0 * log10(max(magnitude, 1e-300)))
+        nothing
+    end
+
+    for f in freqs
+        voltage_phasors, current_phasors = solve_ac_phasor_core(payload, 2.0 * pi * f)
+        for probe in voltage_probes
+            push_sample!(probes[probe.id], get(voltage_phasors, probe.connections["node"], ComplexF64(0.0)))
+        end
+        for probe in current_probes
+            push_sample!(probes[probe.id], get(current_phasors, probe.id, ComplexF64(0.0)))
+        end
+    end
+
+    return Dict{String, Any}(
+        "freq_hz" => freqs,
+        "probes" => probes,
     )
 end
 
@@ -1973,6 +2137,14 @@ function run_simulation(payload::SimulationPayload)
             return Dict(
                 "status" => "ok",
                 "message" => "交流相量分析完成",
+                "method" => method,
+                "data" => data
+            )
+        elseif method == "frequency_sweep"
+            data = solve_by_frequency_sweep(payload)
+            return Dict(
+                "status" => "ok",
+                "message" => "频率扫描分析完成",
                 "method" => method,
                 "data" => data
             )

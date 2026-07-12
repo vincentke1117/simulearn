@@ -1,0 +1,52 @@
+{
+  "name": "lab-ac-power-rc（S̄=V̄·Ī*/2，@fc：P=6.25mW，Q=-6.25mvar 容性，pf=0.7071）",
+  "endpoint": "simulate",
+  "notes": "功率约定：amplitude 为峰值，功率为平均值（复功率带 1/2 因子）；源输出功率为正；Q>0 为感性（电流滞后电压），Q<0 为容性（电流超前电压）。本例 RC 低通 @fc=1kHz：|I|=5/(1000√2)（峰值），P_R1=|I|²R/2=6.25mW；源 P=6.25mW（R1 为唯一耗能元件），电流超前电压 45° → Q=-6.25mvar（容性），|S|=8.8388mVA，pf=cos45°=0.7071。",
+  "request": {
+    "components": [
+      {
+        "id": "VAC1",
+        "type": "vsource_ac",
+        "parameters": { "amplitude": 5.0, "frequency": 1000.0 },
+        "connections": { "pos": "n1", "neg": "gnd" }
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "parameters": { "value": 1000.0 },
+        "connections": { "p": "n1", "n": "n2" }
+      },
+      {
+        "id": "C1",
+        "type": "capacitor",
+        "parameters": { "value": 1.5915494309189535e-07 },
+        "connections": { "p": "n2", "n": "gnd" }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "parameters": {},
+        "connections": { "gnd": "gnd" }
+      }
+    ],
+    "nets": [
+      { "name": "n1", "nodes": [["VAC1", "pos"], ["R1", "p"]] },
+      { "name": "n2", "nodes": [["R1", "n"], ["C1", "p"]] },
+      { "name": "gnd", "nodes": [["VAC1", "neg"], ["C1", "n"], ["G1", "gnd"]] }
+    ],
+    "sim": { "t_stop": 0.001, "n_samples": 10 },
+    "method": "ac_phasor"
+  },
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "method", "equals": "ac_phasor" },
+    { "path": "data.power.convention", "exists": true },
+    { "path": "data.power.elements.R1.p_w", "approx": 0.00625, "atol": 1e-06 },
+    { "path": "data.power.sources.VAC1.p_w", "approx": 0.00625, "atol": 1e-06 },
+    { "path": "data.power.sources.VAC1.q_var", "approx": -0.00625, "atol": 1e-06 },
+    { "path": "data.power.sources.VAC1.s_va", "approx": 0.008838834764831844, "atol": 1e-06 },
+    { "path": "data.power.sources.VAC1.pf", "approx": 0.7071067811865476, "atol": 1e-06 },
+    { "path": "data.node_voltages.n2", "approx": 3.5355339059327378, "atol": 1e-09 },
+    { "path": "data.branch_currents.R1", "approx": 0.0035355339059327377, "atol": 1e-12 }
+  ]
+}

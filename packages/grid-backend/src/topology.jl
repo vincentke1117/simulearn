@@ -181,6 +181,14 @@ function convert_topology(obj::AbstractDict)
                 "name" => node.id,
                 "cost" => [0.0, 1.0],
             )
+            # 机电暂态动态参数（可选，系统基准，直接透传）：h_s 惯性常数 [s]、
+            # xd1_pu 暂态电抗 X'd [pu]、d_pu 阻尼系数。仅在节点携带时新增键，
+            # make_per_unit! 不识别这些键因此原样保留；绝不改动任何既有字段语义。
+            for dyn_key in ("h_s", "xd1_pu", "d_pu")
+                if haskey(node.data, dyn_key)
+                    gens[string(gen_idx)][dyn_key] = parse_float(node.data, dyn_key; path=[node.id])
+                end
+            end
         elseif ltype == "shunt"
             bus_idx = find_bus_for(node, node_lookup, topo.links, bus_map)
             shunt_idx = length(shunts) + 1
