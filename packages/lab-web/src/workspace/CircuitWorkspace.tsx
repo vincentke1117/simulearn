@@ -23,6 +23,7 @@ import {
   type CircuitComponentDefinition,
   type CircuitComponentType,
 } from '@/circuit/components'
+import { defaultSweepSettings } from '@/types/circuit'
 import type {
   CircuitNodeData,
   SimulationSettings,
@@ -33,6 +34,7 @@ import type {
   MeshCurrentResult,
   ComparisonResult,
   TheveninPortConfig,
+  SimulationErrorInfo,
 } from '@/types/circuit'
 import type { DiagramMode } from '@/types/control'
 import { nextComponentIdFromNodes } from '@/utils/id'
@@ -46,6 +48,7 @@ import { buildControlSimulationPayload } from '@/simulation/controlPayload'
 import { buildMixedSimulationPayload } from '@/simulation/mixedPayload'
 import { detectDiagramMode } from '@/simulation/diagramMode'
 import { runSimulationRequest } from '@/simulation/api'
+import { supportsVoltageOverlay } from '@/simulation/resultKind'
 import { buildProjectSnapshot, loadProjectFromObject, wrapProject } from './project'
 import { applyOverlay } from '@/simulation/mapping'
 import { EditorTopBar } from './EditorTopBar'
@@ -71,6 +74,9 @@ const isComparisonResult = (data: AnalysisResultData): data is ComparisonResult 
 
 const pickNodeVoltages = (data: AnalysisResultData): Record<string, number> | null => {
   if (!data) return null
+  // 相量结果（ac_phasor）的 node_voltages 是相量幅值，标量相减会给出错误压降 —— 一律不进叠加层。
+  // 判据见 resultKind.ts::supportsVoltageOverlay
+  if (!supportsVoltageOverlay(data)) return null
   // 单方法：节点/支路/网孔方法都会包含 node_voltages
   if (hasNodeVoltages(data)) {
     return data.node_voltages
@@ -96,6 +102,8 @@ const hasBranchCurrents = (value: unknown): value is { branch_currents: Record<s
 
 const pickBranchCurrents = (data: AnalysisResultData): Record<string, number> | null => {
   if (!data) return null
+  // 相量支路电流是幅值∠相角，画布上只打幅值会误导（缺相角）——同样挡在叠加层之外
+  if (!supportsVoltageOverlay(data)) return null
   if (hasBranchCurrents(data)) {
     return data.branch_currents as Record<string, number>
   }
@@ -116,6 +124,7 @@ interface DragPayload {
 const initialSimulationSettings: SimulationSettings = {
   tStop: 1e-3,
   nSamples: 1000,
+  sweep: defaultSweepSettings,
 }
 
 function createNodeData(definition: CircuitComponentDefinition<CircuitComponentType>): CircuitNodeData {
@@ -146,7 +155,7 @@ function CircuitWorkspaceInner() {
   const [simulationSettings, setSimulationSettings] = useState<SimulationSettings>(initialSimulationSettings)
   const [simulationResult, setSimulationResult] = useState<AnalysisResultData | null>(null)
   const [simulationResultCache, setSimulationResultCache] = useState<Record<string, AnalysisResultData> | null>(null)
-  const [simulationError, setSimulationError] = useState<string | null>(null)
+  const [simulationError, setSimulationError] = useState<SimulationErrorInfo | null>(null)
   const [isSimulating, setIsSimulating] = useState(false)
   const [showResultPanel, setShowResultPanel] = useState(false)
   const [lastMethodUsed, setLastMethodUsed] = useState<string | undefined>(undefined)
@@ -505,7 +514,7 @@ function CircuitWorkspaceInner() {
     try {
       if (currentDiagramMode === 'empty') {
         setSimulationResult(null)
-        setSimulationError('请先在画布中放置元件')
+        setSimulationError({ message: '请先在画布中放置元件' })
         return
       }
 
@@ -513,7 +522,7 @@ function CircuitWorkspaceInner() {
         const buildMixed = buildMixedSimulationPayload(currentNodes, currentEdges, simulationSettings)
         if (!buildMixed.ok || !buildMixed.payload) {
           setSimulationResult(null)
-          setSimulationError(buildMixed.errors.join('；'))
+          setSimulationError({ message: buildMixed.errors.join('；') })
           return
         }
 
@@ -525,9 +534,9 @@ function CircuitWorkspaceInner() {
           setLastMethodUsed('transient')
           setShowResultPanel(true)
         } else {
-          const detail = response.data ? `（详情：${JSON.stringify(response.data)}）` : ''
+          // 后端 422/500 的 message + code + 诊断字段全部保留，交给面板展示，不在这里拼字符串吞掉
           setSimulationResult(null)
-          setSimulationError(`${response.message}${detail}`)
+          setSimulationError({ message: response.message, code: response.code, data: response.data })
         }
         return
       }
@@ -536,7 +545,7 @@ function CircuitWorkspaceInner() {
         const buildControl = buildControlSimulationPayload(currentNodes, currentEdges, simulationSettings)
         if (!buildControl.ok || !buildControl.payload) {
           setSimulationResult(null)
-          setSimulationError(buildControl.errors.join('；'))
+          setSimulationError({ message: buildControl.errors.join('；') })
           return
         }
 
@@ -548,9 +557,9 @@ function CircuitWorkspaceInner() {
           setLastMethodUsed('transient')
           setShowResultPanel(true)
         } else {
-          const detail = response.data ? `（详情：${JSON.stringify(response.data)}）` : ''
+          // 后端 422/500 的 message + code + 诊断字段全部保留，交给面板展示，不在这里拼字符串吞掉
           setSimulationResult(null)
-          setSimulationError(`${response.message}${detail}`)
+          setSimulationError({ message: response.message, code: response.code, data: response.data })
         }
         return
       }
@@ -590,20 +599,24 @@ function CircuitWorkspaceInner() {
          const results = await Promise.all(promises)
          
          const newCache: Record<string, AnalysisResultData> = {}
-         let firstError: string | null = null
-         
+         // 多状态路径也要保留后端的 code + 诊断字段（不要退化成裸字符串，否则结果面板的
+         // error code 徽章与诊断键值表在开关电路上全部失效）
+         let firstError: SimulationErrorInfo | null = null
+
          results.forEach(({ res }, idx) => {
              if (res.status === 'ok') {
                  newCache[signatures[idx]] = res.data
              } else {
-                 if (!firstError) firstError = res.message
+                 if (!firstError) firstError = { message: res.message, code: res.code, data: res.data }
              }
          })
-         
+
          if (Object.keys(newCache).length === 0 && firstError) {
-             throw new Error(firstError)
+             setSimulationResult(null)
+             setSimulationError(firstError)
+             return
          }
-         
+
          setSimulationResultCache(newCache)
          
          // 应用当前状态的结果
@@ -626,7 +639,7 @@ function CircuitWorkspaceInner() {
         const build = buildSimulationPayload(currentNodes, currentEdges, simulationSettings)
         if (!build.ok || !build.payload) {
           setSimulationResult(null)
-          setSimulationError(build.errors.join('；'))
+          setSimulationError({ message: build.errors.join('；') })
           return
         }
 
@@ -649,14 +662,14 @@ function CircuitWorkspaceInner() {
             applyResultToOverlay(response.data, build.payload.nets as SimulationNetPayload[])
           }
         } else {
-          const detail = response.data ? `（详情：${JSON.stringify(response.data)}）` : ''
+          // 后端 422/500 的 message + code + 诊断字段全部保留，交给面板展示，不在这里拼字符串吞掉
           setSimulationResult(null)
-          setSimulationError(`${response.message}${detail}`)
+          setSimulationError({ message: response.message, code: response.code, data: response.data })
         }
       }
     } catch (error) {
       setSimulationResult(null)
-      setSimulationError(error instanceof Error ? error.message : '仿真请求失败')
+      setSimulationError({ message: error instanceof Error ? error.message : '仿真请求失败' })
     } finally {
       setIsSimulating(false)
       const end = performance.now()
@@ -785,6 +798,7 @@ function CircuitWorkspaceInner() {
               error={simulationError}
               isRunning={isSimulating}
               method={lastMethodUsed}
+              diagramMode={diagramMode}
               onClose={() => setShowResultPanel(false)}
               />
           )}

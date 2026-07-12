@@ -37,3 +37,6 @@ Thumbs.db
 gateway/bin/
 packages/grid-backend/runs/*.json
 packages/*/sysimage/
+
+# 本地抓取的 API 响应样本（前端开发用，不入库）
+.samples/

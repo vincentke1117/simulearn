@@ -1,17 +1,32 @@
-import Plot from 'react-plotly.js'
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import { X, FileJson, FileSpreadsheet, FileText, Activity, Layout, Move } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { MatrixDisplay, VectorDisplay } from '@/components/MatrixDisplay'
-import type { SimulationData, AnalysisResultData, NodeVoltageResult, TheveninResult, BranchCurrentResult } from '@/types/circuit'
+import type {
+  SimulationData,
+  AnalysisResultData,
+  NodeVoltageResult,
+  TheveninResult,
+  BranchCurrentResult,
+  SimulationErrorInfo,
+  AcPhasorResult,
+  FrequencySweepResult,
+} from '@/types/circuit'
+import type { DiagramMode } from '@/types/control'
+import { classifyResult } from './resultKind'
+import { AcPhasorView } from './AcPhasorView'
+import { BodePlot } from './BodePlot'
+import { StepResponseChart } from './StepResponseChart'
+import { formatEngineering } from './format'
 
 export interface SimulationResultPanelProps {
   result: AnalysisResultData | null
-  error: string | null
+  error: SimulationErrorInfo | null
   isRunning: boolean
   method?: string
+  diagramMode?: DiagramMode
   onClose?: () => void
 }
 
@@ -38,22 +53,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-export function SimulationResultPanel({ result, error, isRunning, method, onClose }: SimulationResultPanelProps) {
-  // 检测是否是对比模式的结果
-  const isComparisonMode = !!(result && 
-    typeof result === 'object' && 
-    Object.keys(result).length > 0 &&
-    Object.keys(result).every(k => ['node_voltage', 'branch_current', 'mesh_current', 'thevenin'].includes(k)))
-  const comparisonResults = isComparisonMode ? result as ComparisonResults : null
-  
-  // 检测结果类型
-  const isTransientResult = result && 'time' in result && 'signals' in result
-  const isBranchCurrentResult = method === 'branch_current' && result && 'branch_currents' in result
-  const isMeshCurrentResult = method === 'mesh_current' && result && 'branch_currents' in result
-  const isNodeVoltageResult = method === 'node_voltage' && result && 'node_voltages' in result
-  const isTheveninResult = result && 'vth' in result && 'rth' in result
+export function SimulationResultPanel({ result, error, isRunning, method, diagramMode, onClose }: SimulationResultPanelProps) {
+  // 单一分派入口：以结果结构为主、method 仅用于消歧。
+  // 旧代码按 `method === 'node_voltage'` 硬匹配，后端新增 dc_op / ac_phasor / frequency_sweep 后
+  // 全部分支落空 → 面板显示"暂无仿真结果"。classifyResult 堵死这个洞。
+  const kind = useMemo(() => classifyResult(method, result), [method, result])
+
+  const comparisonResults = kind.kind === 'comparison' ? (kind.data as ComparisonResults) : null
+
+  const isTransientResult = kind.kind === 'transient'
+  const isDcTable = kind.kind === 'dc_solve' || kind.kind === 'dc_op'
+  const isBranchCurrentResult = kind.kind === 'dc_solve' && kind.method === 'branch_current'
+  const isMeshCurrentResult = kind.kind === 'dc_solve' && kind.method === 'mesh_current'
+  const isDcOpResult = kind.kind === 'dc_op'
+  const isTheveninResult = kind.kind === 'thevenin'
   const hasSignals = Boolean(isTransientResult && (result as SimulationData).signals.length > 0)
   const teachingResult = isRecord(result) ? result as TeachingResult : null
+  const transientMetrics = isTransientResult ? (result as SimulationData).metrics : undefined
 
   const [showBranch, setShowBranch] = useState(true)
   const [showNode, setShowNode] = useState(true)
@@ -117,9 +133,45 @@ export function SimulationResultPanel({ result, error, isRunning, method, onClos
     if (!result) return
     let csvContent = ''
 
-    if (isNodeVoltageResult || isBranchCurrentResult || isMeshCurrentResult) {
+    if (kind.kind === 'ac_phasor') {
+      const data = kind.data
+      csvContent += `交流相量分析 (f = ${data.frequency_hz} Hz)\n`
+      csvContent += '节点,电压幅值(V,峰值),电压相角(deg)\n'
+      Object.entries(data.node_voltages).forEach(([node, magnitude]) => {
+        csvContent += `${node},${magnitude},${data.node_phases_deg[node] ?? 0}\n`
+      })
+      csvContent += '\n支路,电流幅值(A,峰值),电流相角(deg)\n'
+      Object.entries(data.branch_currents).forEach(([branch, magnitude]) => {
+        csvContent += `${branch},${magnitude},${data.branch_phases_deg[branch] ?? 0}\n`
+      })
+      if (data.power) {
+        csvContent += '\n源,P(W),Q(var),S(VA),功率因数\n'
+        Object.entries(data.power.sources).forEach(([id, p]) => {
+          csvContent += `${id},${p.p_w},${p.q_var},${p.s_va},${p.pf}\n`
+        })
+        csvContent += '\n元件,耗散P(W)\n'
+        Object.entries(data.power.elements).forEach(([id, p]) => {
+          csvContent += `${id},${p.p_w}\n`
+        })
+        csvContent += `\n约定,"${data.power.convention}"\n`
+      }
+    } else if (kind.kind === 'frequency_sweep') {
+      const data = kind.data
+      const probeIds = Object.keys(data.probes)
+      csvContent += '频率(Hz),'
+      probeIds.forEach((id) => { csvContent += `${id}_mag,${id}_mag_dB,${id}_phase_deg,` })
+      csvContent += '\n'
+      data.freq_hz.forEach((f, i) => {
+        csvContent += `${f},`
+        probeIds.forEach((id) => {
+          const curve = data.probes[id]
+          csvContent += `${curve.mag[i]},${curve.mag_db[i]},${curve.phase_deg[i]},`
+        })
+        csvContent += '\n'
+      })
+    } else if (isDcTable) {
       const data = result as NodeVoltageResult
-      
+
       if (data.node_voltages) {
         csvContent += '节点电压\n'
         csvContent += '节点,电压(V)\n'
@@ -161,7 +213,7 @@ export function SimulationResultPanel({ result, error, isRunning, method, onClos
     link.download = `simulation-result-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`
     link.click()
     URL.revokeObjectURL(url)
-  }, [result, isNodeVoltageResult, isBranchCurrentResult, isMeshCurrentResult, isTheveninResult, isTransientResult])
+  }, [result, kind, isDcTable, isTheveninResult, isTransientResult])
 
   // 导出PDF报告
   const handleExportPDF = useCallback(async () => {
@@ -346,12 +398,55 @@ export function SimulationResultPanel({ result, error, isRunning, method, onClos
         ) : error ? (
           <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-start gap-3">
             <Activity className="w-5 h-5 shrink-0 mt-0.5" />
-            <div>
-              <h4 className="font-semibold mb-1">仿真错误</h4>
-              <p>{error}</p>
+            <div className="min-w-0">
+              <div className="mb-1 flex flex-wrap items-center gap-2">
+                <h4 className="font-semibold">仿真错误</h4>
+                {error.code && (
+                  <code className="rounded bg-red-500/20 px-1.5 py-0.5 font-mono text-[11px] text-red-300">
+                    {error.code}
+                  </code>
+                )}
+              </div>
+              <p className="break-words">{error.message}</p>
+              {error.data && Object.keys(error.data).length > 0 && (
+                <dl className="mt-2 space-y-0.5 text-[11px] text-red-300/80">
+                  {Object.entries(error.data).map(([key, value]) => (
+                    <div key={key} className="flex gap-2">
+                      <dt className="font-mono">{key}</dt>
+                      <dd className="font-mono">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
             </div>
           </div>
-        ) : isComparisonMode && comparisonResults ? (
+        ) : kind.kind === 'ac_phasor' ? (
+          <AcPhasorView result={kind.data as AcPhasorResult} />
+        ) : kind.kind === 'frequency_sweep' ? (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h3 className="text-lg font-medium text-slate-200">频率扫描 (Bode 图)</h3>
+              <span className="font-mono text-xs text-slate-500">
+                {formatEngineering((kind.data as FrequencySweepResult).freq_hz[0], 'Hz')} →{' '}
+                {formatEngineering(
+                  (kind.data as FrequencySweepResult).freq_hz[(kind.data as FrequencySweepResult).freq_hz.length - 1],
+                  'Hz',
+                )}
+                {' · '}
+                {(kind.data as FrequencySweepResult).freq_hz.length} 点 · 对数刻度
+              </span>
+            </div>
+            <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-2">
+              <BodePlot result={kind.data as FrequencySweepResult} />
+            </div>
+            <p className="text-[11px] leading-relaxed text-slate-500">
+              上：探针幅值 20·log₁₀(|X| / 1 单位) (dB)；下：探针相角 (°)。每条曲线对应一个探针（电压探针 X 为 V、电流探针为 A），幅值为峰值。
+              <br />
+              注意：这是探针处的<strong className="text-slate-400">绝对幅值</strong>，不是传递函数 |H| = Vout/Vin。
+              若要读 −3 dB 截止频率，需自行减去源幅值的 20·log₁₀(A_src)（源幅值 = 1 V 时两者才重合）。
+            </p>
+          </div>
+        ) : comparisonResults ? (
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-slate-400 flex items-center gap-2">
               <Layout className="w-4 h-4" />
@@ -459,11 +554,25 @@ export function SimulationResultPanel({ result, error, isRunning, method, onClos
               </svg>
             </div>
           </div>
-        ) : isBranchCurrentResult || isMeshCurrentResult || isNodeVoltageResult ? (
+        ) : isDcTable ? (
           <div className="space-y-6">
-            <h3 className="text-lg font-medium text-slate-200">
-              {isBranchCurrentResult ? '支路电流' : isMeshCurrentResult ? '网孔电流' : '节点电压'}结果
-            </h3>
+            <div className="space-y-1">
+              <h3 className="text-lg font-medium text-slate-200">
+                {isDcOpResult
+                  ? '直流工作点'
+                  : isBranchCurrentResult
+                    ? '支路电流'
+                    : isMeshCurrentResult
+                      ? '网孔电流'
+                      : '节点电压'}
+                结果
+              </h3>
+              {isDcOpResult && (
+                <p className="text-xs text-slate-500">
+                  直流工作点（电容开路 / 电感短路 / 交流源取直流分量）
+                </p>
+              )}
+            </div>
             <div className="flex items-center gap-3 text-xs text-slate-400">
               <label className="flex items-center gap-1">
                 <input type="checkbox" checked={showBranch} onChange={(e) => setShowBranch(e.target.checked)} />
@@ -536,45 +645,19 @@ export function SimulationResultPanel({ result, error, isRunning, method, onClos
             </div>
           </div>
         ) : hasSignals && isTransientResult ? (
-          <div className="space-y-4 h-full">
+          <div className="space-y-4">
+            {diagramMode === 'mixed' && (
+              <p className="text-[11px] text-slate-500">
+                混合仿真为准静态耦合：电路侧仅支持纯电阻，L/C 动态不参与
+              </p>
+            )}
             {(result as SimulationData).signals.map((signal) => (
-              <div key={signal.id} className="h-64 bg-slate-800/50 border border-slate-700 rounded-lg p-2 flex flex-col">
-                <div className="text-xs font-semibold text-slate-400 mb-2 px-2">{signal.label ?? signal.id}</div>
-                <div className="flex-1 w-full relative">
-                  <Plot
-                    data={[
-                      {
-                        x: (result as SimulationData).time,
-                        y: signal.values,
-                        type: 'scatter',
-                        mode: 'lines',
-                        name: signal.label ?? signal.id,
-                        line: { color: '#3b82f6', width: 2 },
-                      },
-                    ]}
-                    layout={{
-                      autosize: true,
-                      margin: { l: 40, r: 10, t: 10, b: 30 },
-                      showlegend: false,
-                      xaxis: { 
-                        title: { text: '时间 (s)', font: { size: 10, color: '#94a3b8' } }, 
-                        gridcolor: '#334155',
-                        tickfont: { size: 10, color: '#64748b' }
-                      },
-                      yaxis: { 
-                        title: { text: '数值', font: { size: 10, color: '#94a3b8' } }, 
-                        gridcolor: '#334155',
-                        tickfont: { size: 10, color: '#64748b' }
-                      },
-                      paper_bgcolor: 'rgba(0,0,0,0)',
-                      plot_bgcolor: 'rgba(0,0,0,0)',
-                    }}
-                    config={{ responsive: true, displaylogo: false }}
-                    useResizeHandler
-                    style={{ width: '100%', height: '100%' }}
-                  />
-                </div>
-              </div>
+              <StepResponseChart
+                key={signal.id}
+                time={(result as SimulationData).time}
+                signal={signal}
+                metrics={transientMetrics?.[signal.id]}
+              />
             ))}
           </div>
         ) : (

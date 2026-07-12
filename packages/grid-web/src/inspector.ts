@@ -12,7 +12,25 @@ interface FieldDef {
   min?: number;
   readonly?: boolean;
   help?: string;
+  section?: string;
+  placeholder?: string;
 }
+
+/** 机电暂态动态参数（Gen/DG 通用，后端 topology.jl 原样透传给 dynamics/shortcircuit）。 */
+export const DYNAMIC_DEFAULTS: Record<string, number> = { h_s: 5, xd1_pu: 0.3, d_pu: 0 };
+
+const DYNAMIC_FIELDS: FieldDef[] = [
+  {
+    key: '__dynamic',
+    label: '暂态动态机组',
+    kind: 'bool',
+    section: '机电暂态参数',
+    help: '勾选后该机组参与暂态稳定/短路计算的动态建模；不勾选则视为理想电源（无穷大母线）',
+  },
+  { key: 'h_s', label: '惯性时间常数 H', unit: 's', kind: 'number', min: 0.001, placeholder: '5' },
+  { key: 'xd1_pu', label: "暂态电抗 X'd", unit: 'pu', kind: 'number', min: 0.001, placeholder: '0.3' },
+  { key: 'd_pu', label: '阻尼系数 D', unit: 'pu', kind: 'number', min: 0, placeholder: '0' },
+];
 
 const BUS_FIELDS: FieldDef[] = [
   { key: 'kv', label: '额定电压', unit: 'kV', kind: 'number', required: true, min: 0.001 },
@@ -44,6 +62,7 @@ const GEN_FIELDS: FieldDef[] = [
       { value: '0', label: '停运' },
     ],
   },
+  ...DYNAMIC_FIELDS,
 ];
 
 const LINK_FIELDS: FieldDef[] = [
@@ -126,8 +145,15 @@ export function renderInspector(container: HTMLElement, board: Board, cell: dia.
   }
 
   const elec = { ...((cell.get('elec') ?? {}) as Record<string, unknown>) };
+  const dynamicOn = elec.h_s !== undefined || elec.xd1_pu !== undefined;
 
   for (const field of fields) {
+    if (field.section) {
+      const header = document.createElement('h3');
+      header.className = 'field-section';
+      header.textContent = field.section;
+      container.appendChild(header);
+    }
     const row = document.createElement('label');
     row.className = 'field';
     const labelSpan = document.createElement('span');
@@ -149,17 +175,21 @@ export function renderInspector(container: HTMLElement, board: Board, cell: dia.
     } else if (field.kind === 'bool') {
       input = document.createElement('input');
       input.type = 'checkbox';
-      (input as HTMLInputElement).checked = Boolean(elec[field.key]);
+      (input as HTMLInputElement).checked =
+        field.key === '__dynamic' ? dynamicOn : Boolean(elec[field.key]);
       row.classList.add('field-bool');
     } else {
       input = document.createElement('input');
       input.type = field.kind === 'number' ? 'number' : 'text';
       if (field.kind === 'number') (input as HTMLInputElement).step = 'any';
+      if (field.placeholder) (input as HTMLInputElement).placeholder = field.placeholder;
       input.value = elec[field.key] === undefined || elec[field.key] === null ? '' : String(elec[field.key]);
       if (field.readonly) {
         input.readOnly = true;
         input.classList.add('readonly');
       }
+      // 未启用动态建模时，H / X'd / D 输入框禁用（避免半套参数发给后端）
+      if (DYNAMIC_DEFAULTS[field.key] !== undefined && !dynamicOn) input.disabled = true;
     }
 
     input.addEventListener('change', () => {
@@ -196,6 +226,29 @@ function applyFieldChange(
     cell.set('elec', elec);
     styleLink(cell as dia.Link);
     hooks.onChanged();
+    return;
+  }
+
+  // 暂态动态机组开关：一次性写入/清除 h_s + xd1_pu + d_pu 三件套。
+  // 关键：默认 elec 里【不】带这三个键——否则每台电源（含并网点 slack 机）都会被
+  // 后端当成同步机建模，SMIB 的"无穷大母线"语义就没了。
+  if (field.key === '__dynamic') {
+    const on = (input as HTMLInputElement).checked;
+    if (on) {
+      for (const [key, def] of Object.entries(DYNAMIC_DEFAULTS)) {
+        if (elec[key] === undefined) elec[key] = def;
+      }
+    } else {
+      for (const key of Object.keys(DYNAMIC_DEFAULTS)) delete elec[key];
+    }
+    cell.set('elec', elec);
+    hooks.onChanged();
+    renderInspector(
+      (input.closest('.panel-body') ?? input.parentElement?.parentElement) as HTMLElement,
+      board,
+      cell,
+      hooks,
+    );
     return;
   }
 

@@ -30,8 +30,11 @@ http://127.0.0.1:8100 {
 		file_server
 	}
 
+	# lab-web 用 BrowserRouter（真实路径 /circuit/editor），刷新时需要 SPA 回退到 index.html。
+	# grid-web 用 hash 路由（/grid/#/editor），不需要回退。
 	handle_path /circuit/* {
 		root * packages/lab-web/dist
+		try_files {path} /index.html
 		file_server
 	}
 

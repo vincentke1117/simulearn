@@ -4,8 +4,8 @@
 
 | 模块 | 路径 | 内核 | 能力 |
 |---|---|---|---|
-| **电路实验室** | `/circuit/` | `packages/lab-backend`（ModelingToolkit / DifferentialEquations，端口 8080） | 电路瞬态分析、DC 教学解法（节点电压/支路电流/网孔/戴维南）、控制系统信号流、电路+控制混合仿真、开关多场景对比 |
-| **配电网实验室** | `/grid/` | `packages/grid-backend`（PowerModels / JuMP / Ipopt / Juniper，端口 8123） | AC 潮流、网络重构 + 分布式电源联合优化（网损最小）、IEEE 33 节点金标准算例 |
+| **电路实验室** | `/circuit/` | `packages/lab-backend`（ModelingToolkit / DifferentialEquations，端口 8080） | 瞬态分析、DC 教学解法（节点电压/支路电流/网孔/戴维南）、直流工作点、交流相量（相量图 + P/Q/S/功率因数）、频率扫描（Bode 双子图）、控制系统信号流（含超调/上升/调节时间等阶跃指标）、电路+控制混合仿真、开关多场景对比 |
+| **配电网实验室** | `/grid/` | `packages/grid-backend`（PowerModels / JuMP / Ipopt / Juniper，端口 8123） | AC 潮流、网络重构 + 分布式电源联合优化（网损最小）、N-1 开断扫描、时序潮流、三相对称短路（戴维南等值）、机电暂态稳定（功角曲线 + CCT 二分搜索）、IEEE 33 与 SMIB 金标准算例 |
 
 前端分别为 `packages/lab-web`（React 19 + React Flow）与 `packages/grid-web`（TypeScript + JointJS），由 **Caddy 网关（端口 8100）** 统一托管并反代 API（`/api/lab/*` → 8080，`/api/grid/*` → 8123）。
 
@@ -44,14 +44,19 @@ src/                旧平台壳（全 mock，待重建，勿在其上开发）
 ## 开发
 
 ```bash
-npm run check          # 门禁：lab-web 类型检查(tsc -b) + vitest
+npm run check          # 门禁：两个前端的类型检查 + vitest（lab 66 例 / grid 64 例）
 npm run dev:lab        # lab-web 开发服务器（/api/lab 自动代理到 8080）
 npm run dev -w @simulearn/grid-web   # grid-web 开发服务器（/api 代理到 8123）
-julia --project=packages/grid-backend -e "using Pkg; Pkg.test()"   # 含 IEEE33 金标准断言
+julia --project=packages/grid-backend -e "using Pkg; Pkg.test()"   # 含 IEEE33 / SMIB 金标准断言
 julia --project=packages/lab-backend  -e "using Pkg; Pkg.test()"
 ```
 
-契约要点：统一响应封套 `{status, code?, message, data}`；工程数据 localStorage 键一律 `slp:<module>:*` 命名空间；两后端只绑 `127.0.0.1`，跨域由网关同源化解决。
+契约要点：
+
+- 统一响应封套 `{status, code?, message, data}`；业务错误码分域 `GRID_*` / `LAB_*`。
+- `contracts/{grid,lab}/*.json` 是两个内核共享的**金标准契约夹具**（grid 69 断言 / lab 92 断言），数值全部对拍解析解——改内核先看它红不红。
+- 工程数据 localStorage 键一律 `slp:<module>:*` 命名空间；两后端只绑 `127.0.0.1`，跨域由网关同源化解决。
+- lab-web 用 BrowserRouter，其 `basename` 取自 Vite `base`（构建时为 `/circuit/`），网关侧配套 `try_files` 回退——两者必须一起改，否则刷新深链 404。
 
 ## 项目源流
 

@@ -15,7 +15,10 @@
     "build:lab": "npm run build -w @simulearn/lab-web",
     "typecheck:lab": "npm run typecheck -w @simulearn/lab-web",
     "test:lab": "npm run test -w @simulearn/lab-web -- run",
-    "check": "npm run typecheck:lab && npm run test:lab"
+    "check": "npm run typecheck:lab && npm run test:lab && npm run typecheck:grid && npm run test:grid",
+    "build:grid": "npm run build -w @simulearn/grid-web",
+    "typecheck:grid": "npm run typecheck -w @simulearn/grid-web",
+    "test:grid": "npm run test -w @simulearn/grid-web"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.2.3",

@@ -55,11 +55,14 @@ export function exportTopology(board: Board, meta: { baseMVA: number; feeder?: s
   };
 }
 
+// h_s / xd1_pu / d_pu：机电暂态动态参数，后端 topology.jl 从 Gen/DG 节点原样透传。
+// 之前这里没有列出，导致导入 smib 再导出/运行时动态参数被静默丢弃 → 暂态直接报错。
+const DYNAMIC_KEYS = ['h_s', 'xd1_pu', 'd_pu'];
 const ELEC_KEYS: Record<string, string[]> = {
   Bus: ['kv', 'is_slack', 'vm_pu', 'va_deg', 'vmin_pu', 'vmax_pu'],
   Load: ['bus', 'p_kw', 'q_kvar'],
-  Gen: ['bus', 'p_kw', 'p_max_kw', 'p_min_kw', 'q_kvar', 'q_max_kvar', 'q_min_kvar', 'status'],
-  DG: ['bus', 'p_kw', 'p_max_kw', 'p_min_kw', 'q_kvar', 'q_max_kvar', 'q_min_kvar', 'status'],
+  Gen: ['bus', 'p_kw', 'p_max_kw', 'p_min_kw', 'q_kvar', 'q_max_kvar', 'q_min_kvar', 'status', ...DYNAMIC_KEYS],
+  DG: ['bus', 'p_kw', 'p_max_kw', 'p_min_kw', 'q_kvar', 'q_max_kvar', 'q_min_kvar', 'status', ...DYNAMIC_KEYS],
 };
 
 /** 扁平拓扑 JSON → 画布。缺 loc 的节点走 BFS 分层自动布局；设备自动生成挂接线。 */

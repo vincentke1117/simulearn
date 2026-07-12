@@ -134,3 +134,137 @@ export interface ExampleInfo {
   feeder: string;
   description: string;
 }
+
+// ---- 六种分析 ----
+
+export type AnalysisKind = 'pf' | 'reconfig' | 'n1' | 'timeseries' | 'shortcircuit' | 'transient';
+
+// ---- N-1 开断扫描（src/analysis.jl::execute_n1，请求体 = 拓扑 JSON 直接置于顶层） ----
+
+export type N1Outcome = 'ok' | 'islanding' | 'diverged';
+
+/** islanding 行带 islanded_buses/lost_load_mw；ok 行带 loss_mw/vmin_pu/vmin_bus/violation_buses；diverged 行只有 branch/outcome。 */
+export interface N1Entry {
+  branch: string;
+  outcome: N1Outcome;
+  islanded_buses?: string[];
+  lost_load_mw?: number;
+  loss_mw?: number;
+  vmin_pu?: number;
+  vmin_bus?: string;
+  violation_buses?: string[];
+}
+
+export interface N1Result {
+  type: string;
+  results: N1Entry[];
+  summary: {
+    n_branches: number;
+    n_islanding: number;
+    n_ok: number;
+    n_diverged: number;
+    max_lost_load_mw: number;
+    worst_branch: string | null;
+  };
+}
+
+// ---- 时序潮流（请求体 {topology, load_scale}） ----
+
+export interface TimeseriesPoint {
+  scale: number;
+  outcome: 'ok' | 'diverged';
+  loss_mw?: number;
+  vmin_pu?: number;
+  vmin_bus?: string;
+  violation_count?: number;
+}
+
+export interface TimeseriesResult {
+  type: string;
+  points: TimeseriesPoint[];
+  summary: {
+    n_points: number;
+    max_loss_mw: number | null;
+    min_vmin_pu: number | null;
+  };
+}
+
+// ---- 短路计算（请求体 {topology, fault_bus, zf_pu}） ----
+
+/** zth_pu 是对象 {r, x}（不是复数字符串，不是数组）。 */
+export interface ShortCircuitEntry {
+  bus: string;
+  v_prefault_pu: number;
+  zth_pu: { r: number; x: number };
+  i_f_pu: number;
+  i_f_ka: number;
+  s_sc_mva: number;
+}
+
+export interface ShortCircuitResult {
+  type: string;
+  results: ShortCircuitEntry[];
+  summary: {
+    max_bus: string;
+    max_i_f_ka: number;
+    min_bus: string;
+    min_i_f_ka: number;
+  };
+}
+
+export interface ShortCircuitRequest {
+  topology: Topology;
+  fault_bus: string | null;
+  zf_pu: number;
+}
+
+// ---- 暂态稳定（请求体 {topology, fault, sim, f_hz, find_cct}） ----
+
+export interface TransientFault {
+  bus: string;
+  t_fault_s: number;
+  t_clear_s: number;
+  zf_pu: number;
+  trip_branch: string | null;
+}
+
+export interface TransientSim {
+  t_stop_s: number;
+  dt_s: number;
+}
+
+export interface TransientRequest {
+  topology: Topology;
+  fault: TransientFault;
+  sim: TransientSim;
+  f_hz: number;
+  find_cct: boolean;
+}
+
+export interface TransientMachine {
+  id: string;
+  h_s: number;
+  xd1_pu: number;
+  delta0_deg: number;
+  pm_pu: number;
+}
+
+/** series.delta_deg / series.omega_pu 是 机组 id → 数组 的字典（不是数组的数组）。 */
+export interface TransientResult {
+  type: string;
+  stable: boolean;
+  t_unstable_s: number | null;
+  cct_s: number | null;
+  fault: TransientFault;
+  machines: TransientMachine[];
+  series: {
+    t_s: number[];
+    delta_deg: Record<string, number[]>;
+    omega_pu: Record<string, number[]>;
+  };
+}
+
+export interface TimeseriesRequest {
+  topology: Topology;
+  load_scale: number[];
+}

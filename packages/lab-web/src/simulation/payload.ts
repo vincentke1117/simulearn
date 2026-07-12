@@ -1,13 +1,101 @@
 import type { Edge, Node } from '@xyflow/react'
 
 import { circuitComponentLibrary, type CircuitComponentType } from '@/circuit/components'
-import type {
-  CircuitNodeData,
-  SimulationPayload,
-  SimulationSettings,
-  SimulationNetPayload,
-  AnalysisMethod,
+import {
+  SWEEP_MAX_POINTS,
+  SWEEP_MIN_POINTS,
+  defaultSweepSettings,
+  type CircuitNodeData,
+  type SimulationPayload,
+  type SimulationSettings,
+  type SimulationNetPayload,
+  type AnalysisMethod,
+  type SweepPayload,
+  type SweepSettings,
 } from '@/types/circuit'
+
+const AC_SOURCE_TYPES = new Set(['vsource_ac', 'isource_ac'])
+const CONTROLLED_SOURCE_TYPES = new Set(['vcvs', 'ccvs', 'vccs', 'cccs'])
+const PROBE_TYPES = new Set(['voltage_probe', 'current_probe'])
+
+/** 画布上是否存在交流源——ac_phasor / frequency_sweep 的前置条件 */
+export function hasAcSource(nodes: Node<CircuitNodeData>[]): boolean {
+  return nodes.some((node) => AC_SOURCE_TYPES.has(String(node.type)))
+}
+
+export function hasProbe(nodes: Node<CircuitNodeData>[]): boolean {
+  return nodes.some((node) => PROBE_TYPES.has(String(node.type)))
+}
+
+/**
+ * 频率扫描参数校验——与后端硬约束一一对应，提交前就挡住，别让学生吃 422。
+ * 后端原话：
+ *   "频率扫描点数必须在 2..401 之间" / "频率扫描起始频率必须大于 0"
+ *   "频率扫描终止频率必须大于起始频率" / "频率扫描 v1 仅支持对数刻度（scale = \"log\"）"
+ */
+export function validateSweepSettings(sweep: SweepSettings | undefined): string[] {
+  const errors: string[] = []
+  if (!sweep) {
+    errors.push('频率扫描需要 sweep 参数（起始频率 / 终止频率 / 点数）')
+    return errors
+  }
+  if (!ensureFiniteNumber(sweep.fStartHz) || sweep.fStartHz <= 0) {
+    errors.push('频率扫描起始频率必须大于 0')
+  }
+  if (!ensureFiniteNumber(sweep.fStopHz) || sweep.fStopHz <= sweep.fStartHz) {
+    errors.push('频率扫描终止频率必须大于起始频率')
+  }
+  if (
+    !Number.isInteger(sweep.nPoints) ||
+    sweep.nPoints < SWEEP_MIN_POINTS ||
+    sweep.nPoints > SWEEP_MAX_POINTS
+  ) {
+    errors.push(`频率扫描点数必须在 ${SWEEP_MIN_POINTS}..${SWEEP_MAX_POINTS} 之间`)
+  }
+  if (sweep.scale !== 'log') {
+    errors.push('频率扫描 v1 仅支持对数刻度（scale = "log"）')
+  }
+  return errors
+}
+
+export function toSweepPayload(sweep: SweepSettings): SweepPayload {
+  return {
+    f_start_hz: sweep.fStartHz,
+    f_stop_hz: sweep.fStopHz,
+    n_points: sweep.nPoints,
+    scale: sweep.scale,
+  }
+}
+
+/**
+ * ac_phasor 与 frequency_sweep 共用的前置校验（frequency_sweep 沿用 ac_phasor 的求解器约束）：
+ * - 至少一个交流源
+ * - 不支持受控源
+ * - 所有交流源频率必须一致（扫描频率由 sweep 决定，源的 frequency 参数不参与网格）
+ */
+export function validateAcMethod(nodes: Node<CircuitNodeData>[]): string[] {
+  const errors: string[] = []
+
+  if (!hasAcSource(nodes)) {
+    errors.push('AC 相量分析需要至少一个交流源（交流电压源 / 交流电流源）')
+  }
+
+  const controlled = nodes.filter((node) => CONTROLLED_SOURCE_TYPES.has(String(node.type)))
+  if (controlled.length > 0) {
+    errors.push(`AC 相量分析暂不支持受控源：${controlled.map((n) => n.data.label ?? n.id).join('、')}`)
+  }
+
+  const frequencies = nodes
+    .filter((node) => AC_SOURCE_TYPES.has(String(node.type)))
+    .map((node) => node.data.parameters?.frequency)
+    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
+  const distinct = Array.from(new Set(frequencies))
+  if (distinct.length > 1) {
+    errors.push(`交流源频率不一致：AC 相量分析要求所有交流源频率相同（当前：${distinct.join(' / ')} Hz）`)
+  }
+
+  return errors
+}
 
 export interface BuildSimulationPayloadResult {
   ok: boolean
@@ -245,10 +333,13 @@ export function buildSimulationPayload(
   nodes: Node<CircuitNodeData>[],
   edges: Edge[],
   settings: SimulationSettings,
-  method?: AnalysisMethod,  // 可选指定分析方法，未指定则自动检测
+  methodOverride?: AnalysisMethod,  // 可选指定分析方法，未指定则取 settings.method，再未指定则自动检测
 ): BuildSimulationPayloadResult {
   const errors: string[] = []
   const diagnostics: string[] = []  // 诊断信息（非错误）
+
+  // 此前这里只看第四个参数，而 CircuitWorkspace 从不传它 —— 工具栏选的分析方法被整个丢掉了。
+  const method = methodOverride ?? settings.method
 
   if (!(settings.tStop > 0)) {
     errors.push('仿真时长必须大于 0')
@@ -388,6 +479,24 @@ export function buildSimulationPayload(
     }
   }
 
+  // 交流类方法的前置校验（与后端 LAB_VALIDATION 对齐，提交前挡住）
+  if (method === 'ac_phasor' || method === 'frequency_sweep') {
+    errors.push(...validateAcMethod(nodes))
+  }
+
+  let sweepPayload: SweepPayload | undefined
+  if (method === 'frequency_sweep') {
+    if (!hasProbe(nodes)) {
+      errors.push('频率扫描需要至少一个探针：请添加电压探针或电流探针，Bode 曲线按探针出图')
+    }
+    const sweep = settings.sweep ?? defaultSweepSettings
+    const sweepErrors = validateSweepSettings(sweep)
+    errors.push(...sweepErrors)
+    if (sweepErrors.length === 0) {
+      sweepPayload = toSweepPayload(sweep)
+    }
+  }
+
   if (errors.length > 0) {
     return { ok: false, errors, diagnostics }
   }
@@ -407,6 +516,7 @@ export function buildSimulationPayload(
         n_samples: settings.nSamples,
       },
       method: analysisMethod,
+      ...(sweepPayload ? { sweep: sweepPayload } : {}),
     },
   }
 }

@@ -4,8 +4,10 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
 // https://vite.dev/config/
-export default defineConfig({
-  base: './',
+// base 必须是绝对路径 '/circuit/'（而非 './'）：BrowserRouter 用 import.meta.env.BASE_URL
+// 作为 basename，相对 base 会让路由跳到站点根下的 /editor，刷新即 404。
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/circuit/' : '/',
   plugins: [react()],
   resolve: {
     alias: {
@@ -43,4 +45,4 @@ export default defineConfig({
     setupFiles: './src/test/setup.ts',
     passWithNoTests: true,
   },
-})
+}))

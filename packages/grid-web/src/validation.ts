@@ -1,8 +1,77 @@
-import type { Topology } from './types';
+import type { AnalysisKind, Topology, TopologyNode } from './types';
 
 export interface ValidationIssue {
   level: 'error' | 'warning';
   message: string;
+}
+
+const isGen = (n: TopologyNode) => n.type === 'Gen' || n.type === 'DG';
+
+/**
+ * 机组是否在运。后端 topology.jl 把节点的 status 原样写成 gen_status（缺省 1），
+ * 而 dynamics.jl::extract_machines / shortcircuit.jl 都要求 gen_status == 1 才收这台机。
+ */
+export function isInService(node: TopologyNode): boolean {
+  return Number(node.status ?? 1) === 1;
+}
+
+/**
+ * 一台机组是否具备暂态建模所需的动态参数。
+ * 后端 dynamics.jl::extract_machines 的入选条件：**在运**（gen_status == 1）+ 有 h_s + 必须同时有 xd1_pu。
+ * 停运机组即便填了 H/X'd 后端也不收，前端跟着排除，否则「唯一动态机 status=0」会被前置校验放行、
+ * 到后端才抛 no generator provides dynamic parameters (h_s)。
+ */
+export function isDynamicMachine(node: TopologyNode): boolean {
+  if (!isInService(node)) return false;
+  const h = Number(node.h_s);
+  const xd1 = Number(node.xd1_pu);
+  return Number.isFinite(h) && h > 0 && Number.isFinite(xd1) && xd1 > 0;
+}
+
+/**
+ * 分析类型相关的前置校验（在 validateTopology 之外追加）。
+ * 目的：把后端会抛的 422/500 提前翻译成学生看得懂的中文，而不是把堆栈丢给他。
+ */
+export function validateForAnalysis(topo: Topology, kind: AnalysisKind): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  const allGens = (topo.nodes ?? []).filter(isGen);
+  // 后端（dynamics.jl / shortcircuit.jl）只看在运机组，前端的前置校验必须用同一个集合
+  const gens = allGens.filter(isInService);
+
+  if (kind === 'transient') {
+    const machines = gens.filter(isDynamicMachine);
+    if (machines.length === 0) {
+      // 后端会抛 "no generator provides dynamic parameters (h_s)"（422）——但学生根本不知道去哪填
+      const halfDone = gens.filter((g) => g.h_s !== undefined || g.xd1_pu !== undefined);
+      // 填了 H/X'd 但被 status=0 停运的机组：后端直接跳过，学生看不出为什么"明明填了"还报错
+      const stopped = allGens.filter((g) => !isInService(g) && (g.h_s !== undefined || g.xd1_pu !== undefined));
+      issues.push({
+        level: 'error',
+        message: halfDone.length
+          ? `电源 ${halfDone.map((g) => g.id).join('、')} 的动态参数不完整：暂态分析要求同时给出 H (h_s > 0) 与 X'd (xd1_pu > 0)`
+          : stopped.length
+            ? `电源 ${stopped.map((g) => g.id).join('、')} 填了动态参数但处于停运（status = 0），后端不会把它建成动态机组：请把 status 改回 1，或另加一台在运的动态机组`
+            : "暂态分析需要至少一台动态机组：选中一个电源/DG，在检查器「机电暂态参数」里勾选「暂态动态机组」并填写 H (s) 与 X'd (pu)",
+      });
+    } else if (machines.length === gens.length && gens.length > 1) {
+      issues.push({
+        level: 'warning',
+        message: '所有电源都被建模为动态机组，系统中没有无穷大母线参考；若结果异常，可把并网点电源的动态参数关掉',
+      });
+    }
+  }
+
+  if (kind === 'shortcircuit') {
+    const withXd1 = gens.filter((g) => Number.isFinite(Number(g.xd1_pu)) && Number(g.xd1_pu) > 0);
+    if (withXd1.length === 0) {
+      issues.push({
+        level: 'warning',
+        message: "没有任何机组给出 X'd：短路电流将只由平衡节点（理想电源）与线路阻抗决定，机组不提供短路电流贡献",
+      });
+    }
+  }
+
+  return issues;
 }
 
 /** 前端预检：拦住必然会被 Julia 拒绝或产生无意义结果的拓扑。后端仍是最终权威。 */

@@ -6,13 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@joint/core": "^4.1.0"
   },
   "devDependencies": {
+    "jsdom": "^27.0.1",
     "typescript": "~5.9.3",
-    "vite": "^7.1.12"
+    "vite": "^7.1.12",
+    "vitest": "^3.2.4"
   }
 }
