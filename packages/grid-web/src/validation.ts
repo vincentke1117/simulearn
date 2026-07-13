@@ -29,6 +29,17 @@ export function isDynamicMachine(node: TopologyNode): boolean {
 }
 
 /**
+ * 这台机组是否给出了自己的发电成本曲线。
+ * 注意不能写成 `Number.isFinite(Number(g.cost_c1))`：`Number(null) === 0` 是有限的，
+ * 于是显式写着 `"cost_c1": null` 的节点会被误判成"填了成本"，正好漏掉最该报警的那种脏数据。
+ * 后端 optimization.jl 只在字段**是数**的时候取用，否则落回默认 c₂=0, c₁=1, c₀=0。
+ */
+export function hasCostCurve(node: TopologyNode): boolean {
+  const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
+  return num(node.cost_c1) || num(node.cost_c2);
+}
+
+/**
  * 分析类型相关的前置校验（在 validateTopology 之外追加）。
  * 目的：把后端会抛的 422/500 提前翻译成学生看得懂的中文，而不是把堆栈丢给他。
  */
@@ -58,6 +69,39 @@ export function validateForAnalysis(topo: Topology, kind: AnalysisKind): Validat
         level: 'warning',
         message: '所有电源都被建模为动态机组，系统中没有无穷大母线参考；若结果异常，可把并网点电源的动态参数关掉',
       });
+    }
+  }
+
+  if (kind === 'opf') {
+    if (gens.length === 0) {
+      issues.push({
+        level: 'error',
+        message: '最优潮流需要至少一台在运的电源/DG（经济调度是在机组之间分摊出力）',
+      });
+    } else {
+      // 成本曲线缺省时后端硬编码 c2=0, c1=1, c0=0。两种坑，都必须说：
+      //   全部缺省 → 所有机组同一条平坦曲线，"谁发都一样贵"，调度只由网损决定，LMP 的绝对值无意义；
+      //   部分缺省 → 缺省机组白捡 c1=1 元/MWh 这个"全网最便宜"的价，会被优先顶到 Pmax，
+      //              而结果表看上去是一份权威的经济调度结论 —— 这是学生最常撞的路径。
+      const unpriced = gens.filter((g) => !hasCostCurve(g));
+      if (unpriced.length === gens.length) {
+        issues.push({
+          level: 'warning',
+          message:
+            gens.length > 1
+              ? '没有任何机组填写发电成本（c₂/c₁/c₀）：后端将按默认 c₂=0, c₁=1, c₀=0 处理，各机组成本曲线完全相同，经济调度会退化（谁发都一样贵，出力只由网损决定）。请在检查器「发电成本」分节里填写'
+              : '唯一的机组没有填写发电成本（c₂/c₁/c₀）：后端将按默认 c₂=0, c₁=1, c₀=0 处理，因此 LMP 的绝对值是被归一化出来的假数（约 1 元/MWh），只有母线之间的相对差（边际网损分量）有教学意义。请在检查器「发电成本」分节里填写真实成本曲线',
+        });
+      } else if (unpriced.length > 0) {
+        issues.push({
+          level: 'warning',
+          message: `机组 ${unpriced
+            .map((g) => g.id)
+            .join(
+              '、',
+            )} 没有填写发电成本（c₂/c₁/c₀）：后端会按默认 c₂=0, c₁=1, c₀=0 处理，它们的边际成本恒为 1 元/MWh —— 通常是全网最便宜，会被优先顶到 Pmax，产出一份看似权威、实则由默认值造出来的经济调度结论。请给所有机组填写成本，或把这几台机组从算例里去掉`,
+        });
+      }
     }
   }
 

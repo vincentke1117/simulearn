@@ -125,3 +125,97 @@ export const N1_OUTCOME_LABEL: Record<string, string> = {
   islanding: '孤岛',
   diverged: '不收敛',
 };
+
+// ---------------------------------------------------------------- OPF / LMP
+
+/** 金额：元/h 与 元/MWh 统一保留两位（教学上要能直接对账）。 */
+export function fmtYuan(value: number | null | undefined, digits = 2): string {
+  return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '—';
+}
+
+export interface LmpDomain {
+  lo: number;
+  hi: number;
+  /** true = 全网 LMP 实质相等（无阻塞、网损可忽略）：色标退化，不能拿颜色骗人。 */
+  flat: boolean;
+  /** 相对极差 (hi-lo)/max(|hi|,|lo|,eps)。 */
+  rel: number;
+}
+
+/**
+ * LMP 相对极差小于千分之一即视为「全网同价」。
+ * 依据：econ2（无阻塞、线路阻抗 1e-4 pu）实测 LMP 12.285756 → 12.287029，相对极差 1.0e-4 ——
+ * 这点差异纯粹是边际网损分量，把它拉满整条蓝→红色标会让学生以为存在显著价差。
+ * IEEE33 相对极差 12.8%（1.0000 → 1.1472），远在阈值之上，正常上色。
+ */
+export const LMP_FLAT_REL = 1e-3;
+
+/** LMP 色标定标。返回 null 表示没有有效样本（不能上色，也不能画图例）。 */
+export function lmpDomain(values: Array<number | null | undefined>): LmpDomain | null {
+  const nums = values.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+  if (nums.length === 0) return null;
+  const lo = Math.min(...nums);
+  const hi = Math.max(...nums);
+  const scale = Math.max(Math.abs(hi), Math.abs(lo), 1e-12);
+  const rel = (hi - lo) / scale;
+  return { lo, hi, flat: rel < LMP_FLAT_REL, rel };
+}
+
+/** 色标退化（flat / null）时统一返回中性灰，绝不整片同色却配一条误导性的蓝→红图例。 */
+export function lmpColor(value: number, domain: LmpDomain | null): string {
+  if (!domain || domain.flat) return '#94a3b8';
+  return heatColor(value, [domain.lo, domain.hi]);
+}
+
+/** 是否是边际机组：未顶限（binding=false）⇒ 它在定价，其边际成本应当等于所在母线的 LMP。 */
+export function isMarginalGen(gen: { binding: boolean }): boolean {
+  return !gen.binding;
+}
+
+/** 机组边际成本与所在母线 LMP 是否相等（相对误差 < 1e-4）——「边际机组在定价」这条关系的可视化判据。 */
+export function marginalMatchesLmp(
+  marginalCost: number,
+  lmp: number | undefined,
+  relTol = 1e-4,
+): boolean {
+  if (typeof lmp !== 'number' || !Number.isFinite(lmp) || !Number.isFinite(marginalCost)) return false;
+  const scale = Math.max(Math.abs(lmp), 1e-9);
+  return Math.abs(marginalCost - lmp) / scale < relTol;
+}
+
+/**
+ * 这台机组用的是不是后端的**默认成本曲线**（c₂=0, c₁=1, c₀=0）。
+ * 后端 optimization.jl 在机组没给成本系数时硬编码这条曲线，于是它会变成"全网最便宜的机组"
+ * 并被优先顶到 Pmax —— 结果表看上去权威，实际上这台机的价格是凭空造出来的。
+ * 只要命中就必须在表里标出来（学生最常见的错误是只给一台机填成本）。
+ */
+export function isDefaultCostCurve(gen: { cost_c2: number; cost_c1: number; cost_c0: number }): boolean {
+  return gen.cost_c2 === 0 && gen.cost_c1 === 1 && gen.cost_c0 === 0;
+}
+
+/** 机组顶限状态标签：at_pmin / at_pmax / 未顶限。 */
+export function bindingLabel(gen: { binding: boolean; at_pmin: boolean; at_pmax: boolean }): string {
+  if (!gen.binding) return '未顶限';
+  if (gen.at_pmax) return '顶上限 Pmax';
+  if (gen.at_pmin) return '顶下限 Pmin';
+  return '顶限';
+}
+
+// ---------------------------------------------------------------- N-1 转供恢复
+
+/**
+ * 转供恢复表的「恢复后」单元格。不可恢复的条目里 loss_mw / vmin_pu / violated / radial 等
+ * 一律是 **null**（不是 0）——写成 0.000 会让学生读成「恢复后零网损」。
+ */
+export function restoreCell(value: number | null | undefined, digits = 3): string {
+  return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '—';
+}
+
+/** 恢复后是否「能供上电但供不好」：全部恢复供电，却出现电压/过载越限。这是本分析的教学高潮。 */
+export function isRestoredButViolated(entry: {
+  restorable: boolean;
+  fully_restored: boolean;
+  violated: boolean | null;
+}): boolean {
+  return entry.restorable && entry.fully_restored && entry.violated === true;
+}

@@ -58,11 +58,21 @@ export function exportTopology(board: Board, meta: { baseMVA: number; feeder?: s
 // h_s / xd1_pu / d_pu：机电暂态动态参数，后端 topology.jl 从 Gen/DG 节点原样透传。
 // 之前这里没有列出，导致导入 smib 再导出/运行时动态参数被静默丢弃 → 暂态直接报错。
 const DYNAMIC_KEYS = ['h_s', 'xd1_pu', 'd_pu'];
+// cost_c2 / cost_c1 / cost_c0：发电成本曲线 C(P) = c2·P² + c1·P + c0（P 单位 MW），
+// 后端 optimization.jl::execute_opf 从 Gen/DG 节点读取（缺省 c2=0, c1=1, c0=0）。
+// 不列进白名单的话，导入 econ2 之后成本参数会被 importTopology 静默丢弃，
+// 再导出/运行时全部机组退化成 c1=1 的同一条成本曲线 → 经济调度失去意义（与 h_s/xd1_pu 同类坑）。
+const COST_KEYS = ['cost_c2', 'cost_c1', 'cost_c0'];
+export const GEN_ELEC_KEYS = [
+  'bus', 'p_kw', 'p_max_kw', 'p_min_kw', 'q_kvar', 'q_max_kvar', 'q_min_kvar', 'status',
+  ...DYNAMIC_KEYS,
+  ...COST_KEYS,
+];
 const ELEC_KEYS: Record<string, string[]> = {
   Bus: ['kv', 'is_slack', 'vm_pu', 'va_deg', 'vmin_pu', 'vmax_pu'],
   Load: ['bus', 'p_kw', 'q_kvar'],
-  Gen: ['bus', 'p_kw', 'p_max_kw', 'p_min_kw', 'q_kvar', 'q_max_kvar', 'q_min_kvar', 'status', ...DYNAMIC_KEYS],
-  DG: ['bus', 'p_kw', 'p_max_kw', 'p_min_kw', 'q_kvar', 'q_max_kvar', 'q_min_kvar', 'status', ...DYNAMIC_KEYS],
+  Gen: GEN_ELEC_KEYS,
+  DG: GEN_ELEC_KEYS,
 };
 
 /** 扁平拓扑 JSON → 画布。缺 loc 的节点走 BFS 分层自动布局；设备自动生成挂接线。 */

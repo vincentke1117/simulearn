@@ -1,8 +1,15 @@
 import { dia, highlighters } from '@joint/core';
 import type { Board } from './board';
-import { esc, heatColor, heatDomain, isIdealSourceRow } from './analyses/format';
+import { esc, heatColor, heatDomain, isIdealSourceRow, lmpColor, type LmpDomain } from './analyses/format';
 import { BUS_FILL, styleLink } from './shapes';
-import type { N1Entry, PfResult, ReconfigResult, ShortCircuitResult } from './types';
+import type {
+  N1Entry,
+  N1RestorationEntry,
+  OpfBus,
+  PfResult,
+  ReconfigResult,
+  ShortCircuitResult,
+} from './types';
 
 const fmt = (v: number, digits = 3) => (Number.isFinite(v) ? v.toFixed(digits) : '—');
 
@@ -62,7 +69,10 @@ export function paintResults(board: Board, pf: PfResult): void {
 export function clearPaintedResults(board: Board): void {
   for (const el of board.graph.getElements()) {
     const view = board.paper.findViewByModel(el);
-    if (view) highlighters.stroke.remove(view, CONTINGENCY_HL);
+    if (view) {
+      highlighters.stroke.remove(view, CONTINGENCY_HL);
+      highlighters.stroke.remove(view, RESTORE_HL);
+    }
     if (el.get('jgdoType') === 'Bus') {
       el.attr('body/fill', BUS_FILL);
       el.attr('body/opacity', 1);
@@ -74,7 +84,10 @@ export function clearPaintedResults(board: Board): void {
   }
   for (const link of board.graph.getLinks()) {
     const view = board.paper.findViewByModel(link);
-    if (view) highlighters.stroke.remove(view, CONTINGENCY_HL);
+    if (view) {
+      highlighters.stroke.remove(view, CONTINGENCY_HL);
+      highlighters.stroke.remove(view, RESTORE_HL);
+    }
     const kind = link.get('jgdoType');
     if (kind === 'Line' || kind === 'Switch' || kind === 'attach') styleLink(link as dia.Link);
   }
@@ -95,13 +108,44 @@ export function paintShortCircuit(board: Board, sc: ShortCircuitResult, slackBus
   }
 }
 
-const CONTINGENCY_HL = 'jgdo-contingency';
+/**
+ * OPF：母线按 LMP 热力着色 + 标注电价。
+ * 径向馈线上 LMP 从电源侧向末端递增（边际网损分量）——"电在远处更贵"一眼可见。
+ * 色标退化（全网同价 / 无有效样本）时统一中性灰，不制造虚假的价差观感。
+ */
+export function paintLmp(board: Board, buses: OpfBus[], domain: LmpDomain | null): void {
+  const byBus = new Map(buses.map((b) => [b.id, b]));
+  for (const el of board.graph.getElements()) {
+    if (el.get('jgdoType') !== 'Bus') continue;
+    const row = byBus.get(String(el.id));
+    if (!row) continue;
+    el.attr('body/fill', lmpColor(row.lmp_yuan_per_mwh, domain));
+    el.attr(
+      'result/text',
+      `${fmt(row.lmp_yuan_per_mwh, 4)} 元/MWh · ${fmt(row.vm_pu, 4)} pu`,
+    );
+    el.attr('result/fill', row.violation ? '#dc2626' : '#475569');
+  }
+}
 
-/** N-1 表格行 hover：高亮被断开的支路，并淡出它造成的孤岛母线。 */
-export function highlightContingency(board: Board, entry: N1Entry | null): void {
+const CONTINGENCY_HL = 'jgdo-contingency';
+const RESTORE_HL = 'jgdo-restore';
+
+/**
+ * N-1 表格行 hover：高亮被断开的支路（红），淡出孤岛母线；
+ * 若给出转供恢复条目，额外把被闭合的联络开关描成绿色（转供路径），并只淡出恢复后仍失电的母线。
+ */
+export function highlightContingency(
+  board: Board,
+  entry: N1Entry | null,
+  restoration?: N1RestorationEntry | null,
+): void {
   for (const cell of board.graph.getCells()) {
     const view = board.paper.findViewByModel(cell);
-    if (view) highlighters.stroke.remove(view, CONTINGENCY_HL);
+    if (view) {
+      highlighters.stroke.remove(view, CONTINGENCY_HL);
+      highlighters.stroke.remove(view, RESTORE_HL);
+    }
     if (cell.isElement() && cell.get('jgdoType') === 'Bus') cell.attr('body/opacity', 1);
   }
   if (!entry) return;
@@ -116,7 +160,23 @@ export function highlightContingency(board: Board, entry: N1Entry | null): void 
       });
     }
   }
-  for (const busId of entry.islanded_buses ?? []) {
+
+  // 闭合的联络开关 = 转供路径（绿）
+  for (const tieId of restoration?.closed_ties ?? []) {
+    const tie = board.graph.getCell(tieId);
+    if (!tie || !tie.isLink()) continue;
+    const view = board.paper.findViewByModel(tie);
+    if (view) {
+      highlighters.stroke.add(view, { selector: 'line' }, RESTORE_HL, {
+        padding: 5,
+        attrs: { stroke: '#16a34a', 'stroke-width': 3.5 },
+      });
+    }
+  }
+
+  // 恢复成功的母线不该继续淡出：淡出的只是「恢复之后仍然失电」的那些
+  const dark = restoration ? restoration.islanded_buses_after : (entry.islanded_buses ?? []);
+  for (const busId of dark) {
     const bus = board.graph.getCell(busId);
     if (bus && bus.isElement()) bus.attr('body/opacity', 0.25);
   }

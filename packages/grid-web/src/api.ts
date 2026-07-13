@@ -1,7 +1,9 @@
 import type {
   ApiEnvelope,
   ExampleInfo,
+  N1Request,
   N1Result,
+  OpfResult,
   PfResult,
   ReconfigResult,
   ShortCircuitRequest,
@@ -50,9 +52,17 @@ export function runReconfiguration(topology: Topology): Promise<ReconfigResult> 
   return post<ReconfigResult>('/api/grid/reconfig', topology);
 }
 
-/** N-1：请求体就是拓扑本身（顶层，无包装）。 */
-export function runN1(topology: Topology): Promise<N1Result> {
-  return post<N1Result>('/api/grid/n1', topology);
+/** 最优潮流 / 经济调度：请求体就是拓扑本身（顶层，无包装，与 /n1 的裸拓扑形式一致）。 */
+export function runOpf(topology: Topology): Promise<OpfResult> {
+  return post<OpfResult>('/api/grid/opf', topology);
+}
+
+/**
+ * N-1：请求体 {topology, restore}。restore=true 时响应多出 restoration 数组。
+ * ⚠️ 不要带 max_ties —— 后端已删除该字段，带上直接 422。
+ */
+export function runN1(request: N1Request): Promise<N1Result> {
+  return post<N1Result>('/api/grid/n1', request);
 }
 
 export function runTimeseries(request: TimeseriesRequest): Promise<TimeseriesResult> {

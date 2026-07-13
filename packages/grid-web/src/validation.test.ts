@@ -90,6 +90,74 @@ describe('validateForAnalysis: shortcircuit', () => {
   });
 });
 
+describe('validateForAnalysis: opf（发电成本缺失是学生最常撞的坑）', () => {
+  /** 两机经济调度：结构同 .samples/grid-opf-econ2.json。 */
+  const priced = (over: Partial<Topology> = {}): Topology => {
+    const topo = smib();
+    topo.nodes = topo.nodes.map((n) =>
+      n.type === 'Gen' ? { ...n, cost_c2: 0.02, cost_c1: 10, cost_c0: 100 } : n,
+    );
+    return { ...topo, ...over };
+  };
+
+  it('两台机都填了成本 → 无提示', () => {
+    expect(validateForAnalysis(priced(), 'opf')).toHaveLength(0);
+  });
+
+  it('只有一台机填了成本 → warning 点名缺成本的那台（后端会给它白捡 c₁=1）', () => {
+    const topo = priced();
+    topo.nodes = topo.nodes.map((n) =>
+      n.id === 'gen-1' ? { ...n, cost_c2: undefined, cost_c1: undefined, cost_c0: undefined } : n,
+    );
+    const warnings = validateForAnalysis(topo, 'opf').filter((i) => i.level === 'warning');
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].message).toContain('gen-1');
+    expect(warnings[0].message).not.toContain('grid-1'); // grid-1 填了成本，不该被点名
+    expect(warnings[0].message).toContain('c₁=1');
+  });
+
+  it('显式写成 cost_c1: null 也算「没填」（Number(null) === 0 会把这种脏数据放行）', () => {
+    const topo = priced();
+    topo.nodes = topo.nodes.map((n) =>
+      n.id === 'gen-1' ? { ...n, cost_c2: null, cost_c1: null, cost_c0: null } : n,
+    );
+    const warnings = validateForAnalysis(topo, 'opf').filter((i) => i.level === 'warning');
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].message).toContain('gen-1');
+  });
+
+  it('全部机组都没成本 → warning 说明成本曲线被拉平、经济调度退化', () => {
+    const warnings = validateForAnalysis(smib(), 'opf').filter((i) => i.level === 'warning');
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].message).toContain('经济调度会退化');
+  });
+
+  it('单机且无成本（IEEE33 的 grid-1）→ warning 说明 LMP 绝对值是归一化出来的假数', () => {
+    const topo = smib();
+    topo.nodes = topo.nodes.filter((n) => n.id !== 'gen-1');
+    const warnings = validateForAnalysis(topo, 'opf').filter((i) => i.level === 'warning');
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].message).toContain('绝对值');
+  });
+
+  it('停运机组不计入成本统计（后端也不会调度它）', () => {
+    const topo = priced();
+    // gen-1 停运且无成本：不该因为它而报警
+    topo.nodes = topo.nodes.map((n) =>
+      n.id === 'gen-1' ? { ...n, status: 0, cost_c2: undefined, cost_c1: undefined, cost_c0: undefined } : n,
+    );
+    expect(validateForAnalysis(topo, 'opf')).toHaveLength(0);
+  });
+
+  it('一台在运机组都没有 → error', () => {
+    const topo = smib();
+    topo.nodes = topo.nodes.filter((n) => n.type !== 'Gen');
+    const errors = validateForAnalysis(topo, 'opf').filter((i) => i.level === 'error');
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toContain('至少一台在运的电源');
+  });
+});
+
 describe('validateTopology 基础规则仍然成立', () => {
   it('smib 拓扑本身合法', () => {
     expect(validateTopology(smib()).filter((i) => i.level === 'error')).toHaveLength(0);

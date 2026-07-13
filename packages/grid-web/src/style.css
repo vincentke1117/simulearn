@@ -1181,6 +1181,104 @@ g[model-id]:hover .jgdo-body {
   align-items: center;
   gap: 8px;
   margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+/* ---- OPF / 转供恢复 ---- */
+
+/* 色标退化（全网 LMP 相等）：明说为什么不上色，而不是画一条误导性的蓝→红条 */
+.note-flat {
+  margin: 8px 0;
+  padding: 7px 10px;
+  border-left: 3px solid var(--text-2, #64748b);
+  background: #f8fafc;
+  border-radius: 0 6px 6px 0;
+  font-size: 12.5px;
+  color: #475569;
+}
+
+.note-teach {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-left: 3px solid #2563eb;
+  background: #eff6ff;
+  border-radius: 0 6px 6px 0;
+  font-size: 12.5px;
+  color: #1e3a8a;
+  line-height: 1.6;
+}
+
+.sub-head {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: #334155;
+}
+
+.tag-marginal {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.tag-binding {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.tag-restorable {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.tag-unrestorable {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* 边际机组：边际成本 == 所在母线 LMP，把这两格并排点亮 */
+.cell-pricing {
+  background: #eff6ff;
+  font-weight: 700;
+  color: #1e40af;
+}
+
+.eq-mark {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.row-marginal code {
+  color: #1e40af;
+}
+
+.row-binding {
+  background: #fffbeb;
+}
+
+/* 机组没填成本系数 → 后端按默认 c₂=0, c₁=1, c₀=0 处理：这一行的价格是假的 */
+.row-defaulted {
+  background: #fff7ed;
+}
+
+.cell-defaulted {
+  color: #9a3412;
+  font-weight: 700;
+}
+
+.tag-defaulted {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+/* 「能供上电 ≠ 供得好」：可完全恢复但恢复后越限。
+   显式写 color，不依赖与 .row-bad 的声明顺序（两者已不会同时出现，但保持自足）。 */
+.row-conflict {
+  background: #fff7ed;
+  color: #9a3412;
+  box-shadow: inset 3px 0 0 #ea580c;
+}
+
+.data-table.hoverable tbody tr.row-conflict:hover {
+  background: #ffedd5;
 }
 
 .heat-bar {

@@ -5,6 +5,7 @@ import {
   fetchExample,
   fetchExamples,
   runN1,
+  runOpf,
   runPf,
   runReconfiguration,
   runShortCircuit,
@@ -17,6 +18,7 @@ import {
   clearPaintedResults,
   highlightBus,
   highlightContingency,
+  paintLmp,
   paintResults,
   paintShortCircuit,
   renderPfPanel,
@@ -24,6 +26,7 @@ import {
 } from './results';
 import { esc } from './analyses/format';
 import { renderN1 } from './analyses/n1';
+import { opfLmpDomain, renderOpf } from './analyses/opf';
 import { renderShortCircuit } from './analyses/shortcircuit';
 import { renderTimeseries } from './analyses/timeseries';
 import { renderTransient } from './analyses/transient';
@@ -44,12 +47,17 @@ const ID_PREFIX: Record<NodeType, string> = { Bus: 'bus', Load: 'load', Gen: 'ge
 
 const ANALYSIS_META: Record<AnalysisKind, { title: string; running: string; hint: string }> = {
   pf: { title: 'AC 潮流', running: 'AC 潮流计算中…', hint: '无需额外参数：直接对当前拓扑求解一次 AC 潮流。' },
+  opf: {
+    title: '最优潮流 / 经济调度',
+    running: '最优潮流求解中（AC-OPF）…',
+    hint: '',
+  },
   reconfig: {
     title: '网络重构 + DG 优化',
     running: '重构优化中（MINLP 求解，可能需要几十秒）…',
     hint: '无需额外参数：在可开断支路上搜索降损最优的辐射状运行方式。',
   },
-  n1: { title: 'N-1 开断扫描', running: 'N-1 扫描中…', hint: '无需额外参数：逐条断开在运支路，评估孤岛与失负荷。' },
+  n1: { title: 'N-1 开断扫描', running: 'N-1 扫描中…', hint: '' },
   timeseries: { title: '时序潮流', running: '时序潮流计算中…', hint: '' },
   transient: { title: '暂态稳定', running: '暂态仿真中…', hint: '' },
   shortcircuit: { title: '短路计算', running: '短路计算中…', hint: '' },
@@ -283,6 +291,8 @@ function addNode(type: NodeType): void {
 let analysis: AnalysisKind = 'pf';
 const paramValues: Record<string, string> = {};
 let findCct = false;
+// 转供恢复默认开：不开的话 N-1 只会告诉你「32 条全孤岛」，信息量近乎为零。
+let n1Restore = true;
 let disposeView: (() => void) | null = null;
 
 function loadParams(): void {
@@ -290,6 +300,7 @@ function loadParams(): void {
     const saved = JSON.parse(localStorage.getItem(PARAMS_KEY) ?? '{}') as Record<string, string>;
     Object.assign(paramValues, saved);
     findCct = saved.__find_cct === '1';
+    if (saved.__n1_restore !== undefined) n1Restore = saved.__n1_restore === '1';
   } catch {
     /* 损坏则用默认值 */
   }
@@ -299,7 +310,10 @@ function loadParams(): void {
 
 function saveParams(): void {
   try {
-    localStorage.setItem(PARAMS_KEY, JSON.stringify({ ...paramValues, __find_cct: findCct ? '1' : '0' }));
+    localStorage.setItem(
+      PARAMS_KEY,
+      JSON.stringify({ ...paramValues, __find_cct: findCct ? '1' : '0', __n1_restore: n1Restore ? '1' : '0' }),
+    );
     localStorage.setItem(ANALYSIS_KEY, analysis);
   } catch {
     /* 配额满不致命 */
@@ -333,14 +347,30 @@ function renderParamBar(): void {
   const { buses, branches } = topologyOptions();
   bar.innerHTML = '';
 
-  if (analysis === 'pf' || analysis === 'reconfig' || analysis === 'n1') {
+  if (analysis === 'pf' || analysis === 'reconfig') {
     bar.hidden = true;
     bar.innerHTML = '';
     return;
   }
   bar.hidden = false;
 
-  if (analysis === 'shortcircuit') {
+  if (analysis === 'opf') {
+    // OPF 没有请求级参数：成本曲线是机组自身的属性，在检查器的「发电成本」分节里填。
+    bar.innerHTML = `
+      <span class="param-title">经济调度</span>
+      <span class="param-hint muted small">无需额外参数。发电成本 C(P) = c₂·P² + c₁·P + c₀ 在<strong>检查器 → 选中电源/DG → 「发电成本」</strong>里填；
+      留空则按后端默认 c₂=0, c₁=1, c₀=0（各机组同一条成本曲线，经济调度会退化成"随便怎么分摊都一样"）。</span>
+    `;
+  } else if (analysis === 'n1') {
+    bar.innerHTML = `
+      <span class="param-title">N-1 参数</span>
+      <label class="param param-bool"><input id="n1-restore" type="checkbox" ${
+        n1Restore ? 'checked' : ''
+      } /> 尝试转供恢复</label>
+      <span class="param-hint muted small">勾选后：对每条造成孤岛的开断，尝试闭合<strong>一条</strong>常开联络开关把孤岛接回电源并重跑潮流，
+      给出恢复后的网损 / 最低电压 / 是否越限 / 剩余失负荷。不勾选则只做基础开断扫描。</span>
+    `;
+  } else if (analysis === 'shortcircuit') {
     bar.innerHTML = `
       <span class="param-title">短路参数</span>
       <label class="param"><span class="param-name">故障母线</span>
@@ -393,7 +423,9 @@ function renderParamBar(): void {
     const input = node as HTMLInputElement | HTMLSelectElement;
     if (input.type === 'checkbox') {
       input.addEventListener('change', () => {
-        findCct = (input as HTMLInputElement).checked;
+        const checked = (input as HTMLInputElement).checked;
+        if (input.id === 'n1-restore') n1Restore = checked;
+        else findCct = checked;
         saveParams();
       });
       return;
@@ -517,6 +549,27 @@ async function handleRun(): Promise<void> {
         toast(`潮流完成：网损 ${lossKw.toFixed(1)} kW`, 'success');
         break;
       }
+      case 'opf': {
+        setRunning(true, meta.running);
+        const opf = await runOpf(topo);
+        clearPaintedResults(board);
+        // 支路格式与潮流同构：先用同一套潮流着色画支路方向/负载率，再用 LMP 覆盖母线颜色
+        paintResults(board, { status: opf.status, type: opf.type, buses: opf.buses, branches: opf.branches, summary: { loss_mw: opf.summary.loss_mw, vmin_pu: opf.summary.vmin_pu, vmin_bus: opf.summary.vmin_bus, violation_buses: opf.summary.violation_buses, overloaded_branches: opf.summary.overloaded_branches, solve_time_s: opf.summary.solve_time_s, termination_status: opf.summary.termination_status } });
+        const domain = opfLmpDomain(opf);
+        paintLmp(board, opf.buses, domain);
+        resetView();
+        renderOpf($('#results-body'), opf, domain);
+        const so = opf.summary;
+        pushHistory(
+          '最优潮流',
+          `总成本 ${so.cost_total_yuan_per_h.toFixed(2)} 元/h · 发电 ${so.gen_total_mw.toFixed(3)} MW · LMP ${so.lmp_min_yuan_per_mwh.toFixed(4)} → ${so.lmp_max_yuan_per_mwh.toFixed(4)} 元/MWh`,
+        );
+        toast(
+          `最优潮流完成：${so.cost_total_yuan_per_h.toFixed(2)} 元/h（${so.termination_status}）`,
+          'success',
+        );
+        break;
+      }
       case 'reconfig': {
         setRunning(true, meta.running);
         const rc = await runReconfiguration(topo);
@@ -540,17 +593,35 @@ async function handleRun(): Promise<void> {
         break;
       }
       case 'n1': {
-        setRunning(true, meta.running);
-        const res = await runN1(topo);
+        const restore = (($('#n1-restore') as HTMLInputElement | null)?.checked ?? n1Restore) === true;
+        setRunning(true, restore ? 'N-1 扫描 + 转供恢复计算中…' : meta.running);
+        // ⚠️ 请求体必须是 {topology, restore}；max_ties 已被后端删除，带上直接 422。
+        const res = await runN1({ topology: topo, restore });
         clearPaintedResults(board);
         resetView();
-        renderN1($('#results-body'), res, { onHoverBranch: (entry) => highlightContingency(board, entry) });
+        renderN1($('#results-body'), res, {
+          onHoverBranch: (entry, rest) => highlightContingency(board, entry, rest),
+        });
         disposeView = () => highlightContingency(board, null);
+        const rs = res.summary;
+        const conflicts = (res.restoration ?? []).filter(
+          (r) => r.restorable && r.fully_restored && r.violated === true,
+        ).length;
+        // 判据必须与 renderN1 的 hasRestore 完全一致（length > 0，不是真值判断）：
+        // 全网状拓扑开 restore 但零孤岛时后端给 restoration: []，表格会退回 7 列旧形态，
+        // 此处若用真值判断（[] 为真）就会弹一条「可转供恢复 0 / 不可恢复 0」的自相矛盾提示。
+        const hasRestore = (res.restoration?.length ?? 0) > 0;
         pushHistory(
           'N-1',
-          `${res.summary.n_branches} 条支路：孤岛 ${res.summary.n_islanding} · 最大失负荷 ${res.summary.max_lost_load_mw.toFixed(3)} MW @ ${res.summary.worst_branch ?? '—'}`,
+          `${rs.n_branches} 条支路：孤岛 ${rs.n_islanding} · 最大失负荷 ${rs.max_lost_load_mw.toFixed(3)} MW @ ${rs.worst_branch ?? '—'}` +
+            (hasRestore ? ` · 可恢复 ${rs.n_restorable ?? 0}/${rs.n_branches}（其中 ${conflicts} 条恢复后越限）` : ''),
         );
-        toast(`N-1 完成：最严重 ${res.summary.worst_branch ?? '—'}（失负荷 ${res.summary.max_lost_load_mw.toFixed(3)} MW）`, 'success');
+        toast(
+          hasRestore
+            ? `N-1 完成：可转供恢复 ${rs.n_restorable ?? 0} / 不可恢复 ${rs.n_unrestorable ?? 0}${conflicts ? `，${conflicts} 条恢复后越限` : ''}`
+            : `N-1 完成：最严重 ${rs.worst_branch ?? '—'}（失负荷 ${rs.max_lost_load_mw.toFixed(3)} MW）`,
+          conflicts ? 'info' : 'success',
+        );
         break;
       }
       case 'timeseries': {

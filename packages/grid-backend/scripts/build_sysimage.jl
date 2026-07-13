@@ -15,6 +15,23 @@ Pkg.add("PackageCompiler")
 using PackageCompiler
 
 mkpath(OUT_DIR)
+
+# 前置检查：Windows 上无法覆盖已被映射进运行中进程的 DLL。
+# 服务如果正用 `-J<这个镜像>` 跑着，构建会一路跑到最后的链接步骤才失败
+# （g++ 写不了输出文件，报一堆看不懂的 ProcessExited(1)），白等二十分钟。
+# 在这里花一秒钟试写一下，把它变成一句人话。
+if isfile(OUT)
+    try
+        open(OUT, "a") do _ end
+    catch
+        error("""
+              sysimage 文件被占用，无法覆盖：$OUT
+              多半是配电网内核正用 `-J$(basename(OUT))` 运行中（scripts/start-all.ps1 会自动带上它）。
+              先停掉 8123 端口上的 julia 进程，再重新构建；构建完再启动即可。
+              """)
+    end
+end
+
 @info "开始构建 sysimage（约 10-40 分钟）" project = PROJECT output = OUT
 
 create_sysimage(

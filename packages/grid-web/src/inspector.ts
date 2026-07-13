@@ -32,6 +32,33 @@ const DYNAMIC_FIELDS: FieldDef[] = [
   { key: 'd_pu', label: '阻尼系数 D', unit: 'pu', kind: 'number', min: 0, placeholder: '0' },
 ];
 
+/**
+ * 发电成本曲线 C(P) = c2·P² + c1·P + c0（P 单位 MW），仅最优潮流 / 经济调度用到。
+ * 边际成本 dC/dP = 2·c2·P + c1 —— c1 就是边际成本曲线的截距，c2 决定它的斜率。
+ * 留空 = 后端默认（c2=0, c1=1, c0=0），即"所有机组同一条平坦成本曲线"，经济调度会退化。
+ */
+export const COST_DEFAULTS: Record<string, number> = { cost_c2: 0, cost_c1: 1, cost_c0: 0 };
+
+/**
+ * min: 0 是**前端有意收紧**，不是照抄后端：活后端实测接受负成本系数
+ * （econ2 里把 gen-2 设成 c₁=-5 → HTTP 200，gen-2 被顶到 Pmax，总成本 -399.91 元/h）。
+ * 负边际成本在教学上没有对应物，只会让"谁在定价"这条主线彻底崩掉，所以在输入端就拦住。
+ */
+const COST_FIELDS: FieldDef[] = [
+  {
+    key: 'cost_c2',
+    label: '二次项 c₂',
+    unit: '元/MW²h',
+    kind: 'number',
+    min: 0,
+    placeholder: '0',
+    section: '发电成本',
+    help: 'C(P) = c₂·P² + c₁·P + c₀（P 单位 MW）；边际成本 = 2·c₂·P + c₁。留空按后端默认 c₂=0, c₁=1, c₀=0',
+  },
+  { key: 'cost_c1', label: '一次项 c₁（边际成本截距）', unit: '元/MWh', kind: 'number', min: 0, placeholder: '1' },
+  { key: 'cost_c0', label: '固定项 c₀', unit: '元/h', kind: 'number', min: 0, placeholder: '0' },
+];
+
 const BUS_FIELDS: FieldDef[] = [
   { key: 'kv', label: '额定电压', unit: 'kV', kind: 'number', required: true, min: 0.001 },
   { key: 'is_slack', label: '平衡节点', kind: 'bool', help: '全网必须恰有一个平衡节点' },
@@ -62,6 +89,7 @@ const GEN_FIELDS: FieldDef[] = [
       { value: '0', label: '停运' },
     ],
   },
+  ...COST_FIELDS,
   ...DYNAMIC_FIELDS,
 ];
 
