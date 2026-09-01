@@ -16,29 +16,29 @@
 
 ## 技术栈
 
-- 前端：`React 19`、`TypeScript`、`Vite`、`@xyflow/react`、`framer-motion`、`react-plotly.js`
+- 前端：`React 19`、`TypeScript`、`Vite`、`@xyflow/react`、`framer-motion`、`Plotly.js basic dist`
 - 后端：`Julia`（JCircuitServer），HTTP 接口提供仿真服务
 
 ## 快速开始（Windows）
 
 1. 安装依赖
-   - 安装 Node.js（≥ 18）
-   - 安装 Julia（≥ 1.9）
-2. 启动后端（根目录）
+   - 安装 Node.js（≥ 20.19）
+   - 安装 Julia（≥ 1.10）
+2. 启动后端（仓库根目录）
    ```powershell
-   julia --project=server server/start_server.jl
+   julia --project=packages/lab-backend packages/lab-backend/run_server.jl
    ```
-3. 启动前端（`web` 目录）
+3. 启动前端（仓库根目录）
    ```powershell
    npm install
-   npm run dev
+   npm run dev:lab
    ```
 4. 打开编辑器
-   - 浏览器访问 `http://localhost:3000/editor`
+   - 浏览器访问 Vite 输出的本地地址（通常为 `http://127.0.0.1:3000/editor`）
 
 ## 环境变量
 
-- `VITE_API_BASE_URL`：后端服务地址，缺省为 `http://localhost:8080`
+- `VITE_API_BASE_URL`：仿真 API 基地址；开发服务器会把 `/api/lab` 代理到 `127.0.0.1:8080`
 
 ## 使用说明
 
@@ -54,19 +54,15 @@
 ## 目录结构（关键部分）
 
 ```
-server/                      # Julia 仿真服务
-web/
-  ├── src/
-  │   ├── workspace/         # 编辑器工作区与顶栏
-  │   ├── simulation/        # 仿真请求、结果面板、映射与载荷构建
-  │   ├── canvas/            # 画布节点、连线类型
-  │   ├── circuit/           # 元件库与图标
-  │   ├── pages/Editor.tsx   # 路由入口页（仅保留编辑器）
-  │   ├── types/             # 类型定义
-  │   └── utils/             # 工具函数
-  ├── index.html             # 前端入口
-  ├── package.json           # 前端依赖与脚本
-  └── vite.config.ts         # Vite 配置
+packages/
+  lab-backend/               # Julia 仿真服务
+  lab-web/
+    ├── src/workspace/       # 编辑器工作区与顶栏
+    ├── src/simulation/      # 仿真请求、结果面板、映射与载荷构建
+    ├── src/canvas/          # 画布节点、连线类型
+    ├── src/circuit/         # 元件库与图标
+    ├── src/pages/Editor.tsx # 路由入口页
+    └── vite.config.ts       # Vite 配置
 ```
 
 ## 常见问题
@@ -78,13 +74,14 @@ web/
 ## 构建与预览
 
 ```powershell
-npm run build
-npm run preview
+npm run build:lab
+npm run preview -w @simulearn/lab-web
+npm run test:lab
 ```
 
 ## 维护说明
 
-- 已移除登录/注册/营销页面与测试文件，聚焦编辑器与仿真功能
+- 已移除登录/注册/营销页面，测试与源码同目录维护
 - 路由仅保留 `"/editor"`，`"/"` 重定向到编辑器页
 
 ## 许可证与贡献

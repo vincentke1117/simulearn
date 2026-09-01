@@ -4,6 +4,7 @@
 
 - `kind = "circuit"`（默认）: 电路网络仿真/解析
 - `kind = "control"`: 控制系统信号流仿真（Phase 1）
+- `kind = "mixed"`: 控制信号与电阻电路的准静态耦合仿真
 
 ## 当前能力
 
@@ -13,7 +14,7 @@
 - 使用 ModelingToolkit + DifferentialEquations 建模与求解
 - 返回统一响应：`{status, message, data}`
 
-### 控制分支（control，Phase 1）
+### 控制与混合分支
 
 支持控制块：
 
@@ -28,7 +29,8 @@
 
 主要规则：
 
-- 仅支持控制图（不支持 control/circuit 混合联立）
+- `kind = "control"` 仅接受纯控制图；控制/电路耦合图使用 `kind = "mixed"`
+- 混合仿真通过传感器与受控源桥接控制块和纯电阻电路；电感、电容等动态电路元件暂不参与
 - 每个必填输入端口必须且只能有 1 条输入线
 - 至少声明 1 个 `control_scope` 输出
 - 纯代数环会被拒绝（错误消息包含“代数环”）
@@ -38,13 +40,13 @@
 
 ```bash
 # 安装依赖
-julia --project=server -e 'using Pkg; Pkg.instantiate()'
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 # 运行测试
-julia --project=server -e 'using Pkg; Pkg.test()'
+julia --project=. -e 'using Pkg; Pkg.test()'
 
-# 启动服务（默认 0.0.0.0:8080）
-julia --project=server -e 'using JCircuitServer; bootstrap()'
+# 启动服务（默认 127.0.0.1:8080）
+julia --project=. run_server.jl
 ```
 
 ## 示例：控制 payload
@@ -69,4 +71,3 @@ julia --project=server -e 'using JCircuitServer; bootstrap()'
   "sim": { "t_stop": 2.0, "n_samples": 200 }
 }
 ```
-

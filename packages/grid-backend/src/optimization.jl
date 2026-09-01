@@ -15,6 +15,14 @@ export execute_reconfiguration, default_reconfiguration_optimizer
 
 const DEFAULT_BIGM_FLOW = 10.0
 
+function normalize_relative_gap(gap, objective, bound)
+    isfinite(gap) && return max(Float64(gap), 0.0)
+    if isfinite(objective) && isfinite(bound) && isapprox(objective, bound; rtol=1e-9, atol=1e-12)
+        return 0.0
+    end
+    return nothing
+end
+
 struct BranchData
     key::String
     name::String
@@ -72,6 +80,8 @@ function execute_reconfiguration(pm_data::Dict; optimizer=default_reconfiguratio
         throw(TopologyError("reconfiguration optimizer returned no solution"))
     end
 
+    primal = primal_status(model)
+    gap = normalize_relative_gap(relative_gap(model), objective_value(model), objective_bound(model))
     z_val = value.(dataset.z)
     pg_val = value.(dataset.pg)
     qg_val = value.(dataset.qg)
@@ -88,6 +98,9 @@ function execute_reconfiguration(pm_data::Dict; optimizer=default_reconfiguratio
         "loss_after_mw" => optimized_payload["summary"]["loss_mw"],
         "improvement_pct" => baseline_loss > 0 ? (baseline_loss - optimized_payload["summary"]["loss_mw"]) / baseline_loss * 100 : 0.0,
         "solve_time_s" => objective_runtime(model),
+        "termination_status" => string(termination),
+        "primal_status" => string(primal),
+        "relative_gap" => gap,
     )
 
     return Dict(

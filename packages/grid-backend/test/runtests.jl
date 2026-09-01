@@ -200,6 +200,18 @@ end
     @test response["data"]["type"] == "reconfiguration_dg"
     @test length(response["data"]["switch_schedule"]) == 1
     @test length(response["data"]["dg_dispatch"]) == 2
+    summary = response["data"]["summary"]
+    @test get(summary, "termination_status", nothing) in ("OPTIMAL", "LOCALLY_SOLVED")
+    @test get(summary, "primal_status", nothing) == "FEASIBLE_POINT"
+    @test get(summary, "relative_gap", nothing) isa Real
+    @test get(summary, "relative_gap", -1.0) >= 0
+end
+
+@testset "Reconfiguration relative gap serialization" begin
+    zero_gap = Optimization.normalize_relative_gap(NaN, 0.0, 0.0)
+    @test zero_gap == 0.0
+    @test Optimization.normalize_relative_gap(Inf, 1.0, 2.0) === nothing
+    @test JSON3.read(JSON3.write(Dict("relative_gap" => zero_gap)))["relative_gap"] == 0.0
 end
 
 @testset "Reconfiguration end-to-end (fixture)" begin

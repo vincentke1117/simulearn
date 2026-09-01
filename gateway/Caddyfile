@@ -5,7 +5,6 @@
 #           /grid/*     → 配电网实验室（grid-web 构建产物）
 #           /api/lab/*  → JCircuitServer（8080，前缀剥离：/api/lab/simulate → /simulate）
 #           /api/grid/* → JGDO/Oxygen（8123，前缀透传：后端路由本身就是 /api/grid/*）
-
 {
 	auto_https off
 	admin off
@@ -13,6 +12,10 @@
 
 http://127.0.0.1:8100 {
 	encode gzip
+
+	handle /healthz {
+		respond "ok" 200
+	}
 
 	handle /api/grid/* {
 		reverse_proxy 127.0.0.1:8123

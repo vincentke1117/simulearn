@@ -1,8 +1,8 @@
-import Plot from 'react-plotly.js'
 import type { Data, Layout, Shape } from 'plotly.js'
 
 import type { SimulationSignal, StepResponseMetrics } from '@/types/circuit'
 import { formatStepMetrics } from './format'
+import { Plot } from './Plot'
 
 export interface StepResponseChartProps {
   time: number[]

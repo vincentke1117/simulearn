@@ -129,15 +129,21 @@ export interface InspectorHooks {
 }
 
 export function renderInspector(container: HTMLElement, board: Board, cell: dia.Cell | null, hooks: InspectorHooks): void {
-  container.innerHTML = '';
+  container.replaceChildren();
   if (!cell || !cell.graph) {
-    container.innerHTML = '<p class="muted">未选中元件。点击画布中的元件查看/编辑参数。</p>';
+    const message = document.createElement('p');
+    message.className = 'muted';
+    message.textContent = '未选中元件。点击画布中的元件查看/编辑参数。';
+    container.appendChild(message);
     return;
   }
 
   const kind = cell.get('jgdoType') as string;
   if (kind === 'attach') {
-    container.innerHTML = '<p class="muted">设备挂接线（不参与计算）。删除它可解除设备与母线的挂接。</p>';
+    const message = document.createElement('p');
+    message.className = 'muted';
+    message.textContent = '设备挂接线（不参与计算）。删除它可解除设备与母线的挂接。';
+    container.appendChild(message);
     appendDeleteButton(container, hooks);
     return;
   }
@@ -152,13 +158,21 @@ export function renderInspector(container: HTMLElement, board: Board, cell: dia.
 
   const head = document.createElement('div');
   head.className = 'inspector-head';
-  head.innerHTML = `<span class="chip">${TYPE_TITLES[kind] ?? kind}</span><code>${cell.id}</code>`;
+  const chip = document.createElement('span');
+  chip.className = 'chip';
+  chip.textContent = TYPE_TITLES[kind] ?? kind;
+  const id = document.createElement('code');
+  id.textContent = String(cell.id);
+  head.append(chip, id);
   container.appendChild(head);
 
   if (!cell.isLink()) {
     const nameRow = document.createElement('label');
     nameRow.className = 'field';
-    nameRow.innerHTML = '<span class="field-label">名称</span>';
+    const nameLabel = document.createElement('span');
+    nameLabel.className = 'field-label';
+    nameLabel.textContent = '名称';
+    nameRow.appendChild(nameLabel);
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
     nameInput.value = String(cell.attr('label/text') ?? cell.id).replace(/ ★$/, '');

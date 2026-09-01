@@ -1,49 +1,67 @@
-# SimuLearn 一键启动：2 个 Julia 后端 + Caddy 网关
-# 用法：在仓库根目录运行  powershell -File scripts/start-all.ps1
-# 就绪后访问  http://127.0.0.1:8100
+[CmdletBinding()]
+param(
+    [string]$Root,
+    [ValidateRange(1, 3600)][int]$TimeoutSec = 240
+)
 
 $ErrorActionPreference = 'Stop'
-$root = Split-Path -Parent $PSScriptRoot
-Set-Location $root
-
-function Wait-Health {
-    param([string]$Url, [string]$Name, [int]$TimeoutSec = 240)
-    $sw = [Diagnostics.Stopwatch]::StartNew()
-    while ($sw.Elapsed.TotalSeconds -lt $TimeoutSec) {
-        try {
-            $resp = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 3 -Proxy $null
-            if ($resp.StatusCode -eq 200) { Write-Host "  [OK] $Name" -ForegroundColor Green; return $true }
-        } catch { }
-        Start-Sleep -Seconds 3
-    }
-    Write-Host "  [超时] $Name（$Url）" -ForegroundColor Red
-    return $false
+if ([string]::IsNullOrWhiteSpace($Root)) {
+    $Root = Split-Path -Parent $PSScriptRoot
 }
+$modulePath = Join-Path $PSScriptRoot 'stack-lifecycle.psm1'
+Import-Module $modulePath -Force
 
-Write-Host "启动 SimuLearn 服务栈（首启含 Julia 编译，约 1-2 分钟）..." -ForegroundColor Cyan
+$mutex = $null
+$paths = $null
+$ownsState = $false
+$records = New-Object System.Collections.ArrayList
+try {
+    $mutex = Enter-StackMutex
+    $paths = Get-StackPaths -Root $Root
+    Assert-StackPrerequisites -Paths $paths
+    Assert-NoRunningStack -StatePath $paths.StatePath
+    Assert-StackPortsAvailable
+    Invoke-CaddyValidation -Paths $paths
+    $launchArguments = Get-StackLaunchArguments -Paths $paths
 
-# 1. 配电网内核（JGDO / Oxygen, 127.0.0.1:8123）；有 sysimage 就用（启动 30s → 7s，构建见 build_sysimage.jl）
-$gridSysimage = Join-Path $root 'packages\grid-backend\sysimage\grid.sysimage.dll'
-$gridArgs = @('--project=packages/grid-backend', 'packages/grid-backend/scripts/serve.jl')
-if (Test-Path $gridSysimage) { $gridArgs = @("-J$gridSysimage") + $gridArgs }
-Start-Process julia -ArgumentList $gridArgs -WorkingDirectory $root -WindowStyle Minimized
-# 2. 电路内核（JCircuitServer, 127.0.0.1:8080）
-Start-Process julia -ArgumentList '--project=packages/lab-backend', 'packages/lab-backend/run_server.jl' `
-    -WorkingDirectory $root -WindowStyle Minimized
-# 3. 网关（Caddy, 127.0.0.1:8100）
-Start-Process "$root\gateway\bin\caddy.exe" -ArgumentList 'run', '--config', 'gateway/Caddyfile' `
-    -WorkingDirectory $root -WindowStyle Minimized
+    Write-Host '启动 SimuLearn 服务栈（首启含 Julia 编译，约 1-2 分钟）...' -ForegroundColor Cyan
 
-$ok = $true
-$ok = (Wait-Health 'http://127.0.0.1:8100/' '网关 :8100') -and $ok
-$ok = (Wait-Health 'http://127.0.0.1:8123/health' '配电网内核 :8123') -and $ok
-$ok = (Wait-Health 'http://127.0.0.1:8080/health' '电路内核 :8080') -and $ok
+    [void]$records.Add((Start-TrackedProcess -Role 'grid' -FilePath $paths.JuliaExecutable `
+        -ArgumentList $launchArguments.Grid -WorkingDirectory $paths.Root -RunDirectory $paths.RunDirectory))
+    Write-StackState -StatePath $paths.StatePath -Records @($records)
+    $ownsState = $true
 
-if ($ok) {
-    Write-Host ""
-    Write-Host "SimuLearn 就绪 → http://127.0.0.1:8100" -ForegroundColor Green
-    Write-Host "  电路实验室   http://127.0.0.1:8100/circuit/"
-    Write-Host "  配电网实验室 http://127.0.0.1:8100/grid/"
-} else {
-    Write-Host "部分服务未就绪，请查看各进程窗口日志。" -ForegroundColor Yellow
+    [void]$records.Add((Start-TrackedProcess -Role 'lab' -FilePath $paths.JuliaExecutable `
+        -ArgumentList $launchArguments.Lab `
+        -WorkingDirectory $paths.Root -RunDirectory $paths.RunDirectory))
+    Write-StackState -StatePath $paths.StatePath -Records @($records)
+
+    [void]$records.Add((Start-TrackedProcess -Role 'gateway' -FilePath $paths.CaddyExecutable `
+        -ArgumentList $launchArguments.Gateway `
+        -WorkingDirectory $paths.Root -RunDirectory $paths.RunDirectory))
+    Write-StackState -StatePath $paths.StatePath -Records @($records)
+
+    $endpoints = @(
+        [pscustomobject]@{ Name = 'gateway'; Url = 'http://127.0.0.1:8100/healthz' },
+        [pscustomobject]@{ Name = 'lab backend through gateway'; Url = 'http://127.0.0.1:8100/api/lab/health' },
+        [pscustomobject]@{ Name = 'grid backend through gateway'; Url = 'http://127.0.0.1:8100/api/grid/health' }
+    )
+    Wait-StackHealthy -Records @($records) -Endpoints $endpoints -TimeoutSec $TimeoutSec
+
+    Write-Host ''
+    Write-Host 'SimuLearn 就绪 → http://127.0.0.1:8100' -ForegroundColor Green
+    Write-Host '  电路实验室   http://127.0.0.1:8100/circuit/'
+    Write-Host '  配电网实验室 http://127.0.0.1:8100/grid/'
+    Write-Host '  停止服务     powershell -File scripts/stop-all.ps1'
+}
+catch {
+    if ($records.Count -gt 0) {
+        Write-Warning '启动失败，正在回滚本次启动的进程...'
+        Stop-TrackedProcesses -Records @($records)
+    }
+    if ($ownsState -and $null -ne $paths) { Clear-StackState -StatePath $paths.StatePath }
+    throw
+}
+finally {
+    Exit-StackMutex -Mutex $mutex
 }

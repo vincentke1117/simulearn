@@ -1,4 +1,4 @@
-import { dia, highlighters, shapes } from '@joint/core';
+import { dia, highlighters } from '@joint/core';
 import { createLink, defaultLinkElec, jgdoNamespace, styleLink } from './shapes';
 import type { NodeType } from './types';
 

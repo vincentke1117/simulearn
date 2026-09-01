@@ -14,28 +14,28 @@ A browser-based editor for circuit design and simulation. Supports common analys
 
 ## Tech Stack
 
-- Frontend: `React 19`, `TypeScript`, `Vite`, `@xyflow/react`, `framer-motion`, `react-plotly.js`
+- Frontend: `React 19`, `TypeScript`, `Vite`, `@xyflow/react`, `framer-motion`, `Plotly.js basic dist`
 - Backend: `Julia` (JCircuitServer), HTTP simulation service
 
 ## Quick Start (Windows)
 
 1. Requirements
-   - Node.js ≥ 18
-   - Julia ≥ 1.9
-2. Start backend (project root):
+   - Node.js ≥ 20.19
+   - Julia ≥ 1.10
+2. Start the backend (repository root):
    ```powershell
-   julia --project=server server/start_server.jl
+   julia --project=packages/lab-backend packages/lab-backend/run_server.jl
    ```
-3. Start frontend (`web/`):
+3. Start the frontend (repository root):
    ```powershell
    npm install
-   npm run dev
+   npm run dev:lab
    ```
-4. Open the editor: `http://localhost:3000/editor`
+4. Open the Vite URL shown in the terminal (normally `http://127.0.0.1:3000/editor`)
 
 ## Environment Variables
 
-- `VITE_API_BASE_URL`: backend base URL, defaults to `http://localhost:8080`
+- `VITE_API_BASE_URL`: simulation API base URL; the development server proxies `/api/lab` to `127.0.0.1:8080`
 
 ## Usage
 
@@ -51,22 +51,15 @@ A browser-based editor for circuit design and simulation. Supports common analys
 ## Structure (key parts)
 
 ```
-server/                      # Julia backend
-web/
-  ├── src/
-  │   ├── workspace/         # editor workspace & top bar
-  │   ├── simulation/        # requests, result panel, mapping & payload
-  │   ├── canvas/            # nodes, custom edges
-  │   ├── circuit/           # component library & icons
-  │   ├── pages/Editor.tsx   # router entry (editor only)
-  │   ├── types/             # TypeScript types
-  │   └── utils/             # utilities
-  ├── README.md              # Chinese docs
-  ├── README.en.md           # English docs
-  ├── DEVELOPER_GUIDE.md     # Developer Guide (CN)
-  ├── DEVELOPER_GUIDE.en.md  # Developer Guide (EN)
-  ├── PERFORMANCE_OPTIMIZATION.md      # Performance (CN)
-  └── PERFORMANCE_OPTIMIZATION.en.md   # Performance (EN)
+packages/
+  lab-backend/               # Julia simulation service
+  lab-web/
+    ├── src/workspace/       # editor workspace and top bar
+    ├── src/simulation/      # requests, results, mapping, and payloads
+    ├── src/canvas/          # nodes and custom edges
+    ├── src/circuit/         # component library and icons
+    ├── src/pages/Editor.tsx # router entry
+    └── vite.config.ts       # Vite configuration
 ```
 
 ## Troubleshooting
@@ -78,8 +71,9 @@ web/
 ## Build & Preview
 
 ```powershell
-npm run build
-npm run preview
+npm run build:lab
+npm run preview -w @simulearn/lab-web
+npm run test:lab
 ```
 
 ## License & Contributing

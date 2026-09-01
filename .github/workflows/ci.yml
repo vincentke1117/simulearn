@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lifecycle:
+    name: Windows lifecycle
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Test PowerShell lifecycle scripts
+        shell: powershell
+        run: |
+          $result = Invoke-Pester -Path tests/scripts/lifecycle.Tests.ps1 -PassThru
+          if ($result.FailedCount -gt 0) { exit 1 }
+
+  web:
+    name: Web
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20.19.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint active packages
+        run: npm run lint
+
+      - name: Typecheck and test active packages
+        run: npm run check
+
+      - name: Build active packages
+        run: npm run build
+
+      - name: Enforce bundle budgets
+        run: npm run check:bundle
+
+  julia:
+    name: Julia (${{ matrix.name }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: lab-backend
+            project: packages/lab-backend
+          - name: grid-backend
+            project: packages/grid-backend
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: julia-actions/setup-julia@4c0cb0fce8556fdb04a90347310e5db8b1f98fb9 # v2.7.0
+        with:
+          version: '1.12.1'
+
+      - uses: julia-actions/cache@d10a6fd8f31b12404a54613ebad242900567f2b9 # v2.1.0
+        with:
+          cache-name: julia-${{ matrix.name }}
+
+      - name: Instantiate
+        run: julia --color=yes --project="${{ matrix.project }}" -e 'using Pkg; Pkg.instantiate()'
+
+      - name: Test
+        run: julia --color=yes --project="${{ matrix.project }}" -e 'using Pkg; Pkg.test(; coverage=false)'

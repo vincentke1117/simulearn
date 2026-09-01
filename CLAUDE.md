@@ -45,7 +45,7 @@
 npm run build
 
 # Test
-npm test
+npm run check
 
 # Lint
 npm run lint

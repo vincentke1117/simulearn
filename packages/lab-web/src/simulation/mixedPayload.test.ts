@@ -72,11 +72,81 @@ describe('buildMixedSimulationPayload', () => {
 
     const result = buildMixedSimulationPayload(nodes, edges, settings)
 
-    expect(result.ok).toBe(true)
-    expect(result.payload?.kind).toBe('mixed')
-    expect(result.payload?.bridges).toHaveLength(2)
-    expect(result.payload?.outputs).toHaveLength(1)
-    expect(result.payload?.circuit.components.some((component) => component.id === 'R1')).toBe(true)
+    expect(result).toEqual({
+      ok: true,
+      errors: [],
+      payload: {
+        kind: 'mixed',
+        blocks: [
+          { id: 'STEP1', type: 'control_step', parameters: { amplitude: 1, offset: 0, startTime: 0 } },
+          { id: 'SUM1', type: 'control_sum', parameters: { sign1: 1, sign2: -1 } },
+          { id: 'K1', type: 'control_gain', parameters: { gain: 1 } },
+          { id: 'CVS1', type: 'controlled_voltage_source', parameters: { gain: 1 } },
+          { id: 'VSEN1', type: 'voltage_sensor', parameters: {} },
+          { id: 'SCOPE1', type: 'control_scope', parameters: {} },
+        ],
+        edges: [
+          { id: 'sig-1', source: 'STEP1', target: 'SUM1', sourceHandle: 'out', targetHandle: 'in1' },
+          { id: 'sig-2', source: 'VSEN1', target: 'SUM1', sourceHandle: 'out', targetHandle: 'in2' },
+          { id: 'sig-3', source: 'SUM1', target: 'K1', sourceHandle: 'out', targetHandle: 'in' },
+          { id: 'sig-4', source: 'K1', target: 'CVS1', sourceHandle: 'out', targetHandle: 'in' },
+          { id: 'sig-5', source: 'VSEN1', target: 'SCOPE1', sourceHandle: 'out', targetHandle: 'in' },
+        ],
+        outputs: [{ id: 'SCOPE1:in', blockId: 'SCOPE1', handle: 'in', label: 'Scope SCOPE1' }],
+        bridges: [
+          { blockId: 'CVS1', positiveNet: 'n1', negativeNet: 'gnd' },
+          { blockId: 'VSEN1', positiveNet: 'n2', negativeNet: 'gnd' },
+        ],
+        circuit: {
+          components: [
+            { id: 'R1', type: 'resistor', parameters: { value: 1000 }, connections: { p: 'n1', n: 'n2' } },
+            { id: 'R2', type: 'resistor', parameters: { value: 1000 }, connections: { p: 'n2', n: 'gnd' } },
+            { id: 'G1', type: 'ground', parameters: {}, connections: { gnd: 'gnd' } },
+          ],
+          nets: [
+            { name: 'n1', nodes: [['CVS1', 'pos'], ['R1', 'p']] },
+            { name: 'n2', nodes: [['R1', 'n'], ['R2', 'p'], ['VSEN1', 'p']] },
+            { name: 'gnd', nodes: [['CVS1', 'neg'], ['G1', 'gnd'], ['R2', 'n'], ['VSEN1', 'n']] },
+          ],
+        },
+        sim: { t_stop: 1, n_samples: 100 },
+      },
+    })
+  })
+
+  it('preserves settings errors before the empty-canvas early return', () => {
+    const result = buildMixedSimulationPayload([], [], { tStop: 0, nSamples: 1.5 })
+
+    expect(result).toEqual({
+      ok: false,
+      errors: [
+        '仿真时长必须大于 0',
+        '采样点数至少为 2 且必须为整数',
+        '请先在画布中放置元件',
+      ],
+    })
+  })
+
+  it('preserves edge-validation error order', () => {
+    const nodes = [
+      createNode('STEP1', 'control_step', { amplitude: 1, offset: 0, startTime: 0 }),
+      createNode('CVS1', 'controlled_voltage_source', { gain: 1 }),
+      createNode('R1', 'resistor', { value: 1000 }),
+    ]
+    const edges: Edge[] = [
+      { id: 'missing-handles', source: 'STEP1', target: 'CVS1' },
+      createEdge('missing-node', 'STEP1', 'out', 'UNKNOWN', 'in'),
+      createEdge('cross-domain', 'STEP1', 'out', 'R1', 'p'),
+    ]
+
+    const result = buildMixedSimulationPayload(nodes, edges, settings)
+
+    expect(result.ok).toBe(false)
+    expect(result.errors.slice(0, 3)).toEqual([
+      '连线 missing-handles 缺少端口信息',
+      '连线 missing-node 引用了不存在的元件',
+      '连线 cross-domain 不能跨域连接（电气端口与信号端口不能直接相连）',
+    ])
   })
 
   it('rejects direct signal-to-electrical cross-domain connections', () => {

@@ -14,12 +14,15 @@
 ```powershell
 # 0. 首次：安装依赖 + 构建前端（Julia 环境按 Manifest 精确锁定）
 npm install
-npm run build:lab && npm run build -w @simulearn/grid-web
+npm run build
 julia --project=packages/lab-backend  -e "using Pkg; Pkg.instantiate()"
 julia --project=packages/grid-backend -e "using Pkg; Pkg.instantiate()"
 
 # 1. 一键启动（2 个 Julia 后端 + 网关）
 powershell -File scripts/start-all.ps1
+
+# 2. 安全停止（按网关 → 后端的逆序停止；重复执行也安全）
+powershell -File scripts/stop-all.ps1
 ```
 
 就绪后访问 **<http://127.0.0.1:8100>**。启动约 1.5 分钟（电路内核会在开始监听前跑一遍**预热**），之后所有分析都是热的。
@@ -53,8 +56,10 @@ packages/
   lab-backend/      电路仿真内核（Julia：MTK 9 / DiffEq 7，Manifest 锁定）
   grid-web/         配电网实验室前端（TypeScript + JointJS v4）
   grid-backend/     配电网内核（Julia：PowerModels 0.21 / JuMP，Manifest 锁定；含 IEEE33 金标准测试）
-scripts/start-all.ps1   一键启动编排
-src/                旧平台壳（全 mock，待重建，勿在其上开发）
+scripts/start-all.ps1   一键启动编排（端口预检、健康检查、失败回滚）
+scripts/stop-all.ps1    安全停止由启动脚本记录的进程
+scripts/check-bundle.mjs 前端产物体积门禁
+src/                旧平台壳（仅通过 `*:legacy` 脚本显式运行）
 ```
 
 > **两个 Julia 内核必须保持独立进程**：MTK 9 的 compat 钉死 `DataStructures 0.18` 而 PowerModels 栈需要 0.19，合并环境在依赖层面不可解。产品统一靠网关，不靠进程合一。
@@ -62,7 +67,10 @@ src/                旧平台壳（全 mock，待重建，勿在其上开发）
 ## 开发
 
 ```bash
-npm run check          # 门禁：两个前端的类型检查 + vitest（lab 66 例 / grid 64 例）
+npm run lint           # 两个活跃前端的严格 ESLint 门禁（零 warning）
+npm run check          # 两个活跃前端的类型检查 + vitest
+npm run build          # 构建两个活跃前端
+npm run check:bundle   # 校验首屏、异步块与总体积预算
 npm run dev:lab        # lab-web 开发服务器（/api/lab 自动代理到 8080）
 npm run dev -w @simulearn/grid-web   # grid-web 开发服务器（/api 代理到 8123）
 julia --project=packages/grid-backend -e "using Pkg; Pkg.test()"   # 含 IEEE33 / SMIB 金标准断言
@@ -72,7 +80,7 @@ julia --project=packages/lab-backend  -e "using Pkg; Pkg.test()"
 契约要点：
 
 - 统一响应封套 `{status, code?, message, data}`；业务错误码分域 `GRID_*` / `LAB_*`。
-- `contracts/{grid,lab}/*.json` 是两个内核共享的**金标准契约夹具**（grid 69 断言 / lab 92 断言），数值全部对拍解析解——改内核先看它红不红。
+- `contracts/{grid,lab}/*.json` 是两个内核共享的**金标准契约夹具**，数值全部对拍解析解——改内核先看它红不红。
 - 工程数据 localStorage 键一律 `slp:<module>:*` 命名空间；两后端只绑 `127.0.0.1`，跨域由网关同源化解决。
 - lab-web 用 BrowserRouter，其 `basename` 取自 Vite `base`（构建时为 `/circuit/`），网关侧配套 `try_files` 回退——两者必须一起改，否则刷新深链 404。
 

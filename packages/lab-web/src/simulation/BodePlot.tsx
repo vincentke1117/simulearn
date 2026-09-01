@@ -1,7 +1,7 @@
-import Plot from 'react-plotly.js'
 import type { Data, Layout } from 'plotly.js'
 
 import type { FrequencySweepResult } from '@/types/circuit'
+import { Plot } from './Plot'
 
 const PROBE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#06b6d4', '#ec4899', '#84cc16']
 
