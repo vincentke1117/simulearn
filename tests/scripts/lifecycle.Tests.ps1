@@ -1,4 +1,4 @@
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+﻿$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $modulePath = Join-Path $repoRoot 'scripts\stack-lifecycle.psm1'
 $startPath = Join-Path $repoRoot 'scripts\start-all.ps1'
 $stopPath = Join-Path $repoRoot 'scripts\stop-all.ps1'
@@ -23,6 +23,20 @@ Describe 'SimuLearn stack lifecycle artifacts' {
 
         $LASTEXITCODE | Should Be 0
         ($output -join "`n") | Should Match 'SimuLearn'
+    }
+
+    It 'saves every non-ASCII PowerShell script as UTF-8 with BOM' {
+        # Windows PowerShell 5.1 reads BOM-less scripts in the system ANSI code page: on English systems
+        # (GitHub runners, many student PCs) UTF-8 Chinese turns into quote-like characters and breaks parsing.
+        $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+        $offenders = @(Get-ChildItem -Path (Join-Path $repoRoot 'scripts'), (Join-Path $repoRoot 'tests\scripts') -Recurse -File -Include '*.ps1', '*.psm1' |
+            Where-Object {
+                $bytes = [IO.File]::ReadAllBytes($_.FullName)
+                $hasBom = $bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF
+                $nonAscii = @($bytes | Where-Object { $_ -gt 127 }).Count -gt 0
+                $nonAscii -and -not $hasBom
+            } | ForEach-Object { $_.Name })
+        ($offenders -join ', ') | Should Be ''
     }
 
     It 'exposes a gateway-owned health endpoint' {
