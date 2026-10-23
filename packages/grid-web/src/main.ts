@@ -36,13 +36,51 @@ import { exportTopology, importTopology, shouldBeSlack } from './topologyio';
 import type { AnalysisKind, NodeType, ReconfigResult, Topology } from './types';
 import { isDynamicMachine, validateForAnalysis, validateTopology } from './validation';
 import { unwrapProjectFile, wrapGridProject } from './envelope';
+import {
+  embedQuery,
+  experimentKeyPrefix,
+  isEmbedHash,
+  projectFingerprint,
+  startEmbed,
+  type EmbedWindow,
+  type LoadMessage,
+} from './embed';
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 
-const DRAFT_KEY = 'slp:grid:draft-v1';
-const HISTORY_KEY = 'slp:grid:history-v1';
-const ANALYSIS_KEY = 'slp:grid:analysis-v1';
-const PARAMS_KEY = 'slp:grid:params-v1';
+// 嵌入模式（知帆拓展，#/embed）：只留实验需要的界面，拓扑锁定（设计记录 D19）
+const embedMode = isEmbedHash(location.hash);
+
+// 本地存储命名空间：平时是 slp:grid:；嵌入模式按实验隔离（slp:grid:exp:<实验>:），
+// 收到宿主的实验之前一律不落盘（约定 zhifan-ext/1 §4）。
+let storagePrefix: string | null = embedMode ? null : 'slp:grid:';
+
+function readStore(name: string): string | null {
+  if (storagePrefix === null) return null;
+  try {
+    return localStorage.getItem(storagePrefix + name);
+  } catch {
+    return null;
+  }
+}
+
+function writeStore(name: string, value: string): void {
+  if (storagePrefix === null) return;
+  try {
+    localStorage.setItem(storagePrefix + name, value);
+  } catch {
+    /* 配额满、存储被禁用都不致命 */
+  }
+}
+
+function removeStore(name: string): void {
+  if (storagePrefix === null) return;
+  try {
+    localStorage.removeItem(storagePrefix + name);
+  } catch {
+    /* 同上 */
+  }
+}
 const ID_PREFIX: Record<NodeType, string> = { Bus: 'bus', Load: 'load', Gen: 'gen', DG: 'dg' };
 
 const ANALYSIS_META: Record<AnalysisKind, { title: string; running: string; hint: string }> = {
@@ -81,7 +119,7 @@ interface HistoryEntry {
 
 function loadHistory(): HistoryEntry[] {
   try {
-    return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? '[]');
+    return JSON.parse(readStore('history-v1') ?? '[]');
   } catch {
     return [];
   }
@@ -90,7 +128,7 @@ function loadHistory(): HistoryEntry[] {
 function pushHistory(kind: string, text: string): void {
   const entries = loadHistory();
   entries.unshift({ ts: new Date().toLocaleString(), kind, text });
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, 15)));
+  writeStore('history-v1', JSON.stringify(entries.slice(0, 15)));
   renderHistory();
 }
 
@@ -115,6 +153,7 @@ const board = createBoard($('#canvas'), {
     renderInspector($('#inspector-body'), board, cell, {
       onChanged: () => saveDraft(),
       onDelete: () => board.deleteSelection(),
+      canDelete: !board.isLocked(),
     });
   },
   onGraphChanged() {
@@ -131,12 +170,26 @@ function currentMeta(): { baseMVA: number; feeder: string } {
   return { baseMVA: Number(($('#base-mva') as HTMLInputElement).value) || 100, feeder: 'F1' };
 }
 
+// 嵌入模式下的实验基线：课程给出的初始算例、它的指纹（草稿只在指纹一致时恢复），
+// 以及它刚上画布时导出的样子（与之相同就说明学生没改过，不留草稿、也不提示「恢复」）
+let embedBaseline: { topology: Topology; fingerprint: string; snapshot: string } | null = null;
+
 function saveDraft(): void {
-  try {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(exportTopology(board, currentMeta())));
-  } catch {
-    /* 配额满等情况不致命 */
+  const topology = exportTopology(board, currentMeta());
+  if (embedMode) {
+    if (!embedBaseline) return;
+    const current = JSON.stringify(topology);
+    if (current === embedBaseline.snapshot) {
+      removeStore('embed-draft-v1');
+    } else {
+      writeStore(
+        'embed-draft-v1',
+        JSON.stringify({ fingerprint: embedBaseline.fingerprint, snapshot: embedBaseline.snapshot, topology }),
+      );
+    }
+    return;
   }
+  writeStore('draft-v1', JSON.stringify(topology));
 }
 
 function loadTopology(topo: Topology, source: string): void {
@@ -170,7 +223,7 @@ function inEditor(): boolean {
 }
 
 function route(): void {
-  const editor = inEditor();
+  const editor = embedMode || inEditor();
   ($('#home-view') as HTMLElement).hidden = editor;
   ($('#editor-view') as HTMLElement).hidden = !editor;
   if (editor) {
@@ -240,6 +293,8 @@ function bindHome(): void {
   $('#home-continue').addEventListener('click', gotoEditor);
   $('#home-import').addEventListener('click', () => ($('#file-input') as HTMLInputElement).click());
   $('#btn-home').addEventListener('click', () => {
+    // 嵌入模式下改掉 #/embed，刷新后就不再是嵌入模式
+    if (embedMode) return;
     location.hash = '';
   });
   window.addEventListener('hashchange', route);
@@ -297,27 +352,23 @@ let disposeView: (() => void) | null = null;
 
 function loadParams(): void {
   try {
-    const saved = JSON.parse(localStorage.getItem(PARAMS_KEY) ?? '{}') as Record<string, string>;
+    const saved = JSON.parse(readStore('params-v1') ?? '{}') as Record<string, string>;
     Object.assign(paramValues, saved);
     findCct = saved.__find_cct === '1';
     if (saved.__n1_restore !== undefined) n1Restore = saved.__n1_restore === '1';
   } catch {
     /* 损坏则用默认值 */
   }
-  const kind = localStorage.getItem(ANALYSIS_KEY) as AnalysisKind | null;
+  const kind = readStore('analysis-v1') as AnalysisKind | null;
   if (kind && kind in ANALYSIS_META) analysis = kind;
 }
 
 function saveParams(): void {
-  try {
-    localStorage.setItem(
-      PARAMS_KEY,
-      JSON.stringify({ ...paramValues, __find_cct: findCct ? '1' : '0', __n1_restore: n1Restore ? '1' : '0' }),
-    );
-    localStorage.setItem(ANALYSIS_KEY, analysis);
-  } catch {
-    /* 配额满不致命 */
-  }
+  writeStore(
+    'params-v1',
+    JSON.stringify({ ...paramValues, __find_cct: findCct ? '1' : '0', __n1_restore: n1Restore ? '1' : '0' }),
+  );
+  writeStore('analysis-v1', analysis);
 }
 
 const pv = (key: string, fallback: string) => (paramValues[key] !== undefined ? paramValues[key] : fallback);
@@ -875,6 +926,65 @@ async function bindExamples(): Promise<void> {
   });
 }
 
+// ---------------------------------------------------------------- 嵌入模式（知帆拓展）
+
+function applyExperiment(load: LoadMessage, topology: Topology): void {
+  storagePrefix = experimentKeyPrefix(load.experiment);
+  const fingerprint = projectFingerprint(load.project);
+  loadParams();
+  setAnalysis(analysis);
+  let saved: { fingerprint?: string; snapshot?: unknown; topology?: Topology } | null = null;
+  try {
+    saved = JSON.parse(readStore('embed-draft-v1') ?? 'null');
+  } catch {
+    /* 草稿损坏则用初始算例 */
+  }
+  if (saved?.fingerprint === fingerprint && typeof saved.snapshot === 'string' && saved.topology?.nodes?.length) {
+    embedBaseline = { topology, fingerprint, snapshot: saved.snapshot };
+    loadTopology(saved.topology, '上次的修改');
+    toast('已恢复你上次的修改；点「恢复初始算例」可以重新开始', 'info', 6000);
+  } else {
+    embedBaseline = { topology, fingerprint, snapshot: '' };
+    loadTopology(topology, `实验 ${load.experiment}`);
+    // 画布导出的样子与传入的算例字段顺序、坐标都可能不同，以画布导出为准
+    embedBaseline.snapshot = JSON.stringify(exportTopology(board, currentMeta()));
+  }
+  renderHistory();
+  // 宿主刚把 iframe 塞进课堂舞台时尺寸还在变，等两帧再适配，否则会按旧尺寸缩放
+  requestAnimationFrame(() => requestAnimationFrame(() => board.fitContent()));
+}
+
+function bootEmbed(): void {
+  document.body.classList.add('embed');
+  board.setLocked(true);
+  // 宿主的课堂舞台大小不固定（约定 §4），窗口一变就重新适配一次
+  let fitTimer: number | undefined;
+  window.addEventListener('resize', () => {
+    window.clearTimeout(fitTimer);
+    fitTimer = window.setTimeout(() => board.fitContent(), 200);
+  });
+  const reset = $('#btn-reset');
+  reset.hidden = false;
+  reset.addEventListener('click', () => {
+    if (!embedBaseline) return;
+    if (!window.confirm('恢复成课程给出的初始算例？你的修改会丢失。')) return;
+    loadTopology(embedBaseline.topology, '初始算例');
+    saveDraft();
+  });
+  startEmbed(window as unknown as EmbedWindow, {
+    loadExample: fetchExample,
+    applyExperiment,
+    onError: (message) => toast(message, 'error', 8000),
+  });
+  // 不经宿主直接打开 #/embed?example=<内置算例> 时用它调试
+  const example = embedQuery(location.hash).get('example');
+  if (example && window.parent === window) {
+    void fetchExample(example)
+      .then((topology) => applyExperiment({ experiment: `example-${example}`, project: { example }, task: null }, topology))
+      .catch((err) => reportError('加载示例失败', err));
+  }
+}
+
 // ---------------------------------------------------------------- 启动
 
 function boot(): void {
@@ -882,12 +992,19 @@ function boot(): void {
   bindToolbar();
   bindDock();
   bindHome();
-  void bindExamples();
-  void renderExampleCards();
   renderHistory();
   loadParams();
+  if (embedMode) {
+    bootEmbed();
+    setAnalysis(analysis);
+    route();
+    booted = true;
+    return;
+  }
+  void bindExamples();
+  void renderExampleCards();
 
-  const draft = localStorage.getItem(DRAFT_KEY);
+  const draft = readStore('draft-v1');
   if (draft) {
     try {
       const topo = JSON.parse(draft) as Topology;

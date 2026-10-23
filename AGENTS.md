@@ -55,6 +55,9 @@ julia --project=packages/lab-backend  -e "using Pkg; Pkg.test()"   # 含 lab 金
 powershell -File scripts/start-all.ps1   # 起开发栈（2 个内核 + 网关），访问 http://127.0.0.1:8100
 powershell -File scripts/stop-all.ps1
 powershell -Command "Invoke-Pester -Path tests/scripts/lifecycle.Tests.ps1"
+powershell -File scripts/release-ext.ps1   # 打知帆拓展发布包 dist/ext/simulearn-grid-<版本>.zip（含 ~35 分钟的程序构建；-SkipAppBuild 复用已有程序）
+node scripts/fake-zhifan-host.mjs --entry <程序目录>/bin/simulearn-grid.exe   # 假知帆宿主：按 zhifan-ext/1 启动、转发、嵌入，打开 http://127.0.0.1:8200/
+node scripts/fake-zhifan-host.mjs --attach 8123 --token simulearn-dev    # 同上，但接已在跑的开发态内核
 ```
 
 - 改了哪块就跑哪块的门禁；提交前全部门禁都要绿。

@@ -126,6 +126,8 @@ const TYPE_TITLES: Record<string, string> = {
 export interface InspectorHooks {
   onChanged(): void;
   onDelete(): void;
+  /** 嵌入模式锁定拓扑时为 false：不显示「删除」（设计记录 D19） */
+  canDelete?: boolean;
 }
 
 export function renderInspector(container: HTMLElement, board: Board, cell: dia.Cell | null, hooks: InspectorHooks): void {
@@ -144,7 +146,7 @@ export function renderInspector(container: HTMLElement, board: Board, cell: dia.
     message.className = 'muted';
     message.textContent = '设备挂接线（不参与计算）。删除它可解除设备与母线的挂接。';
     container.appendChild(message);
-    appendDeleteButton(container, hooks);
+    if (hooks.canDelete !== false) appendDeleteButton(container, hooks);
     return;
   }
 
@@ -248,7 +250,7 @@ export function renderInspector(container: HTMLElement, board: Board, cell: dia.
     container.appendChild(row);
   }
 
-  appendDeleteButton(container, hooks);
+  if (hooks.canDelete !== false) appendDeleteButton(container, hooks);
 }
 
 function applyFieldChange(

@@ -1399,3 +1399,14 @@ g[model-id]:hover .jgdo-body {
   background: #f8fafc;
   color: #94a3b8;
 }
+
+/* ---------- 嵌入模式（知帆拓展，#/embed）：只留实验需要的界面，拓扑锁定（设计记录 D19） ---------- */
+
+/* iframe 沙箱禁止下载与弹窗，导入导出、新建、元件库在实验里都没有意义 */
+body.embed [data-embed-hide] {
+  display: none !important;
+}
+
+body.embed .brand-clickable {
+  cursor: default;
+}

@@ -882,3 +882,6 @@ if isdir(CONTRACTS_DIR)
 else
     @info "contracts/ 不存在，跳过契约测试（standalone 模式）"
 end
+
+# 拓展入口与 HTTP 服务（src/server.jl）
+include("server.jl")

@@ -6,6 +6,7 @@
 
 using JGDO
 using JSON3
+using HTTP
 
 const EXAMPLES = normpath(joinpath(@__DIR__, "..", "examples"))
 read_example(name) = read(joinpath(EXAMPLES, name * ".json"), String)
@@ -53,4 +54,30 @@ let ok = 0, failed = String[]
     for f in failed
         println("  [failed] ", f)
     end
+end
+
+# HTTP 链路：起服务（端口 0）→ 带令牌的页面、算例、计算请求 → 不带令牌的 401 → 停服务。
+# 拓展程序与开发镜像的第一次真实请求都靠这一段热起来：只热 run_* 的话，
+# 请求解析、中间件、封套映射、静态文件这条链路仍要现场 JIT。
+let token = repeat("ab", 32), tmp = mktempdir()
+    ui = joinpath(tmp, "ui")
+    mkpath(joinpath(ui, "assets"))
+    write(joinpath(ui, "index.html"), "<!doctype html><p>warmup</p>")
+    write(joinpath(ui, "assets", "app.js"), "1")
+    cfg = JGDO.ServerConfig(; token=token, runs_dir=joinpath(tmp, "runs"), ui_dir=ui, examples_dir=EXAMPLES)
+    port, _ = JGDO.start_server(cfg)
+    try
+        base = "http://127.0.0.1:$port"
+        auth = ["X-Zhifan-Ext-Token" => token, "Content-Type" => "application/json"]
+        for path in ("/health", "/ui/", "/ui/assets/app.js", "/ui", "/api/grid/examples", "/api/grid/examples/ieee33")
+            HTTP.get(base * path; headers=auth, status_exception=false, redirect=false)
+        end
+        for (endpoint, body) in (("pf", read_example("ieee33")), ("opf", read_example("econ2")), ("pf", "{}"))
+            HTTP.post(base * "/api/grid/" * endpoint; headers=auth, body=body, status_exception=false)
+        end
+        HTTP.get(base * "/health"; status_exception=false)
+    finally
+        JGDO.stop_server()
+    end
+    println("http workload done")
 end

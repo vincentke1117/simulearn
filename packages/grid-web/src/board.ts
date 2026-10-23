@@ -18,6 +18,9 @@ export interface Board {
   zoomReset(): void;
   fitContent(): void;
   nextId(prefix: string): string;
+  /** 锁定拓扑：不能连线、改线、删除，元件仍可拖动排布（嵌入模式，设计记录 D19） */
+  setLocked(locked: boolean): void;
+  isLocked(): boolean;
 }
 
 const NODE_TYPES: NodeType[] = ['Bus', 'Load', 'Gen', 'DG'];
@@ -62,6 +65,7 @@ export function createBoard(el: HTMLElement, callbacks: BoardCallbacks): Board {
   });
 
   let selected: dia.Cell | null = null;
+  let locked = false;
 
   function nextIdRef(prefix: string): string {
     let max = 0;
@@ -213,7 +217,7 @@ export function createBoard(el: HTMLElement, callbacks: BoardCallbacks): Board {
     select,
     selection: () => selected,
     deleteSelection() {
-      if (!selected) return;
+      if (locked || !selected) return;
       const cell = selected;
       select(null);
       // 删除设备时一并删除其挂接线（graph 的 remove 级联只删相连 link，这正是我们要的）
@@ -243,6 +247,25 @@ export function createBoard(el: HTMLElement, callbacks: BoardCallbacks): Board {
       });
     },
     nextId: nextIdRef,
+    setLocked(value: boolean) {
+      locked = value;
+      paper.setInteractivity(
+        value
+          ? {
+              elementMove: true,
+              addLinkFromMagnet: false,
+              linkMove: false,
+              labelMove: false,
+              arrowheadMove: false,
+              vertexAdd: false,
+              vertexMove: false,
+              vertexRemove: false,
+              useLinkTools: false,
+            }
+          : true,
+      );
+    },
+    isLocked: () => locked,
   };
 }
 

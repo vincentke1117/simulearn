@@ -81,19 +81,20 @@
             <span class="brand-name">SimuLearn <span class="brand-sub">配电网实验室</span></span>
           </div>
           <div class="topbar-actions">
-            <div class="select-wrap">
+            <div class="select-wrap" data-embed-hide>
               <select id="example-select" title="加载内置算例">
                 <option value="">📚 示例算例…</option>
               </select>
             </div>
-            <button id="btn-new" title="清空画布">新建</button>
-            <button id="btn-import" title="从 JSON 文件导入拓扑">导入</button>
-            <button id="btn-export" title="导出拓扑为 JSON 文件">导出</button>
+            <button id="btn-new" title="清空画布" data-embed-hide>新建</button>
+            <button id="btn-import" title="从 JSON 文件导入拓扑" data-embed-hide>导入</button>
+            <button id="btn-export" title="导出拓扑为 JSON 文件" data-embed-hide>导出</button>
+            <button id="btn-reset" title="恢复成课程给出的初始算例" hidden>恢复初始算例</button>
             <span class="divider"></span>
-            <label class="basemva-label" title="系统基准容量 (MVA)">基准
+            <label class="basemva-label" title="系统基准容量 (MVA)" data-embed-hide>基准
               <input id="base-mva" type="number" value="100" min="0.1" step="1" /> MVA
             </label>
-            <span class="divider"></span>
+            <span class="divider" data-embed-hide></span>
             <label class="analysis-label" title="选择分析类型">分析
               <select id="analysis-select">
                 <option value="pf">⚡ AC 潮流</option>
@@ -112,7 +113,7 @@
         <div class="param-bar" id="param-bar" hidden></div>
 
         <main class="workspace">
-          <aside class="palette" id="palette"></aside>
+          <aside class="palette" id="palette" data-embed-hide></aside>
           <section class="canvas-wrap">
             <div class="canvas-stage">
               <div id="canvas"></div>

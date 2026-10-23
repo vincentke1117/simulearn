@@ -27,6 +27,14 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * 接口地址一律相对页面（知帆拓展约定 zhifan-ext/1 §3）：页面在宿主里位于 /ext/<id>/ui/，
+ * 写死以 / 开头的地址会绕过宿主的 /ext/<id>/ 前缀。'../api/grid/' 在三种部署下都落对：
+ *   宿主 /ext/<id>/ui/ → /ext/<id>/api/grid/…；开发网关 /grid/ → /api/grid/…；Vite 开发服务器 / → /api/grid/…
+ */
+export const API_BASE = '../api/grid/';
+export const apiUrl = (path: string): string => API_BASE + path;
+
 async function post<T>(url: string, body: unknown): Promise<T> {
   const resp = await fetch(url, {
     method: 'POST',
@@ -45,16 +53,16 @@ async function post<T>(url: string, body: unknown): Promise<T> {
 }
 
 export function runPf(topology: Topology): Promise<PfResult> {
-  return post<PfResult>('/api/grid/pf', topology);
+  return post<PfResult>(apiUrl('pf'), topology);
 }
 
 export function runReconfiguration(topology: Topology): Promise<ReconfigResult> {
-  return post<ReconfigResult>('/api/grid/reconfig', topology);
+  return post<ReconfigResult>(apiUrl('reconfig'), topology);
 }
 
 /** 最优潮流 / 经济调度：请求体就是拓扑本身（顶层，无包装，与 /n1 的裸拓扑形式一致）。 */
 export function runOpf(topology: Topology): Promise<OpfResult> {
-  return post<OpfResult>('/api/grid/opf', topology);
+  return post<OpfResult>(apiUrl('opf'), topology);
 }
 
 /**
@@ -62,29 +70,29 @@ export function runOpf(topology: Topology): Promise<OpfResult> {
  * ⚠️ 不要带 max_ties —— 后端已删除该字段，带上直接 422。
  */
 export function runN1(request: N1Request): Promise<N1Result> {
-  return post<N1Result>('/api/grid/n1', request);
+  return post<N1Result>(apiUrl('n1'), request);
 }
 
 export function runTimeseries(request: TimeseriesRequest): Promise<TimeseriesResult> {
-  return post<TimeseriesResult>('/api/grid/timeseries', request);
+  return post<TimeseriesResult>(apiUrl('timeseries'), request);
 }
 
 export function runShortCircuit(request: ShortCircuitRequest): Promise<ShortCircuitResult> {
-  return post<ShortCircuitResult>('/api/grid/shortcircuit', request);
+  return post<ShortCircuitResult>(apiUrl('shortcircuit'), request);
 }
 
 export function runTransient(request: TransientRequest): Promise<TransientResult> {
-  return post<TransientResult>('/api/grid/transient', request);
+  return post<TransientResult>(apiUrl('transient'), request);
 }
 
 export async function fetchExamples(): Promise<ExampleInfo[]> {
-  const resp = await fetch('/api/grid/examples');
+  const resp = await fetch(apiUrl('examples'));
   if (!resp.ok) return [];
   return (await resp.json()) as ExampleInfo[];
 }
 
 export async function fetchExample(name: string): Promise<Topology> {
-  const resp = await fetch(`/api/grid/examples/${encodeURIComponent(name)}`);
+  const resp = await fetch(apiUrl(`examples/${encodeURIComponent(name)}`));
   if (!resp.ok) throw new ApiError(`加载示例失败 (HTTP ${resp.status})`);
   return (await resp.json()) as Topology;
 }
