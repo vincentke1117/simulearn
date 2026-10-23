@@ -126,12 +126,38 @@ const COMPONENT_SCHEMAS = Dict(
     "current_probe" => (; handles = ["p", "n"], params = String[]),
 )
 
+# 不发任何跨域头（设计记录 D17）：页面一律经宿主 / 网关同源访问，
+# 原先的 `Access-Control-Allow-Origin: *` 会让本机打开的任何网页都能调用并读取结果。
 const RESPONSE_HEADERS = Dict(
     "Content-Type" => "application/json",
-    "Access-Control-Allow-Origin" => "*",
-    "Access-Control-Allow-Headers" => "Content-Type",
-    "Access-Control-Allow-Methods" => "POST, OPTIONS",
 )
+
+# 本机服务令牌（D17，zhifan-ext/1 §3）：宿主每次启动生成令牌，转发时注入这个请求头，页面拿不到。
+const TOKEN_HEADER = "X-Zhifan-Ext-Token"
+# 只给手工起服务（julia run_server.jl）的本机开发用；start-all 每次启动都会生成随机令牌。
+const DEV_TOKEN = "simulearn-dev"
+
+function resolve_token()
+    token = strip(get(ENV, "SIMULEARN_TOKEN", ""))
+    if isempty(token)
+        @warn "未设置 SIMULEARN_TOKEN，使用固定的开发令牌（仅限本机开发）" header = TOKEN_HEADER
+        return DEV_TOKEN
+    end
+    return String(token)
+end
+
+"""
+    token_guard(router, token)
+
+在路由前校验 `X-Zhifan-Ext-Token`，不对一律 401（含 /health）。
+"""
+function token_guard(router, token::AbstractString)
+    unauthorized = JSON3.write(Dict("status" => "error", "code" => "LAB_UNAUTHORIZED", "message" => "unauthorized", "data" => Dict()))
+    return function (req::HTTP.Request)
+        HTTP.header(req, TOKEN_HEADER, "") == token || return HTTP.Response(401, collect(RESPONSE_HEADERS), unauthorized)
+        return router(req)
+    end
+end
 
 # 在不同版本的标准库中，Blocks 的输入/输出端口与 Electrical 的信号端口可能是
 # 连接器(ODESystem)或符号量(Symbolics.Num)。为了兼容，提供一个安全连接助手：
@@ -2330,7 +2356,7 @@ function warmup!()
     return nothing
 end
 
-function bootstrap(; host::AbstractString = "127.0.0.1", port::Integer = 8080, start::Bool = true, warmup::Bool = true)
+function bootstrap(; host::AbstractString = "127.0.0.1", port::Integer = 8080, start::Bool = true, warmup::Bool = true, token::AbstractString = resolve_token())
     # 先预热再监听：端口一开、/health 一绿，服务就该是快的。
     # start-all.ps1 的 Wait-Health 本来就在等，这段等待对用户是免费的。
     start && warmup && warmup!()
@@ -2359,13 +2385,13 @@ function bootstrap(; host::AbstractString = "127.0.0.1", port::Integer = 8080, s
             HTTP.Response(400, collect(RESPONSE_HEADERS), body)
         end
     end)
-    HTTP.register!(router, "OPTIONS", "/simulate", _ -> HTTP.Response(200, collect(RESPONSE_HEADERS), ""))
+    handler = token_guard(router, token)
     server = nothing
     if start
-        server = HTTP.serve!(router, host, port; verbose = false)
+        server = HTTP.serve!(handler, host, port; verbose = false)
         @info "JCircuitServer started" host port
     end
-    return (; host, port, router, server)
+    return (; host, port, router, handler, server)
 end
 
 end # module

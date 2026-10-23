@@ -188,6 +188,15 @@ function ConvertTo-NativeArgument {
     return '"' + $escaped + '"'
 }
 
+function New-StackToken {
+    # 每次启动一个随机令牌（32 字节十六进制，同 zhifan-ext/1 §2）：
+    # 两个内核只认带 X-Zhifan-Ext-Token 的请求，网关转发时注入（设计记录 D17）。
+    $bytes = New-Object byte[] 32
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }
+    return (($bytes | ForEach-Object { $_.ToString('x2') }) -join '')
+}
+
 function Get-StackLaunchArguments {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)]$Paths)
@@ -336,6 +345,7 @@ Export-ModuleMember -Function @(
     'Write-StackState',
     'Read-StackState',
     'Test-TrackedProcess',
+    'New-StackToken',
     'Get-StackLaunchArguments',
     'Start-TrackedProcess',
     'Stop-TrackedProcesses',

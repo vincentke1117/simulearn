@@ -27,6 +27,28 @@ const MIME_TYPES = Dict(
 
 json_response(body; status=200) = HTTP.Response(status, ["Content-Type" => "application/json; charset=utf-8"], body)
 
+# 本机服务令牌（设计记录 D17，zhifan-ext/1 §3）：所有请求（含 /health）都要带 X-Zhifan-Ext-Token，
+# 不对一律 401。令牌由宿主 / start-all 每次启动生成并在转发时注入，页面拿不到。
+const TOKEN_HEADER = "X-Zhifan-Ext-Token"
+# 只给手工起服务的本机开发用；start-all 每次启动都会经 SIMULEARN_TOKEN 传入随机令牌。
+const DEV_TOKEN = "simulearn-dev"
+const TOKEN = let token = strip(get(ENV, "SIMULEARN_TOKEN", ""))
+    if isempty(token)
+        @warn "未设置 SIMULEARN_TOKEN，使用固定的开发令牌（仅限本机开发）" header = TOKEN_HEADER
+        DEV_TOKEN
+    else
+        String(token)
+    end
+end
+const UNAUTHORIZED = """{"status":"error","code":"GRID_UNAUTHORIZED","message":"unauthorized","data":null}"""
+
+function token_middleware(handler)
+    return function (req::HTTP.Request)
+        HTTP.header(req, TOKEN_HEADER, "") == TOKEN || return json_response(UNAUTHORIZED; status=401)
+        return handler(req)
+    end
+end
+
 # 封套错误码 → HTTP 状态码（与 lab 内核一致：422 用户输入 / 500 服务端）。
 # 映射本体在 JGDO.http_status（src/errors.jl），测试与契约夹具直接对它断言。
 envelope_response(body::AbstractString) = json_response(body; status=JGDO.http_status(body))
@@ -140,4 +162,4 @@ host = get(ENV, "JGDO_HOST", "127.0.0.1")
 port = parse(Int, get(ENV, "JGDO_PORT", "8123"))
 
 @info "JGDO server starting" host port web_dist_present = isdir(WEB_DIST)
-serve(; host, port)
+serve(; host, port, middleware=[token_middleware])

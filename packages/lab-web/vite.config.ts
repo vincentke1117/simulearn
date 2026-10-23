@@ -33,6 +33,8 @@ export default defineConfig(({ command }) => ({
       '/api/lab': {
         target: 'http://127.0.0.1:8080',
         rewrite: (path) => path.replace(/^\/api\/lab/, ''),
+        // 内核只认带令牌的请求（设计记录 D17）；手工起内核时两边都默认用开发令牌
+        headers: { 'X-Zhifan-Ext-Token': process.env.SIMULEARN_TOKEN ?? 'simulearn-dev' },
       },
     },
   },

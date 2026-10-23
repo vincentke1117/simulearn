@@ -21,6 +21,8 @@ try {
     Assert-StackPrerequisites -Paths $paths
     Assert-NoRunningStack -StatePath $paths.StatePath
     Assert-StackPortsAvailable
+    # 子进程继承本进程环境：两个内核据此校验令牌，Caddy 据此在转发时注入
+    $env:SIMULEARN_TOKEN = New-StackToken
     Invoke-CaddyValidation -Paths $paths
     $launchArguments = Get-StackLaunchArguments -Paths $paths
 

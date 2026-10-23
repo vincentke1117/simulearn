@@ -9,6 +9,21 @@ using JCircuitServer: ComponentPayload, NetPayload, SimulationSettings, Simulati
     @test config.router !== nothing
 end
 
+@testset "token guard (D17)" begin
+    HTTP = JCircuitServer.HTTP
+    config = bootstrap(start = false, warmup = false, token = "t0ken")
+    no_token = config.handler(HTTP.Request("GET", "/health"))
+    @test no_token.status == 401
+    wrong = config.handler(HTTP.Request("GET", "/health", ["X-Zhifan-Ext-Token" => "nope"]))
+    @test wrong.status == 401
+    ok = config.handler(HTTP.Request("GET", "/health", ["X-Zhifan-Ext-Token" => "t0ken"]))
+    @test ok.status == 200
+    # 不再发跨域头，也不再响应 OPTIONS 预检
+    @test !HTTP.hasheader(ok, "Access-Control-Allow-Origin")
+    preflight = config.handler(HTTP.Request("OPTIONS", "/simulate", ["X-Zhifan-Ext-Token" => "t0ken"]))
+    @test preflight.status != 200 || !HTTP.hasheader(preflight, "Access-Control-Allow-Origin")
+end
+
 function sample_payload()
     components = [
         ComponentPayload("V1", "vsource_dc", Dict("dc" => 5.0), Dict("pos" => "n1", "neg" => "gnd")),

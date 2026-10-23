@@ -10,7 +10,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://127.0.0.1:8123',
+      // 内核只认带令牌的请求（设计记录 D17）；手工起内核时两边都默认用开发令牌
+      '/api': {
+        target: 'http://127.0.0.1:8123',
+        headers: { 'X-Zhifan-Ext-Token': process.env.SIMULEARN_TOKEN ?? 'simulearn-dev' },
+      },
     },
   },
   build: {

@@ -7,6 +7,8 @@ import { classifyResult, supportsVoltageOverlay } from '@/simulation/resultKind'
 import { formatPhasor } from '@/simulation/format'
 
 const BACKEND = 'http://127.0.0.1:8080/simulate'
+// 内核只认带令牌的请求（设计记录 D17）：跟随内核的 SIMULEARN_TOKEN，没设置时两边都是开发令牌
+const TOKEN = process.env.SIMULEARN_TOKEN ?? 'simulearn-dev'
 
 /**
  * 打活后端的端到端验证：前端 payload 构造函数 → 真实 Julia 内核 → 前端类型/判别器解析。
@@ -48,7 +50,7 @@ const settings: SimulationSettings = { tStop: 1e-3, nSamples: 10 }
 async function post(body: unknown): Promise<{ http: number; envelope: SimulationResponse }> {
   const res = await fetch(BACKEND, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Zhifan-Ext-Token': TOKEN },
     body: JSON.stringify(body),
   })
   return { http: res.status, envelope: (await res.json()) as SimulationResponse }

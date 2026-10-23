@@ -191,6 +191,15 @@ if (Test-Path -LiteralPath $modulePath -PathType Leaf) {
             $stopped[0] | Should Match '^C:\\tools\\julia\.exe\|2026-07-15T12:00:00'
         }
 
+        It 'generates a fresh 32-byte hex token for every launch' {
+            $first = New-StackToken
+            $second = New-StackToken
+
+            $first | Should Match '^[0-9a-f]{64}$'
+            $second | Should Match '^[0-9a-f]{64}$'
+            ($first -eq $second) | Should Be $false
+        }
+
         It 'keeps launch arguments safe when the repository path contains spaces' {
             $rootWithSpaces = Join-Path $TestDrive 'repo with spaces'
             $sysimageDirectory = Join-Path $rootWithSpaces 'packages\grid-backend\sysimage'

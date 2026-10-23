@@ -81,7 +81,8 @@ julia --project=packages/lab-backend  -e "using Pkg; Pkg.test()"
 
 - 统一响应封套 `{status, code?, message, data}`；业务错误码分域 `GRID_*` / `LAB_*`。
 - `contracts/{grid,lab}/*.json` 是两个内核共享的**金标准契约夹具**，数值全部对拍解析解——改内核先看它红不红。
-- 工程数据 localStorage 键一律 `slp:<module>:*` 命名空间；两后端只绑 `127.0.0.1`，跨域由网关同源化解决。
+- 工程数据 localStorage 键一律 `slp:<module>:*` 命名空间；两后端与网关都只绑 `127.0.0.1`，跨域由网关同源化解决，内核不发任何跨域头。
+- 两个内核只认带 `X-Zhifan-Ext-Token` 的请求，否则一律 401（与知帆拓展约定 `zhifan-ext/1` 一致）。`start-all` 每次启动生成随机令牌（环境变量 `SIMULEARN_TOKEN`），由 Caddy 在转发时注入；手工起内核、跑 `npm run dev:*` 时，没设置这个变量，内核和 Vite 代理两边都退回开发令牌 `simulearn-dev`。
 - lab-web 用 BrowserRouter，其 `basename` 取自 Vite `base`（构建时为 `/circuit/`），网关侧配套 `try_files` 回退——两者必须一起改，否则刷新深链 404。
 
 ## 项目源流
