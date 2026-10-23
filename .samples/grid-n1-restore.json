@@ -1,0 +1,2063 @@
+{
+  "http": 200,
+  "body": {
+    "status": "ok",
+    "message": "n1_analysis",
+    "data": {
+      "summary": {
+        "max_search_depth": 1,
+        "n_branches": 32,
+        "worst_branch": "br-1",
+        "n_restorable": 31,
+        "n_unrestorable": 1,
+        "n_islanding": 32,
+        "n_ok": 0,
+        "n_loops_base": 0,
+        "n_diverged": 0,
+        "max_lost_load_mw": 3.715
+      },
+      "restoration": [
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": null,
+          "lost_load_before_mw": 3.715,
+          "n_bus": 33,
+          "branch": "br-1",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": null,
+          "n_closed_branches": null,
+          "reason": "no tie switch bridges the energized network and the islanded section (every tie has both ends inside the island — the outage isolates the source feeder)",
+          "islanded_buses_after": [
+            "bus-2",
+            "bus-3",
+            "bus-4",
+            "bus-5",
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-19",
+            "bus-20",
+            "bus-21",
+            "bus-22",
+            "bus-23",
+            "bus-24",
+            "bus-25",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": false,
+          "n_loops_after": null,
+          "islanded_buses": [
+            "bus-2",
+            "bus-3",
+            "bus-4",
+            "bus-5",
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-19",
+            "bus-20",
+            "bus-21",
+            "bus-22",
+            "bus-23",
+            "bus-24",
+            "bus-25",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "closed_ties": [],
+          "violated": null,
+          "violation_buses": [],
+          "fully_restored": false,
+          "vmin_pu": null,
+          "lost_load_after_mw": 3.715,
+          "vmin_bus": null,
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.8936669676554889,
+          "lost_load_before_mw": 3.255000000000001,
+          "n_bus": 33,
+          "branch": "br-2",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-3",
+            "bus-4",
+            "bus-5",
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-23",
+            "bus-24",
+            "bus-25",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "closed_ties": [
+            "br-33"
+          ],
+          "violated": true,
+          "violation_buses": [
+            "bus-3",
+            "bus-4",
+            "bus-5",
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-23",
+            "bus-24",
+            "bus-25",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "fully_restored": true,
+          "vmin_pu": 0.745611112492971,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-33",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.3987659539147703,
+          "lost_load_before_mw": 2.2350000000000003,
+          "n_bus": 33,
+          "branch": "br-3",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-4",
+            "bus-5",
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "closed_ties": [
+            "br-33"
+          ],
+          "violated": true,
+          "violation_buses": [
+            "bus-4",
+            "bus-5",
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "fully_restored": true,
+          "vmin_pu": 0.825136606700883,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-33",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.3610460212880451,
+          "lost_load_before_mw": 2.115,
+          "n_bus": 33,
+          "branch": "br-4",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-5",
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "closed_ties": [
+            "br-33"
+          ],
+          "violated": true,
+          "violation_buses": [
+            "bus-5",
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "fully_restored": true,
+          "vmin_pu": 0.8339120148925918,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-33",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.3451238372094068,
+          "lost_load_before_mw": 2.055,
+          "n_bus": 33,
+          "branch": "br-5",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "closed_ties": [
+            "br-33"
+          ],
+          "violated": true,
+          "violation_buses": [
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "fully_restored": true,
+          "vmin_pu": 0.8377974520067932,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-33",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.16328531825810622,
+          "lost_load_before_mw": 1.0750000000000002,
+          "n_bus": 33,
+          "branch": "br-6",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ],
+          "closed_ties": [
+            "br-33"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.921228485045797,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-18",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.15652933737398284,
+          "lost_load_before_mw": 0.875,
+          "n_bus": 33,
+          "branch": "br-7",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ],
+          "closed_ties": [
+            "br-35"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9335751150911612,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-33",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.1534933128577975,
+          "lost_load_before_mw": 0.675,
+          "n_bus": 33,
+          "branch": "br-8",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ],
+          "closed_ties": [
+            "br-35"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.929791991063797,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-33",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.15399226301267,
+          "lost_load_before_mw": 0.615,
+          "n_bus": 33,
+          "branch": "br-9",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ],
+          "closed_ties": [
+            "br-35"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9287404838686455,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-33",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.15513079053558698,
+          "lost_load_before_mw": 0.555,
+          "n_bus": 33,
+          "branch": "br-10",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ],
+          "closed_ties": [
+            "br-35"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9276829672735362,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-33",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.15678543600548878,
+          "lost_load_before_mw": 0.51,
+          "n_bus": 33,
+          "branch": "br-11",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ],
+          "closed_ties": [
+            "br-35"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9267426513245475,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-33",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.1973463767665784,
+          "lost_load_before_mw": 0.44999999999999996,
+          "n_bus": 33,
+          "branch": "br-12",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ],
+          "closed_ties": [
+            "br-34"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9166892515741258,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-33",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.1965041336832174,
+          "lost_load_before_mw": 0.39,
+          "n_bus": 33,
+          "branch": "br-13",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ],
+          "closed_ties": [
+            "br-34"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9167091232604393,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-33",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.19641512397081673,
+          "lost_load_before_mw": 0.27,
+          "n_bus": 33,
+          "branch": "br-14",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ],
+          "closed_ties": [
+            "br-34"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9167150315694346,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-33",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.20629228796690047,
+          "lost_load_before_mw": 0.21,
+          "n_bus": 33,
+          "branch": "br-15",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ],
+          "closed_ties": [
+            "br-36"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.905049812121388,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-16",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.20401057658599342,
+          "lost_load_before_mw": 0.15,
+          "n_bus": 33,
+          "branch": "br-16",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-17",
+            "bus-18"
+          ],
+          "closed_ties": [
+            "br-36"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9090281094874583,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-17",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.20276755359886156,
+          "lost_load_before_mw": 0.09,
+          "n_bus": 33,
+          "branch": "br-17",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-18"
+          ],
+          "closed_ties": [
+            "br-36"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9121854504049769,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-18",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.24997721813720758,
+          "lost_load_before_mw": 0.36,
+          "n_bus": 33,
+          "branch": "br-18",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-19",
+            "bus-20",
+            "bus-21",
+            "bus-22"
+          ],
+          "closed_ties": [
+            "br-33"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.90265955898782,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-18",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.23640332230645095,
+          "lost_load_before_mw": 0.27,
+          "n_bus": 33,
+          "branch": "br-19",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-20",
+            "bus-21",
+            "bus-22"
+          ],
+          "closed_ties": [
+            "br-33"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9053136000631354,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-18",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.22403858072968852,
+          "lost_load_before_mw": 0.18,
+          "n_bus": 33,
+          "branch": "br-20",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-21",
+            "bus-22"
+          ],
+          "closed_ties": [
+            "br-33"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9079330682407364,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-18",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.21604732664052495,
+          "lost_load_before_mw": 0.09,
+          "n_bus": 33,
+          "branch": "br-21",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-22"
+          ],
+          "closed_ties": [
+            "br-35"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9083005511833346,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-18",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.35567923060123346,
+          "lost_load_before_mw": 0.9299999999999998,
+          "n_bus": 33,
+          "branch": "br-22",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-23",
+            "bus-24",
+            "bus-25"
+          ],
+          "closed_ties": [
+            "br-37"
+          ],
+          "violated": true,
+          "violation_buses": [
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-23",
+            "bus-24",
+            "bus-25",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "fully_restored": true,
+          "vmin_pu": 0.8772400227272008,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-23",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.333629179491206,
+          "lost_load_before_mw": 0.8399999999999999,
+          "n_bus": 33,
+          "branch": "br-23",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-24",
+            "bus-25"
+          ],
+          "closed_ties": [
+            "br-37"
+          ],
+          "violated": true,
+          "violation_buses": [
+            "bus-17",
+            "bus-18",
+            "bus-24",
+            "bus-25",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "fully_restored": true,
+          "vmin_pu": 0.8822705175236724,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-33",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.2541645815541037,
+          "lost_load_before_mw": 0.41999999999999993,
+          "n_bus": 33,
+          "branch": "br-24",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-25"
+          ],
+          "closed_ties": [
+            "br-37"
+          ],
+          "violated": true,
+          "violation_buses": [
+            "bus-33"
+          ],
+          "fully_restored": true,
+          "vmin_pu": 0.899935413827262,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-33",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.18326646803012991,
+          "lost_load_before_mw": 0.92,
+          "n_bus": 33,
+          "branch": "br-25",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "closed_ties": [
+            "br-37"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9293742907412459,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-33",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.18004084379730223,
+          "lost_load_before_mw": 0.86,
+          "n_bus": 33,
+          "branch": "br-26",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "closed_ties": [
+            "br-37"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9300922213752242,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-18",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.17727751145944382,
+          "lost_load_before_mw": 0.8,
+          "n_bus": 33,
+          "branch": "br-27",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "closed_ties": [
+            "br-37"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9292776741326184,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-18",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.1751296753662946,
+          "lost_load_before_mw": 0.74,
+          "n_bus": 33,
+          "branch": "br-28",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "closed_ties": [
+            "br-37"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9284945881993766,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-18",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.3703557409991731,
+          "lost_load_before_mw": 0.62,
+          "n_bus": 33,
+          "branch": "br-29",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "closed_ties": [
+            "br-36"
+          ],
+          "violated": true,
+          "violation_buses": [
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "fully_restored": true,
+          "vmin_pu": 0.7952684354517713,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-30",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.23919991581168532,
+          "lost_load_before_mw": 0.41999999999999993,
+          "n_bus": 33,
+          "branch": "br-30",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "closed_ties": [
+            "br-36"
+          ],
+          "violated": true,
+          "violation_buses": [
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ],
+          "fully_restored": true,
+          "vmin_pu": 0.8681718056918352,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-31",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.21873757692348672,
+          "lost_load_before_mw": 0.26999999999999996,
+          "n_bus": 33,
+          "branch": "br-31",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-32",
+            "bus-33"
+          ],
+          "closed_ties": [
+            "br-36"
+          ],
+          "violated": true,
+          "violation_buses": [
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-32",
+            "bus-33"
+          ],
+          "fully_restored": true,
+          "vmin_pu": 0.8850508481060867,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-32",
+          "max_search_depth": 1
+        },
+        {
+          "n_loops_base": 0,
+          "n_candidates_evaluated": 5,
+          "loss_mw": 0.20394905509137473,
+          "lost_load_before_mw": 0.06,
+          "n_bus": 33,
+          "branch": "br-32",
+          "candidate_ties": [
+            "br-33",
+            "br-34",
+            "br-35",
+            "br-36",
+            "br-37"
+          ],
+          "radial": true,
+          "n_closed_branches": 32,
+          "reason": null,
+          "islanded_buses_after": [],
+          "search_depth": 1,
+          "overloaded_branches": [],
+          "restorable": true,
+          "n_loops_after": 0,
+          "islanded_buses": [
+            "bus-33"
+          ],
+          "closed_ties": [
+            "br-36"
+          ],
+          "violated": false,
+          "violation_buses": [],
+          "fully_restored": true,
+          "vmin_pu": 0.9067398559365483,
+          "lost_load_after_mw": 0,
+          "vmin_bus": "bus-33",
+          "max_search_depth": 1
+        }
+      ],
+      "results": [
+        {
+          "branch": "br-1",
+          "lost_load_mw": 3.715,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-2",
+            "bus-3",
+            "bus-4",
+            "bus-5",
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-19",
+            "bus-20",
+            "bus-21",
+            "bus-22",
+            "bus-23",
+            "bus-24",
+            "bus-25",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-2",
+          "lost_load_mw": 3.255000000000001,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-3",
+            "bus-4",
+            "bus-5",
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-23",
+            "bus-24",
+            "bus-25",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-3",
+          "lost_load_mw": 2.2350000000000003,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-4",
+            "bus-5",
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-4",
+          "lost_load_mw": 2.115,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-5",
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-5",
+          "lost_load_mw": 2.055,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-6",
+          "lost_load_mw": 1.0750000000000002,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-7",
+          "lost_load_mw": 0.875,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-8",
+          "lost_load_mw": 0.675,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-9",
+          "lost_load_mw": 0.615,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-10",
+          "lost_load_mw": 0.555,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-11",
+          "lost_load_mw": 0.51,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-12",
+          "lost_load_mw": 0.44999999999999996,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-13",
+          "lost_load_mw": 0.39,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-14",
+          "lost_load_mw": 0.27,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-15",
+          "lost_load_mw": 0.21,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-16",
+          "lost_load_mw": 0.15,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-17",
+          "lost_load_mw": 0.09,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-18",
+          "lost_load_mw": 0.36,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-19",
+            "bus-20",
+            "bus-21",
+            "bus-22"
+          ]
+        },
+        {
+          "branch": "br-19",
+          "lost_load_mw": 0.27,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-20",
+            "bus-21",
+            "bus-22"
+          ]
+        },
+        {
+          "branch": "br-20",
+          "lost_load_mw": 0.18,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-21",
+            "bus-22"
+          ]
+        },
+        {
+          "branch": "br-21",
+          "lost_load_mw": 0.09,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-22"
+          ]
+        },
+        {
+          "branch": "br-22",
+          "lost_load_mw": 0.9299999999999998,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-23",
+            "bus-24",
+            "bus-25"
+          ]
+        },
+        {
+          "branch": "br-23",
+          "lost_load_mw": 0.8399999999999999,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-24",
+            "bus-25"
+          ]
+        },
+        {
+          "branch": "br-24",
+          "lost_load_mw": 0.41999999999999993,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-25"
+          ]
+        },
+        {
+          "branch": "br-25",
+          "lost_load_mw": 0.92,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-26",
+          "lost_load_mw": 0.86,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-27",
+          "lost_load_mw": 0.8,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-28",
+          "lost_load_mw": 0.74,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-29",
+          "lost_load_mw": 0.62,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-30",
+          "lost_load_mw": 0.41999999999999993,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-31",
+          "lost_load_mw": 0.26999999999999996,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-32",
+          "lost_load_mw": 0.06,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-33"
+          ]
+        }
+      ],
+      "type": "n1_analysis"
+    }
+  }
+}

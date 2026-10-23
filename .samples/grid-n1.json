@@ -1,0 +1,499 @@
+{
+  "http": 200,
+  "body": {
+    "status": "ok",
+    "message": "n1_analysis",
+    "data": {
+      "summary": {
+        "n_branches": 32,
+        "worst_branch": "br-1",
+        "n_islanding": 32,
+        "n_ok": 0,
+        "n_diverged": 0,
+        "max_lost_load_mw": 3.715
+      },
+      "results": [
+        {
+          "branch": "br-1",
+          "lost_load_mw": 3.715,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-2",
+            "bus-3",
+            "bus-4",
+            "bus-5",
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-19",
+            "bus-20",
+            "bus-21",
+            "bus-22",
+            "bus-23",
+            "bus-24",
+            "bus-25",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-2",
+          "lost_load_mw": 3.255000000000001,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-3",
+            "bus-4",
+            "bus-5",
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-23",
+            "bus-24",
+            "bus-25",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-3",
+          "lost_load_mw": 2.2350000000000003,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-4",
+            "bus-5",
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-4",
+          "lost_load_mw": 2.115,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-5",
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-5",
+          "lost_load_mw": 2.055,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-6",
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18",
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-6",
+          "lost_load_mw": 1.0750000000000002,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-7",
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-7",
+          "lost_load_mw": 0.875,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-8",
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-8",
+          "lost_load_mw": 0.675,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-9",
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-9",
+          "lost_load_mw": 0.615,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-10",
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-10",
+          "lost_load_mw": 0.555,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-11",
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-11",
+          "lost_load_mw": 0.51,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-12",
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-12",
+          "lost_load_mw": 0.44999999999999996,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-13",
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-13",
+          "lost_load_mw": 0.39,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-14",
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-14",
+          "lost_load_mw": 0.27,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-15",
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-15",
+          "lost_load_mw": 0.21,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-16",
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-16",
+          "lost_load_mw": 0.15,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-17",
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-17",
+          "lost_load_mw": 0.09,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-18"
+          ]
+        },
+        {
+          "branch": "br-18",
+          "lost_load_mw": 0.36,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-19",
+            "bus-20",
+            "bus-21",
+            "bus-22"
+          ]
+        },
+        {
+          "branch": "br-19",
+          "lost_load_mw": 0.27,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-20",
+            "bus-21",
+            "bus-22"
+          ]
+        },
+        {
+          "branch": "br-20",
+          "lost_load_mw": 0.18,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-21",
+            "bus-22"
+          ]
+        },
+        {
+          "branch": "br-21",
+          "lost_load_mw": 0.09,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-22"
+          ]
+        },
+        {
+          "branch": "br-22",
+          "lost_load_mw": 0.9299999999999998,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-23",
+            "bus-24",
+            "bus-25"
+          ]
+        },
+        {
+          "branch": "br-23",
+          "lost_load_mw": 0.8399999999999999,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-24",
+            "bus-25"
+          ]
+        },
+        {
+          "branch": "br-24",
+          "lost_load_mw": 0.41999999999999993,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-25"
+          ]
+        },
+        {
+          "branch": "br-25",
+          "lost_load_mw": 0.92,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-26",
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-26",
+          "lost_load_mw": 0.86,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-27",
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-27",
+          "lost_load_mw": 0.8,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-28",
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-28",
+          "lost_load_mw": 0.74,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-29",
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-29",
+          "lost_load_mw": 0.62,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-30",
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-30",
+          "lost_load_mw": 0.41999999999999993,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-31",
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-31",
+          "lost_load_mw": 0.26999999999999996,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-32",
+            "bus-33"
+          ]
+        },
+        {
+          "branch": "br-32",
+          "lost_load_mw": 0.06,
+          "outcome": "islanding",
+          "islanded_buses": [
+            "bus-33"
+          ]
+        }
+      ],
+      "type": "n1_analysis"
+    }
+  }
+}

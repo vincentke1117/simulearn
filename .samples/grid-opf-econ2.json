@@ -1,0 +1,119 @@
+{
+  "http": 200,
+  "body": {
+    "status": "ok",
+    "message": "optimal_power_flow",
+    "data": {
+      "summary": {
+        "gen_total_mw": 100.0046281366848,
+        "lmp_max_yuan_per_mwh": 12.287029284773299,
+        "lmp_min_bus": "bus-1",
+        "lmp_min_yuan_per_mwh": 12.285755543363376,
+        "loss_mw": 0.004628136912288028,
+        "load_total_mw": 100,
+        "solve_time_s": 0.018999814987182617,
+        "cost_total_yuan_per_h": 1221.4854320616457,
+        "overloaded_branches": [],
+        "termination_status": "LOCALLY_SOLVED",
+        "violation_buses": [],
+        "vmin_pu": 1.0499449512306664,
+        "vmin_bus": "bus-2",
+        "lmp_max_bus": "bus-2"
+      },
+      "branches": [
+        {
+          "loading_pct": 28.571944337910537,
+          "status": "CLOSED",
+          "q_mvar": 0.003325138260153182,
+          "id": "line-12",
+          "q_to_mvar": 0.011484059104076294,
+          "p_to_mw": -57.14092673960748,
+          "overloaded": false,
+          "loss_mw": 0.0029618394705721585,
+          "p_mw": 57.14388857907805
+        },
+        {
+          "loading_pct": 21.42953739928911,
+          "status": "CLOSED",
+          "q_mvar": -0.011484059269048497,
+          "id": "line-23",
+          "q_to_mvar": 0.01981554646625916,
+          "p_to_mw": 42.86073955744706,
+          "overloaded": false,
+          "loss_mw": 0.0016662974417158694,
+          "p_mw": -42.859073260005346
+        }
+      ],
+      "gens": [
+        {
+          "at_pmax": false,
+          "pmin_mw": 0,
+          "marginal_cost_yuan_per_mwh": 12.285755543217174,
+          "pmax_mw": 100,
+          "cost_c2": 0.02,
+          "bus": "bus-1",
+          "pg_mw": 57.14388858042935,
+          "qg_mvar": 0.003325130856682537,
+          "cost_c0": 100,
+          "at_pmin": false,
+          "cost_yuan_per_h": 736.7473658461439,
+          "id": "gen-1",
+          "cost_c1": 10,
+          "binding": false
+        },
+        {
+          "at_pmax": false,
+          "pmin_mw": 0,
+          "marginal_cost_yuan_per_mwh": 12.286073955625547,
+          "pmax_mw": 100,
+          "cost_c2": 0.05,
+          "bus": "bus-3",
+          "pg_mw": 42.86073955625546,
+          "qg_mvar": 0.019815552590097717,
+          "cost_c0": 50,
+          "at_pmin": false,
+          "cost_yuan_per_h": 484.73806621550176,
+          "id": "gen-2",
+          "cost_c1": 8,
+          "binding": false
+        }
+      ],
+      "status": "ok",
+      "buses": [
+        {
+          "vmin_pu": 0.95,
+          "va_deg": 1.6736145753027231e-32,
+          "vm_pu": 1.0499993545881259,
+          "violation": null,
+          "id": "bus-1",
+          "lmp_yuan_per_mwh": 12.285755543363376,
+          "vmax_pu": 1.05
+        },
+        {
+          "vmin_pu": 0.95,
+          "va_deg": -0.014849157579441977,
+          "vm_pu": 1.0499449512306664,
+          "violation": null,
+          "id": "bus-2",
+          "lmp_yuan_per_mwh": 12.287029284773299,
+          "vmax_pu": 1.05
+        },
+        {
+          "vmin_pu": 0.95,
+          "va_deg": -0.0037123127961903673,
+          "vm_pu": 1.0499858460596565,
+          "violation": null,
+          "id": "bus-3",
+          "lmp_yuan_per_mwh": 12.286073955479445,
+          "vmax_pu": 1.05
+        }
+      ],
+      "objective": {
+        "termination_status": "LOCALLY_SOLVED",
+        "solve_time_s": 0.018999814987182617,
+        "cost_total_yuan_per_h": 1221.4854320616457
+      },
+      "type": "opf"
+    }
+  }
+}

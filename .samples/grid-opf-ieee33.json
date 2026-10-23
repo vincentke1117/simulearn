@@ -1,0 +1,758 @@
+{
+  "http": 200,
+  "body": {
+    "status": "ok",
+    "message": "optimal_power_flow",
+    "data": {
+      "summary": {
+        "gen_total_mw": 3.917677126424917,
+        "lmp_max_yuan_per_mwh": 1.1471924294768638,
+        "lmp_min_bus": "bus-1",
+        "lmp_min_yuan_per_mwh": 1.0000000000012583,
+        "loss_mw": 0.2026771264506922,
+        "load_total_mw": 3.715,
+        "solve_time_s": 0.04200005531311035,
+        "cost_total_yuan_per_h": 3.917677126424917,
+        "overloaded_branches": [],
+        "termination_status": "LOCALLY_SOLVED",
+        "violation_buses": [],
+        "vmin_pu": 0.9130904793623372,
+        "vmin_bus": "bus-18",
+        "lmp_max_bus": "bus-18"
+      },
+      "branches": [
+        {
+          "loading_pct": 46.12819703316709,
+          "status": "CLOSED",
+          "q_mvar": 2.435140970949364,
+          "id": "br-1",
+          "q_to_mvar": -2.428901275300378,
+          "p_to_mw": -3.905436702194431,
+          "overloaded": false,
+          "loss_mw": 0.012240424230185454,
+          "p_mw": 3.9176771264246164
+        },
+        {
+          "loading_pct": 40.911705760018684,
+          "status": "CLOSED",
+          "q_mvar": 2.2078224224808087,
+          "id": "br-2",
+          "q_to_mvar": -2.181443560543687,
+          "p_to_mw": -3.392507944440429,
+          "overloaded": false,
+          "loss_mw": 0.051791234309064293,
+          "p_mw": 3.4442991787494934
+        },
+        {
+          "loading_pct": 29.016900322009427,
+          "status": "CLOSED",
+          "q_mvar": 1.6842005150713728,
+          "id": "br-3",
+          "q_to_mvar": -1.674065409030872,
+          "p_to_mw": -2.342994711236871,
+          "overloaded": false,
+          "loss_mw": 0.019900476452932025,
+          "p_mw": 2.3628951876898032
+        },
+        {
+          "loading_pct": 27.35461572469203,
+          "status": "CLOSED",
+          "q_mvar": 1.5940654090291382,
+          "id": "br-4",
+          "q_to_mvar": -1.5845417547030358,
+          "p_to_mw": -2.2042957691273153,
+          "overloaded": false,
+          "loss_mw": 0.01869894211075973,
+          "p_mw": 2.222994711238075
+        },
+        {
+          "loading_pct": 26.485098475585495,
+          "status": "CLOSED",
+          "q_mvar": 1.5545417547067912,
+          "id": "br-5",
+          "q_to_mvar": -1.52152371205633,
+          "p_to_mw": -2.1060471454607086,
+          "overloaded": false,
+          "loss_mw": 0.038248623664376424,
+          "p_mw": 2.144295769125085
+        },
+        {
+          "loading_pct": 12.158437789134572,
+          "status": "CLOSED",
+          "q_mvar": 0.5278877388191411,
+          "id": "br-6",
+          "q_to_mvar": -0.5215591945395509,
+          "p_to_mw": -1.093352860684004,
+          "overloaded": false,
+          "loss_mw": 0.0019145175971946315,
+          "p_mw": 1.0952673782811986
+        },
+        {
+          "loading_pct": 9.878215872432667,
+          "status": "CLOSED",
+          "q_mvar": 0.4215591945309073,
+          "id": "br-7",
+          "q_to_mvar": -0.41996036744781595,
+          "p_to_mw": -0.8885148956397126,
+          "overloaded": false,
+          "loss_mw": 0.004837965065540573,
+          "p_mw": 0.8933528607052532
+        },
+        {
+          "loading_pct": 7.592281595514959,
+          "status": "CLOSED",
+          "q_mvar": 0.319960367456569,
+          "id": "br-8",
+          "q_to_mvar": -0.3169568748587206,
+          "p_to_mw": -0.6843343586419546,
+          "overloaded": false,
+          "loss_mw": 0.004180536994304873,
+          "p_mw": 0.6885148956362594
+        },
+        {
+          "loading_pct": 6.913586456443325,
+          "status": "CLOSED",
+          "q_mvar": 0.2969568748599798,
+          "id": "br-9",
+          "q_to_mvar": -0.29443285522155627,
+          "p_to_mw": -0.6207734444491163,
+          "overloaded": false,
+          "loss_mw": 0.0035609141925974086,
+          "p_mw": 0.6243343586417137
+        },
+        {
+          "loading_pct": 6.243238326582867,
+          "status": "CLOSED",
+          "q_mvar": 0.2744328552105214,
+          "id": "br-10",
+          "q_to_mvar": -0.2742497899884112,
+          "p_to_mw": -0.560219742568072,
+          "overloaded": false,
+          "loss_mw": 0.0005537018871137889,
+          "p_mw": 0.5607734444551858
+        },
+        {
+          "loading_pct": 5.701836046765112,
+          "status": "CLOSED",
+          "q_mvar": 0.24424978998910923,
+          "id": "br-11",
+          "q_to_mvar": -0.24395843195418415,
+          "p_to_mw": -0.5143386080911612,
+          "overloaded": false,
+          "loss_mw": 0.0008811344771686436,
+          "p_mw": 0.5152197425683298
+        },
+        {
+          "loading_pct": 5.000871894843691,
+          "status": "CLOSED",
+          "q_mvar": 0.20895843196819397,
+          "id": "br-12",
+          "q_to_mvar": -0.2068606783582897,
+          "p_to_mw": -0.45167237232706575,
+          "overloaded": false,
+          "loss_mw": 0.002666235757002866,
+          "p_mw": 0.4543386080840686
+        },
+        {
+          "loading_pct": 4.277187627451248,
+          "status": "CLOSED",
+          "q_mvar": 0.1718606783656434,
+          "id": "br-13",
+          "q_to_mvar": -0.17090089363420097,
+          "p_to_mw": -0.39094321056777426,
+          "overloaded": false,
+          "loss_mw": 0.0007291617485805091,
+          "p_mw": 0.39167237231635477
+        },
+        {
+          "loading_pct": 2.8578522673812694,
+          "status": "CLOSED",
+          "q_mvar": 0.09090089363231336,
+          "id": "br-14",
+          "q_to_mvar": -0.09058318073895046,
+          "p_to_mw": -0.2705862365861874,
+          "overloaded": false,
+          "loss_mw": 0.00035697399235701255,
+          "p_mw": 0.2709432105785444
+        },
+        {
+          "loading_pct": 2.2547774182648617,
+          "status": "CLOSED",
+          "q_mvar": 0.08058318073544693,
+          "id": "br-15",
+          "q_to_mvar": -0.08037763428090552,
+          "p_to_mw": -0.21030476995098907,
+          "overloaded": false,
+          "loss_mw": 0.00028146664041273084,
+          "p_mw": 0.2105862365914018
+        },
+        {
+          "loading_pct": 1.6197833988042802,
+          "status": "CLOSED",
+          "q_mvar": 0.06037763428268109,
+          "id": "br-16",
+          "q_to_mvar": -0.0600416666557179,
+          "p_to_mw": -0.15005313585578373,
+          "overloaded": false,
+          "loss_mw": 0.000251634091301689,
+          "p_mw": 0.15030476994708541
+        },
+        {
+          "loading_pct": 0.9855405799462001,
+          "status": "CLOSED",
+          "q_mvar": 0.04004166665228083,
+          "id": "br-17",
+          "q_to_mvar": -0.0400000000021329,
+          "p_to_mw": -0.08999999999645458,
+          "overloaded": false,
+          "loss_mw": 0.0000531358674038529,
+          "p_mw": 0.09005313586385844
+        },
+        {
+          "loading_pct": 3.954323047824751,
+          "status": "CLOSED",
+          "q_mvar": 0.16107885281892398,
+          "id": "br-18",
+          "q_to_mvar": -0.16092525933134216,
+          "p_to_mw": -0.36097656924737265,
+          "overloaded": false,
+          "loss_mw": 0.00016095419780981501,
+          "p_mw": 0.36113752344518246
+        },
+        {
+          "loading_pct": 2.967342572494664,
+          "status": "CLOSED",
+          "q_mvar": 0.12092525933136382,
+          "id": "br-19",
+          "q_to_mvar": -0.12017540406976461,
+          "p_to_mw": -0.2701443925581382,
+          "overloaded": false,
+          "loss_mw": 0.0008321766891583593,
+          "p_mw": 0.2709765692472966
+        },
+        {
+          "loading_pct": 1.971803681604672,
+          "status": "CLOSED",
+          "q_mvar": 0.08017540406975199,
+          "id": "br-20",
+          "q_to_mvar": -0.08005769306198429,
+          "p_to_mw": -0.18004363449443905,
+          "overloaded": false,
+          "loss_mw": 0.00010075806372356055,
+          "p_mw": 0.1801443925581626
+        },
+        {
+          "loading_pct": 0.9855188930922135,
+          "status": "CLOSED",
+          "q_mvar": 0.04005769306196713,
+          "id": "br-21",
+          "q_to_mvar": -0.0399999999999949,
+          "p_to_mw": -0.08999999999999757,
+          "overloaded": false,
+          "loss_mw": 0.00004363449445321521,
+          "p_mw": 0.09004363449445078
+        },
+        {
+          "loading_pct": 10.449609252415566,
+          "status": "CLOSED",
+          "q_mvar": 0.45724304547098205,
+          "id": "br-22",
+          "q_to_mvar": -0.4550690733026709,
+          "p_to_mw": -0.9364311276812652,
+          "overloaded": false,
+          "loss_mw": 0.003181629070212466,
+          "p_mw": 0.9396127567514777
+        },
+        {
+          "loading_pct": 9.383637930216866,
+          "status": "CLOSED",
+          "q_mvar": 0.40506907330269154,
+          "id": "br-23",
+          "q_to_mvar": -0.4010074026892138,
+          "p_to_mw": -0.8412874523027118,
+          "overloaded": false,
+          "loss_mw": 0.005143675378533885,
+          "p_mw": 0.8464311276812457
+        },
+        {
+          "loading_pct": 4.6678377585735245,
+          "status": "CLOSED",
+          "q_mvar": 0.20100740268923167,
+          "id": "br-24",
+          "q_to_mvar": -0.2000000000000346,
+          "p_to_mw": -0.4199999999999612,
+          "overloaded": false,
+          "loss_mw": 0.0012874523028294504,
+          "p_mw": 0.42128745230279063
+        },
+        {
+          "loading_pct": 13.608633928611782,
+          "status": "CLOSED",
+          "q_mvar": 0.9736359732352079,
+          "id": "br-25",
+          "q_to_mvar": -0.9723111816333124,
+          "p_to_mw": -0.948178870694155,
+          "overloaded": false,
+          "loss_mw": 0.0026008964717050276,
+          "p_mw": 0.95077976716586
+        },
+        {
+          "loading_pct": 12.985608115118755,
+          "status": "CLOSED",
+          "q_mvar": 0.9473111816318053,
+          "id": "br-26",
+          "q_to_mvar": -0.9456162294632492,
+          "p_to_mw": -0.8848498768716018,
+          "overloaded": false,
+          "loss_mw": 0.0033289938237857086,
+          "p_mw": 0.8881788706953875
+        },
+        {
+          "loading_pct": 12.360871981116778,
+          "status": "CLOSED",
+          "q_mvar": 0.92061622946981,
+          "id": "br-27",
+          "q_to_mvar": -0.9106524810914401,
+          "p_to_mw": -0.8135490205641855,
+          "overloaded": false,
+          "loss_mw": 0.011300856305762608,
+          "p_mw": 0.8248498768699482
+        },
+        {
+          "loading_pct": 11.666610340912019,
+          "status": "CLOSED",
+          "q_mvar": 0.8906524810871321,
+          "id": "br-28",
+          "q_to_mvar": -0.8838282520702148,
+          "p_to_mw": -0.7457156706180973,
+          "overloaded": false,
+          "loss_mw": 0.007833349950630009,
+          "p_mw": 0.7535490205687273
+        },
+        {
+          "loading_pct": 10.265654018623678,
+          "status": "CLOSED",
+          "q_mvar": 0.8138282520453416,
+          "id": "br-29",
+          "q_to_mvar": -0.8118439557668339,
+          "p_to_mw": -0.6218200019221889,
+          "overloaded": false,
+          "loss_mw": 0.0038956687091840775,
+          "p_mw": 0.6257156706313729
+        },
+        {
+          "loading_pct": 4.720275157425561,
+          "status": "CLOSED",
+          "q_mvar": 0.2118439558174215,
+          "id": "br-30",
+          "q_to_mvar": -0.21026896250149446,
+          "p_to_mw": -0.42022636380195266,
+          "overloaded": false,
+          "loss_mw": 0.0015936380966241614,
+          "p_mw": 0.4218200018985768
+        },
+        {
+          "loading_pct": 3.0446291980483466,
+          "status": "CLOSED",
+          "q_mvar": 0.14026896250096274,
+          "id": "br-31",
+          "q_to_mvar": -0.1400204750861049,
+          "p_to_mw": -0.2700131686060202,
+          "overloaded": false,
+          "loss_mw": 0.00021319519845519608,
+          "p_mw": 0.2702263638044754
+        },
+        {
+          "loading_pct": 0.7213334064772073,
+          "status": "CLOSED",
+          "q_mvar": 0.04002047508072995,
+          "id": "br-32",
+          "q_to_mvar": -0.04000000000132023,
+          "p_to_mw": -0.05999999999630809,
+          "overloaded": false,
+          "loss_mw": 0.000013168619528158843,
+          "p_mw": 0.06001316861583625
+        },
+        {
+          "loading_pct": 0,
+          "status": "OPEN",
+          "q_mvar": 0,
+          "id": "br-33",
+          "q_to_mvar": 0,
+          "p_to_mw": 0,
+          "overloaded": false,
+          "loss_mw": 0,
+          "p_mw": 0
+        },
+        {
+          "loading_pct": 0,
+          "status": "OPEN",
+          "q_mvar": 0,
+          "id": "br-34",
+          "q_to_mvar": 0,
+          "p_to_mw": 0,
+          "overloaded": false,
+          "loss_mw": 0,
+          "p_mw": 0
+        },
+        {
+          "loading_pct": 0,
+          "status": "OPEN",
+          "q_mvar": 0,
+          "id": "br-35",
+          "q_to_mvar": 0,
+          "p_to_mw": 0,
+          "overloaded": false,
+          "loss_mw": 0,
+          "p_mw": 0
+        },
+        {
+          "loading_pct": 0,
+          "status": "OPEN",
+          "q_mvar": 0,
+          "id": "br-36",
+          "q_to_mvar": 0,
+          "p_to_mw": 0,
+          "overloaded": false,
+          "loss_mw": 0,
+          "p_mw": 0
+        },
+        {
+          "loading_pct": 0,
+          "status": "OPEN",
+          "q_mvar": 0,
+          "id": "br-37",
+          "q_to_mvar": 0,
+          "p_to_mw": 0,
+          "overloaded": false,
+          "loss_mw": 0,
+          "p_mw": 0
+        }
+      ],
+      "gens": [
+        {
+          "at_pmax": false,
+          "pmin_mw": 0,
+          "marginal_cost_yuan_per_mwh": 1,
+          "pmax_mw": 10,
+          "cost_c2": 0,
+          "bus": "bus-1",
+          "pg_mw": 3.917677126424917,
+          "qg_mvar": 2.435140970949448,
+          "cost_c0": 0,
+          "at_pmin": false,
+          "cost_yuan_per_h": 3.917677126424917,
+          "id": "grid-1",
+          "cost_c1": 1,
+          "binding": false
+        }
+      ],
+      "status": "ok",
+      "buses": [
+        {
+          "vmin_pu": 1,
+          "va_deg": -3.520145446523727e-28,
+          "vm_pu": 1,
+          "violation": null,
+          "id": "bus-1",
+          "lmp_yuan_per_mwh": 1.0000000000012583,
+          "vmax_pu": 1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": 0.014481414064691136,
+          "vm_pu": 0.997032259729226,
+          "violation": null,
+          "id": "bus-2",
+          "lmp_yuan_per_mwh": 1.0047906828330322,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": 0.09604158129254604,
+          "vm_pu": 0.9829379833957271,
+          "violation": null,
+          "id": "bus-3",
+          "lmp_yuan_per_mwh": 1.0279063068994696,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": 0.1616514484501913,
+          "vm_pu": 0.9754564132211817,
+          "violation": null,
+          "id": "bus-4",
+          "lmp_yuan_per_mwh": 1.0402867998325016,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": 0.22828536374709013,
+          "vm_pu": 0.9680592323563942,
+          "violation": null,
+          "id": "bus-5",
+          "lmp_yuan_per_mwh": 1.0527186670980446,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": 0.1338532625452331,
+          "vm_pu": 0.9496581773962444,
+          "violation": null,
+          "id": "bus-6",
+          "lmp_yuan_per_mwh": 1.0797532420713432,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.09647403505176019,
+          "vm_pu": 0.9461726135061072,
+          "violation": null,
+          "id": "bus-7",
+          "lmp_yuan_per_mwh": 1.0834147906701843,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.06040303241866703,
+          "vm_pu": 0.9413284372186401,
+          "violation": null,
+          "id": "bus-8",
+          "lmp_yuan_per_mwh": 1.093442151331781,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.133484479784001,
+          "vm_pu": 0.9350593721810195,
+          "violation": null,
+          "id": "bus-9",
+          "lmp_yuan_per_mwh": 1.1051225245656666,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.19601403035457013,
+          "vm_pu": 0.929244422593373,
+          "violation": null,
+          "id": "bus-10",
+          "lmp_yuan_per_mwh": 1.1160850426609197,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.18876106666163883,
+          "vm_pu": 0.9283844171643435,
+          "violation": null,
+          "id": "bus-11",
+          "lmp_yuan_per_mwh": 1.1179225684368599,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.17726896175712237,
+          "vm_pu": 0.9268848367474669,
+          "violation": null,
+          "id": "bus-12",
+          "lmp_yuan_per_mwh": 1.121151267682617,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.26858651882951545,
+          "vm_pu": 0.9207717475528895,
+          "violation": null,
+          "id": "bus-13",
+          "lmp_yuan_per_mwh": 1.1327789845149583,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.34726748878775077,
+          "vm_pu": 0.9185049927697456,
+          "violation": null,
+          "id": "bus-14",
+          "lmp_yuan_per_mwh": 1.1366727746309926,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.38495024496023855,
+          "vm_pu": 0.9170926801186061,
+          "violation": null,
+          "id": "bus-15",
+          "lmp_yuan_per_mwh": 1.1395522733726058,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.40820492695192023,
+          "vm_pu": 0.9157247600803724,
+          "violation": null,
+          "id": "bus-16",
+          "lmp_yuan_per_mwh": 1.142362750316414,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.48547316680071556,
+          "vm_pu": 0.9136975461583129,
+          "violation": null,
+          "id": "bus-17",
+          "lmp_yuan_per_mwh": 1.1459958808808925,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.4950627345587534,
+          "vm_pu": 0.9130904793623372,
+          "violation": null,
+          "id": "bus-18",
+          "lmp_yuan_per_mwh": 1.1471924294768638,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": 0.0036508957120413694,
+          "vm_pu": 0.9965038956547063,
+          "violation": null,
+          "id": "bus-19",
+          "lmp_yuan_per_mwh": 1.0055426461271175,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.06332768295133488,
+          "vm_pu": 0.9929262995314287,
+          "violation": null,
+          "id": "bus-20",
+          "lmp_yuan_per_mwh": 1.0107484100625412,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.08268556174580476,
+          "vm_pu": 0.9922217958205711,
+          "violation": null,
+          "id": "bus-21",
+          "lmp_yuan_per_mwh": 1.0116998375687047,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.10303313281473675,
+          "vm_pu": 0.9915843768577616,
+          "violation": null,
+          "id": "bus-22",
+          "lmp_yuan_per_mwh": 1.0125258836403368,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": 0.06507995939045128,
+          "vm_pu": 0.9793522573361024,
+          "violation": null,
+          "id": "bus-23",
+          "lmp_yuan_per_mwh": 1.0336829944978496,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.023653926983137435,
+          "vm_pu": 0.9726811009693364,
+          "violation": null,
+          "id": "bus-24",
+          "lmp_yuan_per_mwh": 1.0442246724578688,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": -0.06735454545775954,
+          "vm_pu": 0.9693561124545272,
+          "violation": null,
+          "id": "bus-25",
+          "lmp_yuan_per_mwh": 1.049559274468833,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": 0.173309614551855,
+          "vm_pu": 0.9477289101326609,
+          "violation": null,
+          "id": "bus-26",
+          "lmp_yuan_per_mwh": 1.0828188178119045,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": 0.2294631582598876,
+          "vm_pu": 0.9451651642333307,
+          "violation": null,
+          "id": "bus-27",
+          "lmp_yuan_per_mwh": 1.0868596049335588,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": 0.3124091271184966,
+          "vm_pu": 0.9337255809143847,
+          "violation": null,
+          "id": "bus-28",
+          "lmp_yuan_per_mwh": 1.1013844087640114,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": 0.39031444368944523,
+          "vm_pu": 0.9255074783602852,
+          "violation": null,
+          "id": "bus-29",
+          "lmp_yuan_per_mwh": 1.111791229088975,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": 0.49558559180045697,
+          "vm_pu": 0.921950057874285,
+          "violation": null,
+          "id": "bus-30",
+          "lmp_yuan_per_mwh": 1.1172061901381025,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": 0.41117769307697916,
+          "vm_pu": 0.9177888870887979,
+          "violation": null,
+          "id": "bus-31",
+          "lmp_yuan_per_mwh": 1.124600505711658,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": 0.38813495997341585,
+          "vm_pu": 0.9168734657352849,
+          "violation": null,
+          "id": "bus-32",
+          "lmp_yuan_per_mwh": 1.1261483445666185,
+          "vmax_pu": 1.1
+        },
+        {
+          "vmin_pu": 0.9,
+          "va_deg": 0.3804050663826352,
+          "vm_pu": 0.916589822134673,
+          "violation": null,
+          "id": "bus-33",
+          "lmp_yuan_per_mwh": 1.1265389178467013,
+          "vmax_pu": 1.1
+        }
+      ],
+      "objective": {
+        "termination_status": "LOCALLY_SOLVED",
+        "solve_time_s": 0.04200005531311035,
+        "cost_total_yuan_per_h": 3.917677126424917
+      },
+      "type": "opf"
+    }
+  }
+}

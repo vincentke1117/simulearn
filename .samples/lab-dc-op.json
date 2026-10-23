@@ -1,0 +1,19 @@
+{
+  "http": 200,
+  "body": {
+    "method": "dc_op",
+    "status": "ok",
+    "message": "直流工作点分析完成",
+    "data": {
+      "node_voltages": {
+        "gnd": 0,
+        "n1": 0,
+        "n2": 0
+      },
+      "branch_currents": {
+        "R1": 0,
+        "VAC1": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "http": 422,
+  "body": {
+    "status": "error",
+    "message": "referenced bus not found @ gen-1.bus",
+    "data": null,
+    "code": "GRID_VALIDATION",
+    "path": [
+      "gen-1",
+      "bus"
+    ]
+  }
+}

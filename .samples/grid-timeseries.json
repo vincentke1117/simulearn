@@ -1,0 +1,49 @@
+{
+  "http": 200,
+  "body": {
+    "status": "ok",
+    "message": "timeseries_pf",
+    "data": {
+      "summary": {
+        "max_loss_mw": 0.30145410639457193,
+        "min_vmin_pu": 0.8938422254522972,
+        "n_points": 4
+      },
+      "points": [
+        {
+          "vmin_pu": 0.9582647068655263,
+          "outcome": "ok",
+          "violation_count": 0,
+          "vmin_bus": "bus-18",
+          "scale": 0.5,
+          "loss_mw": 0.04707076310699776
+        },
+        {
+          "vmin_pu": 0.9316290538725098,
+          "outcome": "ok",
+          "violation_count": 0,
+          "vmin_bus": "bus-18",
+          "scale": 0.8,
+          "loss_mw": 0.12580313002263033
+        },
+        {
+          "vmin_pu": 0.9130904816081948,
+          "outcome": "ok",
+          "violation_count": 0,
+          "vmin_bus": "bus-18",
+          "scale": 1,
+          "loss_mw": 0.20267711696940527
+        },
+        {
+          "vmin_pu": 0.8938422254522972,
+          "outcome": "ok",
+          "violation_count": 7,
+          "vmin_bus": "bus-18",
+          "scale": 1.2,
+          "loss_mw": 0.30145410639457193
+        }
+      ],
+      "type": "timeseries_pf"
+    }
+  }
+}
