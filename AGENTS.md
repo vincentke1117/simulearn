@@ -1,188 +1,66 @@
-# Codex Configuration - RuFlo V3
+# SimuLearn 开发约定
 
-## Behavioral Rules (Always Enforced)
+给人和 AI 编码工具读的项目约定。产品方向、范围、里程碑与验收以 [`docs/design/v1-design-record.md`](docs/design/v1-design-record.md) 为准，动手前先读它；本文件只写「怎么在这个仓库里干活」。
 
-- Do what has been asked; nothing more, nothing less
-- NEVER create files unless they're absolutely necessary for achieving your goal
-- ALWAYS prefer editing an existing file to creating a new one
-- NEVER proactively create documentation files (*.md) or README files unless explicitly requested
-- NEVER save working files, text/mds, or tests to the root folder
-- Never continuously check status after spawning a swarm — wait for results
-- ALWAYS read a file before editing it
-- NEVER commit secrets, credentials, or .env files
+## 项目是什么
 
-## File Organization
+- 电气工程仿真学习平台：电路实验室（lab）与配电网实验室（grid），Julia 计算内核 + Web 前端。
+- 当前阶段：先把配电网实验室做成知帆客户端拓展 `simulearn-grid`（第十二章调压试点），之后再做 Tauri 桌面版。阶段划分见设计记录第 5 节。
 
-- NEVER save to root folder — use the directories below
-- Use `/src` for source code files
-- Use `/tests` for test files
-- Use `/docs` for documentation and markdown files
-- Use `/config` for configuration files
-- Use `/scripts` for utility scripts
-- Use `/examples` for example code
+## 仓库结构
 
-## Project Architecture
+| 路径 | 内容 |
+|---|---|
+| `packages/lab-web` | 电路实验室前端（React 19 + @xyflow/react） |
+| `packages/lab-backend` | 电路内核（Julia：MTK 9 / DiffEq，Manifest 锁定） |
+| `packages/grid-web` | 配电网实验室前端（TypeScript + JointJS v4） |
+| `packages/grid-backend` | 配电网内核（Julia：PowerModels 0.21 / JuMP，Manifest 锁定） |
+| `contracts/{grid,lab}/*.json` | 两个内核共享的解析解金标准契约夹具 |
+| `gateway/` | 开发态网关（Caddy，端口 8100）与静态首页 |
+| `scripts/`、`tests/scripts/` | 启停编排与它的 Pester 测试；打包脚本也放这里 |
+| `docs/` | 设计记录与帮助源文件 |
 
-- Follow Domain-Driven Design with bounded contexts
-- Keep files under 500 lines
-- Use typed interfaces for all public APIs
-- Prefer TDD London School (mock-first) for new code
-- Use event sourcing for state changes
-- Ensure input validation at system boundaries
+根目录的 `src/`、`index.html`、`vite.config.ts`、`tasks.json` 和几份旧 `.md` 是废弃的旧平台壳，计划在 M1 第一天删除：不要往里加东西，也不要引用它们。
 
-### Project Config
+## 不可破坏的约束
 
-- **Topology**: hierarchical-mesh
-- **Max Agents**: 15
-- **Memory**: hybrid
-- **HNSW**: Enabled
-- **Neural**: Enabled
+1. **两个 Julia 内核必须分进程**：MTK 9 钉死 `DataStructures 0.18`，PowerModels 栈需要 `0.19`，合并环境不可解。
+2. **知帆拓展约定 `zhifan-ext/1`**（原文：`D:\workspace\Dev_course\course-site\拓展对接约定.md`）。同一版本号内只能加可选字段，不能改已有字段的含义。拓展必须做到：
+   - 启动参数 `--port 0 --token <令牌> --data-dir <目录> --host-version <版本>`；就绪后打一行**以 `{"ready"` 开头**的 JSON。在 Julia 里用 NamedTuple 输出，不能用 `Dict`，因为 `Dict` 的键序不定，会让这一行以别的键开头，宿主就认不出来。
+   - 只绑 `127.0.0.1`；所有请求校验 `X-Zhifan-Ext-Token`，不对一律返回 401（含 `/health`）。
+   - 页面里只用相对路径（页面实际位于 `/ext/<id>/ui/`）；不用 WebSocket，不用 Cookie。
+   - 只写 `--data-dir`，不主动联网；标准输入关闭后 5 s 内退出，连同子进程。
+   - 判分在内核里重算后核对，不信页面自报的数。
+3. **本机服务安全（D17）**：内核不发任何跨域头；令牌由宿主或网关在转发时注入，页面拿不到。开发态由 `start-all.ps1` 每次启动生成令牌（环境变量 `SIMULEARN_TOKEN`）；没设置时内核、Caddy、Vite 代理都退回开发令牌 `simulearn-dev`，它只用于本机开发，不进发布物。
+4. **响应封套**统一为 `{status, code?, message, data}`，错误码分域 `GRID_*` / `LAB_*`；封套到 HTTP 状态码的映射有测试守着。
+5. **契约先行**：每项分析都对应 `contracts/` 里的解析解金标准，改内核先看它红不红。新分析或新元件要同时带「金标准契约 + 至少 1 个内置示例 + 1 页帮助」，三件齐才算完成（D1）。
+6. **localStorage** 键一律用 `slp:<module>:*` 命名空间；嵌入模式下按实验 id 隔离。
+7. **lab-web 路由**：用 BrowserRouter，`basename` 取自 Vite `base`（构建时为 `/circuit/`），网关侧配套 `try_files` 回退，两者必须一起改。M2 会把它改成相对路径。
 
-## Build & Test
+## 代码约定
 
-```bash
-# Build
-npm run build
+- 新文件不超过 500 行。`JCircuitServer.jl`（2371 行）计划在 M4a 拆分，在那之前不要再往里堆大块新功能，新能力放进单独的文件。
+- 跟随周边代码的命名与注释密度；注释用中文，讲「为什么」，不复述代码。
+- 用户可见文案用中文。
 
-# Test
-npm run check
-
-# Lint
-npm run lint
-```
-
-- ALWAYS run tests after making code changes
-- ALWAYS verify build succeeds before committing
-
-## Security Rules
-
-- NEVER hardcode API keys, secrets, or credentials in source files
-- NEVER commit .env files or any file containing secrets
-- Always validate user input at system boundaries
-- Always sanitize file paths to prevent directory traversal
-- Run `npx @claude-flow/cli@latest security scan` after security-related changes
-
-## Concurrency: 1 MESSAGE = ALL RELATED OPERATIONS
-
-- All operations MUST be concurrent/parallel in a single message
-- Use Codex's Task tool for spawning agents, not just MCP
-- ALWAYS batch ALL todos in ONE TodoWrite call (5-10+ minimum)
-- ALWAYS spawn ALL agents in ONE message with full instructions via Task tool
-- ALWAYS batch ALL file reads/writes/edits in ONE message
-- ALWAYS batch ALL Bash commands in ONE message
-
-## Swarm Orchestration
-
-- MUST initialize the swarm using CLI tools when starting complex tasks
-- MUST spawn concurrent agents using Codex's Task tool
-- Never use CLI tools alone for execution — Task tool agents do the actual work
-- MUST call CLI tools AND Task tool in ONE message for complex work
-
-### 3-Tier Model Routing (ADR-026)
-
-| Tier | Handler | Latency | Cost | Use Cases |
-|------|---------|---------|------|-----------|
-| **1** | Agent Booster (WASM) | <1ms | $0 | Simple transforms (var→const, add types) — Skip LLM |
-| **2** | Haiku | ~500ms | $0.0002 | Simple tasks, low complexity (<30%) |
-| **3** | Sonnet/Opus | 2-5s | $0.003-0.015 | Complex reasoning, architecture, security (>30%) |
-
-- Always check for `[AGENT_BOOSTER_AVAILABLE]` or `[TASK_MODEL_RECOMMENDATION]` before spawning agents
-- Use Edit tool directly when `[AGENT_BOOSTER_AVAILABLE]`
-
-## Swarm Configuration & Anti-Drift
-
-- ALWAYS use hierarchical topology for coding swarms
-- Keep maxAgents at 6-8 for tight coordination
-- Use specialized strategy for clear role boundaries
-- Use `raft` consensus for hive-mind (leader maintains authoritative state)
-- Run frequent checkpoints via `post-task` hooks
-- Keep shared memory namespace for all agents
+## 命令
 
 ```bash
-npx @claude-flow/cli@latest swarm init --topology hierarchical --max-agents 8 --strategy specialized
+npm run lint            # 两个前端的严格 ESLint（零 warning）
+npm run check           # 两个前端的类型检查 + vitest
+npm run build           # 构建两个前端
+npm run check:bundle    # lab-web 体积预算
+julia --project=packages/grid-backend -e "using Pkg; Pkg.test()"   # 含 grid 金标准契约
+julia --project=packages/lab-backend  -e "using Pkg; Pkg.test()"   # 含 lab 金标准契约
+powershell -File scripts/start-all.ps1   # 起开发栈（2 个内核 + 网关），访问 http://127.0.0.1:8100
+powershell -File scripts/stop-all.ps1
+powershell -Command "Invoke-Pester -Path tests/scripts/lifecycle.Tests.ps1"
 ```
 
-## Swarm Execution Rules
+- 改了哪块就跑哪块的门禁；提交前全部门禁都要绿。
+- 不提交密钥和 `.env`；推送到远端前先问用户。
 
-- ALWAYS use `run_in_background: true` for all agent Task calls
-- ALWAYS put ALL agent Task calls in ONE message for parallel execution
-- After spawning, STOP — do NOT add more tool calls or check status
-- Never poll TaskOutput or check swarm status — trust agents to return
-- When agent results arrive, review ALL results before proceeding
+## 工作方式
 
-## V3 CLI Commands
-
-### Core Commands
-
-| Command | Subcommands | Description |
-|---------|-------------|-------------|
-| `init` | 4 | Project initialization |
-| `agent` | 8 | Agent lifecycle management |
-| `swarm` | 6 | Multi-agent swarm coordination |
-| `memory` | 11 | AgentDB memory with HNSW search |
-| `task` | 6 | Task creation and lifecycle |
-| `session` | 7 | Session state management |
-| `hooks` | 17 | Self-learning hooks + 12 workers |
-| `hive-mind` | 6 | Byzantine fault-tolerant consensus |
-
-### Quick CLI Examples
-
-```bash
-npx @claude-flow/cli@latest init --wizard
-npx @claude-flow/cli@latest agent spawn -t coder --name my-coder
-npx @claude-flow/cli@latest swarm init --v3-mode
-npx @claude-flow/cli@latest memory search --query "authentication patterns"
-npx @claude-flow/cli@latest doctor --fix
-```
-
-## Available Agents (60+ Types)
-
-### Core Development
-`coder`, `reviewer`, `tester`, `planner`, `researcher`
-
-### Specialized
-`security-architect`, `security-auditor`, `memory-specialist`, `performance-engineer`
-
-### Swarm Coordination
-`hierarchical-coordinator`, `mesh-coordinator`, `adaptive-coordinator`
-
-### GitHub & Repository
-`pr-manager`, `code-review-swarm`, `issue-tracker`, `release-manager`
-
-### SPARC Methodology
-`sparc-coord`, `sparc-coder`, `specification`, `pseudocode`, `architecture`
-
-## Memory Commands Reference
-
-```bash
-# Store (REQUIRED: --key, --value; OPTIONAL: --namespace, --ttl, --tags)
-npx @claude-flow/cli@latest memory store --key "pattern-auth" --value "JWT with refresh" --namespace patterns
-
-# Search (REQUIRED: --query; OPTIONAL: --namespace, --limit, --threshold)
-npx @claude-flow/cli@latest memory search --query "authentication patterns"
-
-# List (OPTIONAL: --namespace, --limit)
-npx @claude-flow/cli@latest memory list --namespace patterns --limit 10
-
-# Retrieve (REQUIRED: --key; OPTIONAL: --namespace)
-npx @claude-flow/cli@latest memory retrieve --key "pattern-auth" --namespace patterns
-```
-
-## Quick Setup
-
-```bash
-codex mcp add claude-flow -- npx -y @claude-flow/cli@latest
-npx @claude-flow/cli@latest daemon start
-npx @claude-flow/cli@latest doctor --fix
-```
-
-## Codex vs CLI Tools
-
-- Codex's Task tool handles ALL execution: agents, file ops, code generation, git
-- CLI tools handle coordination via Bash: swarm init, memory, hooks, routing
-- NEVER use CLI tools as a substitute for Task tool agents
-
-## Support
-
-- Documentation: https://github.com/ruvnet/claude-flow
-- Issues: https://github.com/ruvnet/claude-flow/issues
+- 事实先查再说：代码、契约夹具、设计记录、约定原文都在本机。不要凭印象下结论。
+- 范围超出当前任务、或要改动设计记录里已定的决定时，先说明再动手；确定要改的，在设计记录末尾的「修订记录」里追加一条。
