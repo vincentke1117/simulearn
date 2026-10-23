@@ -1410,3 +1410,11 @@ body.embed [data-embed-hide] {
 body.embed .brand-clickable {
   cursor: default;
 }
+
+/* 两步确认的激活态（「再点一次确认」），比普通按钮醒目 */
+.topbar button.armed {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+  font-weight: 600;
+}

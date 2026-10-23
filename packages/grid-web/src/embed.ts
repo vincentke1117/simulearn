@@ -79,6 +79,19 @@ export function projectFingerprint(project: unknown): string {
   return hash.toString(16).padStart(8, '0');
 }
 
+/**
+ * 「学生改没改过算例」只看电气内容，不看元件位置：
+ * 点一下元件就会吸附到网格、改动坐标，拖动排布也不改变算例本身。
+ */
+export function layoutFreeSignature(topology: Topology): string {
+  const nodes = (topology.nodes ?? []).map((node) => {
+    const rest: Record<string, unknown> = { ...node };
+    delete rest.loc;
+    return rest;
+  });
+  return JSON.stringify({ ...topology, nodes });
+}
+
 /** 嵌入页面与父窗口之间只需要这几样，测试里可以直接伪造。 */
 export interface EmbedWindow {
   parent: { postMessage(message: unknown, targetOrigin: string): void };

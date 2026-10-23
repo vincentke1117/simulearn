@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   embedQuery,
+  layoutFreeSignature,
   experimentKeyPrefix,
   isEmbedHash,
   parseLoadMessage,
@@ -66,6 +67,15 @@ describe('resolveProject', () => {
     expect(resolveProject(null).kind).toBe('error');
     const circuit = { schema: 'simulearn.project/1', kind: 'circuit', app: { module: 'lab' }, payload: { nodes: [], edges: [] } };
     expect(resolveProject(circuit).kind).toBe('error');
+  });
+});
+
+describe('layoutFreeSignature', () => {
+  it('ignores element positions but not electrical changes', () => {
+    const at = (x: number, pKw: number) =>
+      ({ meta: { baseMVA: 100 }, nodes: [{ id: 'load-1', type: 'Load', bus: 'bus-1', p_kw: pKw, loc: { x, y: 10 } }], links: [] }) as unknown as Topology;
+    expect(layoutFreeSignature(at(10, 100))).toBe(layoutFreeSignature(at(240, 100)));
+    expect(layoutFreeSignature(at(10, 100))).not.toBe(layoutFreeSignature(at(10, 120)));
   });
 });
 

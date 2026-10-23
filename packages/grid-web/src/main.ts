@@ -36,10 +36,12 @@ import { exportTopology, importTopology, shouldBeSlack } from './topologyio';
 import type { AnalysisKind, NodeType, ReconfigResult, Topology } from './types';
 import { isDynamicMachine, validateForAnalysis, validateTopology } from './validation';
 import { unwrapProjectFile, wrapGridProject } from './envelope';
+import { armTwoStep } from './confirm';
 import {
   embedQuery,
   experimentKeyPrefix,
   isEmbedHash,
+  layoutFreeSignature,
   projectFingerprint,
   startEmbed,
   type EmbedWindow,
@@ -171,19 +173,18 @@ function currentMeta(): { baseMVA: number; feeder: string } {
 }
 
 // 嵌入模式下的实验基线：课程给出的初始算例、它的指纹（草稿只在指纹一致时恢复），
-// 以及它刚上画布时导出的样子（与之相同就说明学生没改过，不留草稿、也不提示「恢复」）
+// 以及它刚上画布时的电气签名（与之相同就说明学生没改过算例，不留草稿、也不提示「恢复」）
 let embedBaseline: { topology: Topology; fingerprint: string; snapshot: string } | null = null;
 
 function saveDraft(): void {
   const topology = exportTopology(board, currentMeta());
   if (embedMode) {
     if (!embedBaseline) return;
-    const current = JSON.stringify(topology);
-    if (current === embedBaseline.snapshot) {
-      removeStore('embed-draft-v1');
+    if (layoutFreeSignature(topology) === embedBaseline.snapshot) {
+      removeStore('embed-draft-v2');
     } else {
       writeStore(
-        'embed-draft-v1',
+        'embed-draft-v2',
         JSON.stringify({ fingerprint: embedBaseline.fingerprint, snapshot: embedBaseline.snapshot, topology }),
       );
     }
@@ -935,7 +936,7 @@ function applyExperiment(load: LoadMessage, topology: Topology): void {
   setAnalysis(analysis);
   let saved: { fingerprint?: string; snapshot?: unknown; topology?: Topology } | null = null;
   try {
-    saved = JSON.parse(readStore('embed-draft-v1') ?? 'null');
+    saved = JSON.parse(readStore('embed-draft-v2') ?? 'null');
   } catch {
     /* 草稿损坏则用初始算例 */
   }
@@ -946,8 +947,8 @@ function applyExperiment(load: LoadMessage, topology: Topology): void {
   } else {
     embedBaseline = { topology, fingerprint, snapshot: '' };
     loadTopology(topology, `实验 ${load.experiment}`);
-    // 画布导出的样子与传入的算例字段顺序、坐标都可能不同，以画布导出为准
-    embedBaseline.snapshot = JSON.stringify(exportTopology(board, currentMeta()));
+    // 画布导出的字段与传入的算例可能不同，以画布导出为准
+    embedBaseline.snapshot = layoutFreeSignature(exportTopology(board, currentMeta()));
   }
   renderHistory();
   // 宿主刚把 iframe 塞进课堂舞台时尺寸还在变，等两帧再适配，否则会按旧尺寸缩放
@@ -965,12 +966,16 @@ function bootEmbed(): void {
   });
   const reset = $('#btn-reset');
   reset.hidden = false;
-  reset.addEventListener('click', () => {
-    if (!embedBaseline) return;
-    if (!window.confirm('恢复成课程给出的初始算例？你的修改会丢失。')) return;
-    loadTopology(embedBaseline.topology, '初始算例');
-    saveDraft();
-  });
+  // 不能用 window.confirm：宿主 iframe 沙箱没有 allow-modals，弹窗会被浏览器忽略并返回 false
+  armTwoStep(
+    reset,
+    () => {
+      if (!embedBaseline) return;
+      loadTopology(embedBaseline.topology, '初始算例');
+      saveDraft();
+    },
+    { armedLabel: '再点一次确认恢复' },
+  );
   startEmbed(window as unknown as EmbedWindow, {
     loadExample: fetchExample,
     applyExperiment,

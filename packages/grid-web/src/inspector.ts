@@ -144,7 +144,10 @@ export function renderInspector(container: HTMLElement, board: Board, cell: dia.
   if (kind === 'attach') {
     const message = document.createElement('p');
     message.className = 'muted';
-    message.textContent = '设备挂接线（不参与计算）。删除它可解除设备与母线的挂接。';
+    message.textContent =
+      hooks.canDelete === false
+        ? '设备挂接线（不参与计算）。'
+        : '设备挂接线（不参与计算）。删除它可解除设备与母线的挂接。';
     container.appendChild(message);
     if (hooks.canDelete !== false) appendDeleteButton(container, hooks);
     return;
