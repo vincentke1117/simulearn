@@ -4,8 +4,9 @@
 //
 // 假下载站按《拓展对接约定》zhifan-ext/1 §1 提供 /desktop/ext/manifest.json 与拓展 zip；
 // bytes / sha256 / unpackedBytes 从 zip 本身算出（口径与知帆的 downloads-worker/sync.mjs --ext 一致）。
-// 课堂包按知帆的课堂资源包格式（course-package.json + manifest.json）生成，含两个拓展实验场景：
-// 一个用内置算例名引用（{"example": "ieee33"}），一个用 simulearn.project/1 工程文件引用（ring4）。
+// 课堂包按知帆的课堂资源包格式（course-package.json + manifest.json）生成，含四个拓展实验场景：
+// 一个用内置算例名引用（{"example": "ieee33"}），一个用 simulearn.project/1 工程文件引用（ring4），
+// 再加第十二章的两个调压实验（与 scripts/ch12-course-kit.mjs 交给课程站的完全相同）。
 // 只用 Node 自带模块（需要 Node ≥ 22.2 的 zlib.crc32）。
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
@@ -13,6 +14,8 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import zlib from 'node:zlib';
+
+import { ch12Experiments } from './ch12-course-kit.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2);
@@ -127,6 +130,7 @@ const ring4Project = {
   payload: ring4,
 };
 const fallback = '这个实验需要在知帆客户端里安装「仿真实验 · 配电网」拓展。';
+const ch12 = ch12Experiments();
 const lectureFiles = {
   'manifest.json': Buffer.from(JSON.stringify({
     stage: { name: '演练：SimuLearn 配电网拓展' },
@@ -136,14 +140,16 @@ const lectureFiles = {
         content: { type: 'extension', ext: ID, minVersion: version, experiment: 'rehearsal-ieee33', project: { example: 'ieee33' }, fallback } },
       { type: 'interactive', title: '看一看：四节点环网（工程文件）', order: 3,
         content: { type: 'extension', ext: ID, minVersion: version, experiment: 'rehearsal-ring4', project: 'experiments/ring4.project.json', fallback } },
+      ...ch12.scenes.map((scene, i) => ({ ...scene, order: 4 + i })),
     ],
   })),
   'experiments/ring4.project.json': Buffer.from(JSON.stringify(ring4Project)),
+  ...ch12.files,
 };
 const descriptor = {
   format: 'course-package', formatVersion: 1, minPlayerVersion: 1,
   courseId: 'power-system-analysis', packageId: 'simulearn-grid-rehearsal', version: `${new Date().toISOString().slice(0, 10).replaceAll('-', '.')}.1`,
-  title: '演练：SimuLearn 配电网拓展', sceneCount: 3, createdAt: new Date().toISOString(),
+  title: '演练：SimuLearn 配电网拓展', sceneCount: 3 + ch12.scenes.length, createdAt: new Date().toISOString(),
   files: Object.fromEntries(Object.entries(lectureFiles).map(([name, data]) => [name, { bytes: data.length, sha256: sha256(data) }])),
 };
 fs.mkdirSync(outDir, { recursive: true });
@@ -190,6 +196,6 @@ server.listen(port, '127.0.0.1', () => {
   console.log(`  $env:ZHIFAN_EXT_ORIGIN = "${origin}"`);
   console.log(`  $env:ZHIFAN_USER_DATA = "$env:TEMP\\zhifan-rehearsal"`);
   console.log(`  npm start`);
-  console.log(`\n然后：个人中心 → 拓展 → 安装「仿真实验 · 配电网」；课程 → 导入课堂资源包 → 选上面的课堂包；进入课堂做两个实验。`);
+  console.log(`\n然后：个人中心 → 拓展 → 安装「仿真实验 · 配电网」；课程 → 导入课堂资源包 → 选上面的课堂包；进入课堂做四个实验（后两个是第十二章调压实验）。`);
   console.log('（本窗口保持运行；Ctrl+C 结束假下载站）');
 });

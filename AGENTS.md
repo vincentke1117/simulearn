@@ -61,6 +61,7 @@ powershell -File scripts/release-ext.ps1   # 打知帆拓展发布包 dist/ext/s
 node scripts/fake-zhifan-host.mjs --entry <程序目录>/bin/simulearn-grid.exe   # 假知帆宿主：按 zhifan-ext/1 启动、转发、嵌入，打开 http://127.0.0.1:8200/
 node scripts/fake-zhifan-host.mjs --attach 8123 --token simulearn-dev    # 同上，但接已在跑的开发态内核
 node scripts/zhifan-rehearsal.mjs   # 用真实知帆客户端（开发版）演练：生成演练课堂包 + 起假下载站，并打印客户端的启动命令
+node scripts/ch12-course-kit.mjs     # 第十二章调压实验交给课程站的工程文件与场景，写到 dist/course/ch12/
 ```
 
 - 改了哪块就跑哪块的门禁；提交前全部门禁都要绿。
