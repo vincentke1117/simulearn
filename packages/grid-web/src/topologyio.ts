@@ -4,8 +4,11 @@ import { isBus, isDevice } from './board';
 import { createLink, createNodeElement, defaultLinkElec, styleLink } from './shapes';
 import type { LinkType, NodeType, Topology, TopologyLink, TopologyNode } from './types';
 
-const NODE_TYPES = new Set(['Bus', 'Load', 'Gen', 'DG']);
-const LINK_TYPES = new Set(['Line', 'Switch']);
+const NODE_TYPES = new Set(['Bus', 'Load', 'Gen', 'DG', 'Capacitor']);
+const LINK_TYPES = new Set(['Line', 'Switch', 'Transformer']);
+// 变压器的教材参数（后端 topology.jl::transformer_branch 读取）。不列进来的话导入再导出会静默丢掉挡位，
+// 实验每次重载都回到 0 挡（与 h_s / cost_* 同类坑）。
+const TRANSFORMER_KEYS = ['hv_kv', 'lv_kv', 'tap_step_pct', 'tap_steps', 'tap_pos'] as const;
 
 /** 画布 → 扁平拓扑 JSON（电气参数在顶层，与 Julia 契约一致；挂接线不导出）。 */
 export function exportTopology(board: Board, meta: { baseMVA: number; feeder?: string }): Topology {
@@ -45,6 +48,9 @@ export function exportTopology(board: Board, meta: { baseMVA: number; feeder?: s
       rate_mva: elec.rate_mva !== undefined ? Number(elec.rate_mva) : undefined,
       status: (elec.status as 'CLOSED' | 'OPEN') ?? 'CLOSED',
       switchable: Boolean(elec.switchable ?? kind === 'Switch'),
+      ...(kind === 'Transformer'
+        ? Object.fromEntries(TRANSFORMER_KEYS.filter((k) => elec[k] !== undefined).map((k) => [k, Number(elec[k])]))
+        : {}),
     });
   }
 
@@ -73,6 +79,7 @@ const ELEC_KEYS: Record<string, string[]> = {
   Load: ['bus', 'p_kw', 'q_kvar'],
   Gen: GEN_ELEC_KEYS,
   DG: GEN_ELEC_KEYS,
+  Capacitor: ['bus', 'q_unit_kvar', 'groups', 'in_service'],
 };
 
 /** 扁平拓扑 JSON → 画布。缺 loc 的节点走 BFS 分层自动布局；设备自动生成挂接线。 */
@@ -120,6 +127,9 @@ export function importTopology(board: Board, topo: Topology): void {
       rate_mva: spec.rate_mva ?? defaults.rate_mva,
       status: spec.status ?? 'CLOSED',
       switchable: spec.switchable ?? spec.type === 'Switch',
+      ...(spec.type === 'Transformer'
+        ? Object.fromEntries(TRANSFORMER_KEYS.map((k) => [k, spec[k] ?? defaults[k]]))
+        : {}),
     });
     styleLink(link);
     cells.push(link);

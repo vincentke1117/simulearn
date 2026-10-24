@@ -81,9 +81,13 @@ function build_pf_payload(data)
         end
         violation !== nothing && push!(violations, bus["name"])
         vm < vmin_seen[1] && (vmin_seen = (vm, bus["name"]))
+        base_kv = finite_or_zero(get(bus, "base_kv", 0.0))
         push!(buses, Dict(
             "id" => bus["name"],
             "vm_pu" => vm,
+            # 额定电压与实际电压（kV）：多电压等级（教材调压）时，学生要直接看 kV 判断是否在 6.0~6.6 kV 之类的范围内
+            "kv" => base_kv,
+            "v_kv" => vm * base_kv,
             "va_deg" => rad2deg(finite_or_zero(get(bus, "va", 0.0))),
             "vmin_pu" => vmin,
             "vmax_pu" => vmax,

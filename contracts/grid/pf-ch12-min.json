@@ -1,0 +1,46 @@
+{
+  "name": "grid-pf-ch12-min-tap0",
+  "endpoint": "pf",
+  "expect_http": 200,
+  "request_example": "ch12_tap_min",
+  "note": "教材例 12-3（0 挡 = 110 kV）。期望值取两母线精确闭式解（test/transformer.jl 的 ch12_exact），不是教材简化法。",
+  "expect": [
+    {
+      "path": "status",
+      "equals": "ok"
+    },
+    {
+      "path": "data.buses.2.id",
+      "equals": "bus-lv"
+    },
+    {
+      "path": "data.buses.2.kv",
+      "approx": 6.0,
+      "atol": 1e-09
+    },
+    {
+      "path": "data.buses.2.v_kv",
+      "approx": 6.331766,
+      "atol": 1e-05
+    },
+    {
+      "path": "data.branches.1.id",
+      "equals": "T1"
+    },
+    {
+      "path": "data.branches.1.p_mw",
+      "approx": 10.02715,
+      "atol": 1e-05
+    },
+    {
+      "path": "data.branches.1.q_mvar",
+      "approx": 6.445087,
+      "atol": 1e-05
+    },
+    {
+      "path": "data.buses.1.v_kv",
+      "approx": 113.0,
+      "atol": 1e-06
+    }
+  ]
+}

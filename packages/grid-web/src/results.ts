@@ -24,7 +24,8 @@ export function paintResults(board: Board, pf: PfResult): void {
     if (!res) continue;
     const fill = res.violation ? '#dc2626' : res.vm_pu < res.vmin_pu + 0.02 ? '#d97706' : '#16a34a';
     el.attr('body/fill', fill);
-    el.attr('result/text', `${fmt(res.vm_pu, 4)} pu ∠${fmt(res.va_deg, 2)}°`);
+    const kv = res.v_kv !== undefined ? `${fmt(res.v_kv, 3)} kV · ` : '';
+    el.attr('result/text', `${kv}${fmt(res.vm_pu, 4)} pu ∠${fmt(res.va_deg, 2)}°`);
     el.attr('result/fill', res.violation ? '#dc2626' : '#475569');
   }
 
@@ -214,11 +215,11 @@ export function renderPfPanel(container: HTMLElement, pf: PfResult): void {
     <p class="muted small">求解 ${fmt(s.solve_time_s, 3)} s · ${esc(s.termination_status)}</p>
     <details>
       <summary>节点电压（${pf.buses.length}）</summary>
-      <table><thead><tr><th>母线</th><th>Vm (pu)</th><th>Va (°)</th></tr></thead><tbody>
+      <table><thead><tr><th>母线</th><th>电压 (kV)</th><th>额定 (kV)</th><th>Vm (pu)</th><th>Va (°)</th></tr></thead><tbody>
         ${pf.buses
           .map(
             (b) =>
-              `<tr class="${b.violation ? 'row-bad' : ''}"><td>${esc(b.id)}</td><td>${fmt(b.vm_pu, 4)}</td><td>${fmt(b.va_deg, 2)}</td></tr>`,
+              `<tr class="${b.violation ? 'row-bad' : ''}"><td>${esc(b.id)}</td><td>${b.v_kv !== undefined ? fmt(b.v_kv, 3) : '—'}</td><td>${b.kv !== undefined ? fmt(b.kv, 2) : '—'}</td><td>${fmt(b.vm_pu, 4)}</td><td>${fmt(b.va_deg, 2)}</td></tr>`,
           )
           .join('')}
       </tbody></table>

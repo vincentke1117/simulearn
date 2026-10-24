@@ -150,6 +150,13 @@ export function validateTopology(topo: Topology): ValidationIssue[] {
     if (node.type === 'Load' && (!Number.isFinite(node.p_kw) || !Number.isFinite(node.q_kvar))) {
       err(`负荷 ${node.id} 缺少 p_kw / q_kvar`);
     }
+    if (node.type === 'Capacitor') {
+      const groups = Number(node.groups);
+      const on = Number(node.in_service ?? 0);
+      if (!Number.isInteger(groups) || groups < 0) err(`电容组 ${node.id} 的总组数必须是非负整数`);
+      else if (!Number.isInteger(on) || on < 0 || on > groups) err(`电容组 ${node.id} 的投入组数必须在 0 到 ${groups} 之间`);
+      if (!Number.isFinite(Number(node.q_unit_kvar)) || Number(node.q_unit_kvar) < 0) err(`电容组 ${node.id} 的每组容量必须是非负数`);
+    }
   }
 
   if (topo.links.length === 0 && buses.length > 1) err('多条母线之间没有任何连线');
@@ -169,6 +176,21 @@ export function validateTopology(topo: Topology): ValidationIssue[] {
     }
     if (seen.has(link.id)) err(`支路 id 重复：${link.id}`);
     seen.add(link.id);
+
+    const kvFrom = Number(buses.find((b) => b.id === link.from)?.kv);
+    const kvTo = Number(buses.find((b) => b.id === link.to)?.kv);
+    if (link.type === 'Transformer') {
+      // 与后端 transformer_branch 约定一致：起点是高压侧
+      if (kvFrom < kvTo) err(`变压器 ${link.id} 的起点必须是高压侧母线（现在起点 ${kvFrom} kV、终点 ${kvTo} kV，请反向连线）`);
+      const steps = Number(link.tap_steps ?? 0);
+      const pos = Number(link.tap_pos ?? 0);
+      if (!(Number(link.hv_kv) > 0) || !(Number(link.lv_kv) > 0)) err(`变压器 ${link.id} 缺少高压侧或低压侧额定电压`);
+      if (!Number.isInteger(steps) || steps < 0) err(`变压器 ${link.id} 的挡数必须是非负整数`);
+      else if (!Number.isInteger(pos) || Math.abs(pos) > steps) err(`变压器 ${link.id} 的挡位必须在 −${steps} 到 +${steps} 之间`);
+    } else if (Number.isFinite(kvFrom) && Number.isFinite(kvTo) && kvFrom !== kvTo) {
+      // 后端按起点母线的电压等级折算线路阻抗，跨电压等级连线会静默算错
+      err(`支路 ${link.id} 连接了不同电压等级的母线（${kvFrom} kV 与 ${kvTo} kV），请把类型改成「变压器」`);
+    }
   }
 
   // 重构可行性提示（与 Julia 侧辐射预检对应）

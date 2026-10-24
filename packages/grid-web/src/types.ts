@@ -1,8 +1,8 @@
 // 拓扑 JSON 契约（与 Julia 侧 src/types.jl + src/topology.jl 对齐）：
 // 电气参数一律是【顶层扁平字段】，Julia 的 Node(obj) 会把除 id/type 外的顶层键收进 data。
 
-export type NodeType = 'Bus' | 'Load' | 'Gen' | 'DG';
-export type LinkType = 'Line' | 'Switch';
+export type NodeType = 'Bus' | 'Load' | 'Gen' | 'DG' | 'Capacitor';
+export type LinkType = 'Line' | 'Switch' | 'Transformer';
 export type SwitchStatus = 'CLOSED' | 'OPEN';
 
 export interface TopologyMeta {
@@ -32,6 +32,10 @@ export interface TopologyNode {
   q_max_kvar?: number;
   q_min_kvar?: number;
   status?: number;
+  // Capacitor（第十二章调压）：每组额定容量、总组数、投入组数
+  q_unit_kvar?: number;
+  groups?: number;
+  in_service?: number;
   [key: string]: unknown;
 }
 
@@ -46,6 +50,12 @@ export interface TopologyLink {
   status?: SwitchStatus;
   switchable?: boolean;
   b_siemens?: number;
+  // Transformer：from = 高压侧；r_ohm / x_ohm 归算到高压侧；挡位见 transformer.ts
+  hv_kv?: number;
+  lv_kv?: number;
+  tap_step_pct?: number;
+  tap_steps?: number;
+  tap_pos?: number;
   [key: string]: unknown;
 }
 
@@ -96,10 +106,16 @@ export interface PfSummary {
   termination_status: string;
 }
 
+/** 潮流的母线结果多带额定电压与实际电压（kV），0.5.1 起后端提供；最优潮流不带 */
+export interface PfBus extends BusResult {
+  kv?: number;
+  v_kv?: number;
+}
+
 export interface PfResult {
   status: string;
   type: string;
-  buses: BusResult[];
+  buses: PfBus[];
   branches: BranchResult[];
   summary: PfSummary;
 }

@@ -8,7 +8,7 @@ using Sockets
 
 const CONTRACT = "zhifan-ext/1"
 # 拓展版本：ready 行与发布清单都用它，发版时改这里
-const EXT_VERSION = "0.5.0"
+const EXT_VERSION = "0.5.1"
 const TOKEN_HEADER = "X-Zhifan-Ext-Token"
 # 只给手工起服务的本机开发用；宿主与 start-all 每次启动都会传入随机令牌（设计记录 D17）
 const DEV_TOKEN = "simulearn-dev"

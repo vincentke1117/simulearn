@@ -1,6 +1,7 @@
 import { dia } from '@joint/core';
 import type { Board } from './board';
 import { styleLink } from './shapes';
+import { capacitorOptions, tapOptions } from './transformer';
 
 interface FieldDef {
   key: string;
@@ -14,6 +15,12 @@ interface FieldDef {
   help?: string;
   section?: string;
   placeholder?: string;
+  /** 选项随当前参数变化（如挡位对应的 kV、电容组投入容量） */
+  optionsFrom?: (elec: Record<string, unknown>) => { value: string; label: string }[];
+  /** select 的值按数字存（挡位、投入组数） */
+  numeric?: boolean;
+  /** 改了它，其它字段的选项要跟着变：改完重绘检查器 */
+  rerender?: boolean;
 }
 
 /** 机电暂态动态参数（Gen/DG 通用，后端 topology.jl 原样透传给 dynamics/shortcircuit）。 */
@@ -93,14 +100,45 @@ const GEN_FIELDS: FieldDef[] = [
   ...DYNAMIC_FIELDS,
 ];
 
-const LINK_FIELDS: FieldDef[] = [
+const KIND_FIELD: FieldDef = {
+  key: '__kind', label: '类型', kind: 'select',
+  options: [
+    { value: 'Line', label: '线路' },
+    { value: 'Switch', label: '开关' },
+    { value: 'Transformer', label: '变压器' },
+  ],
+};
+
+const CAPACITOR_FIELDS: FieldDef[] = [
+  { key: 'bus', label: '所属母线', kind: 'text', readonly: true, help: '从设备拖一条线到母线即可挂接' },
+  { key: 'q_unit_kvar', label: '每组容量', unit: 'kvar', kind: 'number', required: true, min: 0, rerender: true,
+    help: '在母线额定电压下的补偿容量；实际补偿无功随电压平方变化' },
+  { key: 'groups', label: '总组数', kind: 'number', required: true, min: 0, rerender: true },
+  { key: 'in_service', label: '投入组数', kind: 'select', numeric: true, optionsFrom: capacitorOptions },
+];
+
+const TRANSFORMER_FIELDS: FieldDef[] = [
+  KIND_FIELD,
+  { key: 'hv_kv', label: '高压侧额定电压', unit: 'kV', kind: 'number', required: true, min: 0.001, rerender: true,
+    help: '即分接头中心电压；连线起点必须是高压侧母线' },
+  { key: 'lv_kv', label: '低压侧额定电压', unit: 'kV', kind: 'number', required: true, min: 0.001, rerender: true },
+  { key: 'r_ohm', label: '电阻（归算到高压侧）', unit: 'Ω', kind: 'number', required: true, min: 0 },
+  { key: 'x_ohm', label: '电抗（归算到高压侧）', unit: 'Ω', kind: 'number', required: true, min: 0 },
+  { key: 'tap_step_pct', label: '每挡调压', unit: '%', kind: 'number', min: 0, rerender: true },
+  { key: 'tap_steps', label: '挡数（±）', kind: 'number', min: 0, rerender: true, help: '例如 110±2×2.5% 填 2' },
+  { key: 'tap_pos', label: '分接头挡位', kind: 'select', numeric: true, optionsFrom: tapOptions },
+  { key: 'rate_mva', label: '额定容量', unit: 'MVA', kind: 'number' },
   {
-    key: '__kind', label: '类型', kind: 'select',
+    key: 'status', label: '运行状态', kind: 'select',
     options: [
-      { value: 'Line', label: '线路' },
-      { value: 'Switch', label: '开关' },
+      { value: 'CLOSED', label: '投运' },
+      { value: 'OPEN', label: '退出' },
     ],
   },
+];
+
+const LINK_FIELDS: FieldDef[] = [
+  KIND_FIELD,
   { key: 'r_ohm', label: '电阻', unit: 'Ω', kind: 'number', required: true, min: 0 },
   { key: 'x_ohm', label: '电抗', unit: 'Ω', kind: 'number', required: true, min: 0 },
   { key: 'rate_mva', label: '额定容量', unit: 'MVA', kind: 'number' },
@@ -121,6 +159,8 @@ const TYPE_TITLES: Record<string, string> = {
   DG: '分布式电源',
   Line: '线路',
   Switch: '开关',
+  Capacitor: '电容组',
+  Transformer: '变压器',
 };
 
 export interface InspectorHooks {
@@ -154,8 +194,12 @@ export function renderInspector(container: HTMLElement, board: Board, cell: dia.
   }
 
   const fields = cell.isLink()
-    ? LINK_FIELDS
-    : kind === 'Bus'
+    ? kind === 'Transformer'
+      ? TRANSFORMER_FIELDS
+      : LINK_FIELDS
+    : kind === 'Capacitor'
+      ? CAPACITOR_FIELDS
+      : kind === 'Bus'
       ? BUS_FIELDS
       : kind === 'Load'
         ? LOAD_FIELDS
@@ -211,7 +255,7 @@ export function renderInspector(container: HTMLElement, board: Board, cell: dia.
     let input: HTMLInputElement | HTMLSelectElement;
     if (field.kind === 'select') {
       input = document.createElement('select');
-      for (const opt of field.options ?? []) {
+      for (const opt of field.optionsFrom ? field.optionsFrom(elec) : (field.options ?? [])) {
         const option = document.createElement('option');
         option.value = opt.value;
         option.textContent = opt.label;
@@ -266,13 +310,26 @@ function applyFieldChange(
   const elec = { ...((cell.get('elec') ?? {}) as Record<string, unknown>) };
 
   if (field.key === '__kind') {
-    const kind = input.value as 'Line' | 'Switch';
+    const kind = input.value as 'Line' | 'Switch' | 'Transformer';
     cell.set('jgdoType', kind);
-    if (kind === 'Switch' && elec.switchable === undefined) elec.switchable = true;
     if (kind === 'Switch') elec.switchable = true;
+    if (kind === 'Transformer') {
+      // 额定电压默认取两端母线的电压等级，挡位默认 110±2×2.5% 式的 ±2 挡、0 挡
+      const link = cell as dia.Link;
+      const kvOf = (el: dia.Element | null) => Number(((el?.get('elec') ?? {}) as Record<string, unknown>).kv);
+      const hv = kvOf(link.getSourceElement());
+      const lv = kvOf(link.getTargetElement());
+      if (elec.hv_kv === undefined && Number.isFinite(hv)) elec.hv_kv = hv;
+      if (elec.lv_kv === undefined && Number.isFinite(lv)) elec.lv_kv = lv;
+      elec.tap_step_pct ??= 2.5;
+      elec.tap_steps ??= 2;
+      elec.tap_pos ??= 0;
+      elec.switchable = false;
+    }
     cell.set('elec', elec);
     styleLink(cell as dia.Link);
     hooks.onChanged();
+    rerenderInspector(board, cell, input, hooks);
     return;
   }
 
@@ -315,7 +372,7 @@ function applyFieldChange(
       value = num;
     }
   } else if (field.kind === 'select') {
-    value = field.key === 'status' && cell.isElement() ? Number(input.value) : input.value;
+    value = field.numeric || (field.key === 'status' && cell.isElement()) ? Number(input.value) : input.value;
   } else {
     value = input.value;
   }
@@ -347,6 +404,16 @@ function applyFieldChange(
   if (cell.isLink()) styleLink(cell as dia.Link);
 
   hooks.onChanged();
+  if (field.rerender) rerenderInspector(board, cell, input, hooks);
+}
+
+function rerenderInspector(board: Board, cell: dia.Cell, input: HTMLElement, hooks: InspectorHooks): void {
+  renderInspector(
+    (input.closest('.panel-body') ?? input.parentElement?.parentElement) as HTMLElement,
+    board,
+    cell,
+    hooks,
+  );
 }
 
 function appendDeleteButton(container: HTMLElement, hooks: InspectorHooks): void {

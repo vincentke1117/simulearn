@@ -83,7 +83,7 @@ function removeStore(name: string): void {
     /* 同上 */
   }
 }
-const ID_PREFIX: Record<NodeType, string> = { Bus: 'bus', Load: 'load', Gen: 'gen', DG: 'dg' };
+const ID_PREFIX: Record<NodeType, string> = { Bus: 'bus', Load: 'load', Gen: 'gen', DG: 'dg', Capacitor: 'cap' };
 
 const ANALYSIS_META: Record<AnalysisKind, { title: string; running: string; hint: string }> = {
   pf: { title: 'AC 潮流', running: 'AC 潮流计算中…', hint: '无需额外参数：直接对当前拓扑求解一次 AC 潮流。' },
@@ -153,7 +153,10 @@ function renderHistory(): void {
 const board = createBoard($('#canvas'), {
   onSelectionChange(cell) {
     renderInspector($('#inspector-body'), board, cell, {
-      onChanged: () => saveDraft(),
+      onChanged: () => {
+        saveDraft();
+        markResultsStale();
+      },
       onDelete: () => board.deleteSelection(),
       canDelete: !board.isLocked(),
     });
@@ -527,6 +530,8 @@ function setAnalysis(kind: AnalysisKind): void {
 // ---------------------------------------------------------------- 运行
 
 let running = false;
+// 结果面板此刻是否正显示一次成功计算的结果；改了参数就据此把它标成过期（markResultsStale）
+let resultsShown = false;
 
 function setRunning(state: boolean, text = '计算中…'): void {
   running = state;
@@ -544,6 +549,21 @@ function setRunning(state: boolean, text = '计算中…'): void {
 function resetView(): void {
   disposeView?.();
   disposeView = null;
+  resultsShown = false;
+}
+
+/**
+ * 检查器里改了参数，画布着色与结果面板就都对不上了：改了分接头挡位，低压母线旁还标着上一挡的电压，
+ * 学生会把它当成新挡位的结果。画布着色直接清掉；面板留着数字方便对比，但标明是改动前的结果。
+ */
+function markResultsStale(): void {
+  if (!resultsShown) return;
+  resultsShown = false;
+  clearPaintedResults(board);
+  $('#results-body').insertAdjacentHTML(
+    'afterbegin',
+    '<p class="stale-note">参数已改动，下面是改动前的结果。点「运行」重新计算。</p>',
+  );
 }
 
 function showEmpty(message = '尚未运行计算。选择上方的分析类型，填好参数后点「运行」。'): void {
@@ -742,6 +762,7 @@ async function handleRun(): Promise<void> {
         break;
       }
     }
+    resultsShown = true;
   } catch (err) {
     reportError(`${meta.title}失败`, err);
   } finally {

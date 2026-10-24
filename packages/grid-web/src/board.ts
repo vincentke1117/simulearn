@@ -23,11 +23,11 @@ export interface Board {
   isLocked(): boolean;
 }
 
-const NODE_TYPES: NodeType[] = ['Bus', 'Load', 'Gen', 'DG'];
+const NODE_TYPES: NodeType[] = ['Bus', 'Load', 'Gen', 'DG', 'Capacitor'];
 
 function isDevice(cell: dia.Cell | null): boolean {
   const t = cell?.get('jgdoType');
-  return t === 'Load' || t === 'Gen' || t === 'DG';
+  return t === 'Load' || t === 'Gen' || t === 'DG' || t === 'Capacitor';
 }
 
 function isBus(cell: dia.Cell | null): boolean {

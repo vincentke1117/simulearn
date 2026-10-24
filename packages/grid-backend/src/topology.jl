@@ -94,6 +94,38 @@ function ensure_connectivity(buses, branches, slack_indices)
     end
 end
 
+"""
+    transformer_branch(link, hv_base_kv, lv_base_kv, r_ohm, x_ohm, base_mva) -> (r_pu, x_pu, tap)
+
+双绕组变压器（教材调压实验的约定）：`from` 为高压侧母线、`to` 为低压侧母线；`r_ohm` / `x_ohm`
+归算到高压侧；高压侧额定电压 `hv_kv` 即分接头中心，挡位 `tap_pos`（−`tap_steps`…+`tap_steps`）、
+每挡 `tap_step_pct`%，分接头电压 U_tap = hv_kv·(1 + tap_pos·tap_step_pct/100)，低压侧额定 `lv_kv`。
+
+PowerModels / MATPOWER 的支路把理想变压器放在 from 端（V_from = τ·V_内），串联阻抗在 to 侧：
+- τ = (U_tap / U_高压基准) / (U_2N / U_低压基准)
+- 把高压侧阻抗跨理想变压器归算到低压侧：Z_低 = Z_高·(U_2N / U_tap)²，再按低压侧基准折成标幺值。
+与教材「阻抗在高压侧、理想变压器在低压侧」的等值电路在数学上完全等价；由两母线闭式解测试守着。
+"""
+function transformer_branch(link::Link, hv_base_kv::Real, lv_base_kv::Real, r_ohm::Real, x_ohm::Real, base_mva::Real)
+    hv_kv = parse_float(link.data, "hv_kv"; path=[link.id])
+    lv_kv = parse_float(link.data, "lv_kv"; path=[link.id])
+    step_pct = parse_float(link.data, "tap_step_pct"; default=0.0, path=[link.id])
+    steps = parse_float(link.data, "tap_steps"; default=0.0, path=[link.id])
+    pos = parse_float(link.data, "tap_pos"; default=0.0, path=[link.id])
+    (hv_kv > 0 && lv_kv > 0) || throw(ValidationError("transformer rated voltages must be positive", [link.id]))
+    hv_base_kv >= lv_base_kv ||
+        throw(ValidationError("transformer 'from' must be the high-voltage bus", [link.id]))
+    (isinteger(steps) && steps >= 0 && step_pct >= 0) ||
+        throw(ValidationError("tap_steps must be a non-negative integer and tap_step_pct non-negative", [link.id]))
+    (isinteger(pos) && abs(pos) <= steps) ||
+        throw(ValidationError("tap position out of range", [link.id, "tap_pos"]))
+    u_tap = hv_kv * (1 + pos * step_pct / 100)
+    tap = (u_tap / hv_base_kv) / (lv_kv / lv_base_kv)
+    referral = (lv_kv / u_tap)^2
+    z_base = base_impedance(lv_base_kv, base_mva)
+    return r_ohm * referral / z_base, x_ohm * referral / z_base, tap
+end
+
 function convert_topology(obj::AbstractDict)
     topo = TopologyData(obj)
     base_mva = parse_float(topo.meta, "baseMVA"; path=["meta"])
@@ -215,6 +247,27 @@ function convert_topology(obj::AbstractDict)
                 "status" => 1,
                 "name" => node.id,
             )
+        elseif ltype == "capacitor"
+            # 并联电容组（教材调压实验）：每组额定容量 q_unit_kvar（在母线额定电压下），共 groups 组，
+            # 投入 in_service 组。电纳不随电压变：实际补偿无功 = 投入容量 × (U/U_N)²。
+            # PowerModels 约定 bs > 0 为容性（向系统注入无功），单位 MVar（v = 1 pu 时），make_per_unit! 再折成 pu。
+            bus_idx = find_bus_for(node, node_lookup, topo.links, bus_map)
+            q_unit = parse_float(node.data, "q_unit_kvar"; path=[node.id])
+            groups = parse_float(node.data, "groups"; path=[node.id])
+            in_service = parse_float(node.data, "in_service"; default=0.0, path=[node.id])
+            q_unit >= 0 || throw(ValidationError("capacitor group size must be non-negative", [node.id, "q_unit_kvar"]))
+            (isinteger(groups) && groups >= 0) || throw(ValidationError("capacitor group count must be a non-negative integer", [node.id, "groups"]))
+            (isinteger(in_service) && 0 <= in_service <= groups) ||
+                throw(ValidationError("capacitor groups in service must be an integer between 0 and groups", [node.id, "in_service"]))
+            shunt_idx = length(shunts) + 1
+            shunts[string(shunt_idx)] = Dict(
+                "index" => shunt_idx,
+                "shunt_bus" => bus_idx,
+                "gs" => 0.0,
+                "bs" => in_service * q_unit / 1000,
+                "status" => 1,
+                "name" => node.id,
+            )
         end
     end
 
@@ -245,14 +298,24 @@ function convert_topology(obj::AbstractDict)
         r_ohm = parse_float(link.data, "r_ohm"; default=0.0, path=[link.id])
         x_ohm = parse_float(link.data, "x_ohm"; default=0.0, path=[link.id])
         from_kv = buses[string(from_bus)]["base_kv"]
-        z_base = base_impedance(from_kv, base_mva)
-        r = r_ohm / z_base
-        x = x_ohm / z_base
-        b = to_float(get(link.data, "b_siemens", 0.0)) * z_base
-        rate_mva = to_float(get(link.data, "rate_mva", base_mva))
-        tap = to_float(get(link.data, "tap", 1.0))
-        shift = to_float(get(link.data, "shift_deg", 0.0))
+        to_kv = buses[string(to_bus)]["base_kv"]
         device_type = lowercase(link.type)
+        rate_mva = to_float(get(link.data, "rate_mva", base_mva))
+        shift = to_float(get(link.data, "shift_deg", 0.0))
+        is_transformer = device_type == "transformer"
+        if is_transformer
+            r, x, tap = transformer_branch(link, from_kv, to_kv, r_ohm, x_ohm, base_mva)
+            b = 0.0  # 励磁支路忽略（教材调压计算同样忽略）
+        else
+            # 线路阻抗按起点母线的电压等级折算：两端等级不同时这样算是错的，必须用变压器连接
+            abs(from_kv - to_kv) <= 1e-6 * max(from_kv, to_kv) ||
+                throw(ValidationError("line connects buses with different nominal voltages; use a Transformer", [link.id]))
+            z_base = base_impedance(from_kv, base_mva)
+            r = r_ohm / z_base
+            x = x_ohm / z_base
+            tap = to_float(get(link.data, "tap", 1.0))
+            b = to_float(get(link.data, "b_siemens", 0.0)) * z_base
+        end
         switchable_raw = get(link.data, "switchable", occursin("switch", device_type))
         switchable = switchable_raw isa Bool ? switchable_raw : parse(Bool, lowercase(string(switchable_raw)))
         branches[string(branch_idx)] = Dict(
@@ -269,6 +332,7 @@ function convert_topology(obj::AbstractDict)
             "rate_a" => rate_mva,
             "tap" => tap,
             "shift" => shift,
+            "transformer" => is_transformer,
             "br_status" => status_value,
             "status" => status_value,
             "name" => link.id,

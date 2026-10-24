@@ -1,0 +1,98 @@
+{
+  "meta": {
+    "baseMVA": 100.0,
+    "feeder": "CH12-MIN",
+    "description": "教材例 12-3 降压变电所·最小负荷：高压侧 113 kV，负荷 10+j6 MVA。变压器与要求同最大负荷算例。"
+  },
+  "nodes": [
+    {
+      "id": "bus-hv",
+      "type": "Bus",
+      "name": "高压母线",
+      "kv": 110.0,
+      "is_slack": true,
+      "vm_pu": 1.0272727273,
+      "va_deg": 0.0,
+      "vmin_pu": 0.9,
+      "vmax_pu": 1.1,
+      "loc": {
+        "x": 120,
+        "y": 120
+      }
+    },
+    {
+      "id": "bus-lv",
+      "type": "Bus",
+      "name": "低压母线",
+      "kv": 6.0,
+      "vm_pu": 1.0,
+      "va_deg": 0.0,
+      "vmin_pu": 1.0,
+      "vmax_pu": 1.1,
+      "loc": {
+        "x": 520,
+        "y": 120
+      }
+    },
+    {
+      "id": "grid-1",
+      "type": "Gen",
+      "name": "系统电源",
+      "bus": "bus-hv",
+      "p_kw": 0,
+      "p_max_kw": 1000000,
+      "p_min_kw": 0,
+      "q_kvar": 0,
+      "q_max_kvar": 1000000,
+      "q_min_kvar": -1000000,
+      "status": 1,
+      "loc": {
+        "x": 150,
+        "y": 230
+      }
+    },
+    {
+      "id": "load-1",
+      "type": "Load",
+      "name": "变电所负荷",
+      "bus": "bus-lv",
+      "p_kw": 10000,
+      "q_kvar": 6000,
+      "loc": {
+        "x": 520,
+        "y": 230
+      }
+    },
+    {
+      "id": "cap-1",
+      "type": "Capacitor",
+      "name": "并联电容组",
+      "bus": "bus-lv",
+      "q_unit_kvar": 2000,
+      "groups": 4,
+      "in_service": 0,
+      "loc": {
+        "x": 640,
+        "y": 230
+      }
+    }
+  ],
+  "links": [
+    {
+      "id": "T1",
+      "type": "Transformer",
+      "name": "降压变压器",
+      "from": "bus-hv",
+      "to": "bus-lv",
+      "hv_kv": 110.0,
+      "lv_kv": 6.3,
+      "r_ohm": 2.44,
+      "x_ohm": 40.0,
+      "tap_step_pct": 2.5,
+      "tap_steps": 2,
+      "tap_pos": 0,
+      "rate_mva": 40.0,
+      "status": "CLOSED"
+    }
+  ]
+}

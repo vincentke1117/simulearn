@@ -24,6 +24,8 @@ let ok = 0, failed = String[]
 
     jobs = [
         ("pf", () -> JGDO.run_pf(ieee33)),
+        # 变压器分接头 + 电容组（第十二章调压实验），走 transformer_branch 与 capacitor 分支
+        ("pf-ch12", () -> JGDO.run_pf(read_example("ch12_tap_max"))),
         ("reconfig", () -> JGDO.run_reconfiguration_dg(read_example("reconfiguration_test"))),
         ("opf", () -> JGDO.run_opf(read_example("econ2"))),
         # N-1 两条都要：不带转供（纯扫描）与带转供（多走一遍潮流 + 连通性搜索）

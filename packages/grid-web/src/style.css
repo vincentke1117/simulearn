@@ -1055,6 +1055,20 @@ g[model-id]:hover .jgdo-body {
   font-size: 14px;
 }
 
+.stale-note {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--warn);
+  background: #fffbeb;
+  border-radius: 0 6px 6px 0;
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.stale-note ~ * {
+  opacity: 0.55;
+}
+
 .result-error {
   border-left: 3px solid var(--danger);
   padding: 8px 12px;

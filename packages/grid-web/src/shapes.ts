@@ -1,4 +1,5 @@
 import { dia, shapes } from '@joint/core';
+import { transformerLabel } from './transformer';
 import type { LinkType, NodeType } from './types';
 
 export type LinkKind = LinkType | 'attach';
@@ -12,12 +13,15 @@ const SWITCH_INK = '#334155';
 const GEN_COLOR = '#15803d';
 const DG_COLOR = '#0369a1';
 const LOAD_COLOR = '#d97706';
+const CAP_COLOR = '#7c3aed';
+const XFMR_INK = '#1f2937';
 
 export const NODE_META: Record<NodeType, { label: string; title: string; color: string }> = {
   Bus: { label: '▬', title: '母线', color: BUS_FILL },
   Load: { label: '↓', title: '负荷', color: LOAD_COLOR },
   Gen: { label: 'G', title: '电源', color: GEN_COLOR },
   DG: { label: 'DG', title: '分布式电源', color: DG_COLOR },
+  Capacitor: { label: '⊣⊢', title: '电容组', color: CAP_COLOR },
 };
 
 const PORT_ATTRS = {
@@ -150,10 +154,11 @@ function sourceShape(type: string, color: string, icon: string, iconSize: number
 
 export const GenShape = sourceShape('Gen', GEN_COLOR, 'G', 17, 46);
 export const DgShape = sourceShape('DG', DG_COLOR, 'DG', 12, 42);
+export const CapacitorShape = sourceShape('Capacitor', CAP_COLOR, '⊣⊢', 13, 38);
 
 export const jgdoNamespace = {
   ...shapes,
-  jgdo: { Bus: BusShape, Gen: GenShape, DG: DgShape, Load: LoadShape },
+  jgdo: { Bus: BusShape, Gen: GenShape, DG: DgShape, Load: LoadShape, Capacitor: CapacitorShape },
 };
 
 export function defaultElec(type: NodeType): Record<string, unknown> {
@@ -166,6 +171,8 @@ export function defaultElec(type: NodeType): Record<string, unknown> {
       return { bus: '', p_kw: 1000, p_max_kw: 2000, p_min_kw: 0, q_kvar: 0, q_max_kvar: 800, q_min_kvar: -800, status: 1 };
     case 'DG':
       return { bus: '', p_kw: 200, p_max_kw: 400, p_min_kw: 0, q_kvar: 0, q_max_kvar: 150, q_min_kvar: -150, status: 1 };
+    case 'Capacitor':
+      return { bus: '', q_unit_kvar: 1000, groups: 4, in_service: 0 };
   }
 }
 
@@ -173,11 +180,17 @@ export function defaultLinkElec(kind: LinkType): Record<string, unknown> {
   if (kind === 'Switch') {
     return { r_ohm: 0.001, x_ohm: 0.003, rate_mva: 10, status: 'CLOSED', switchable: true };
   }
+  if (kind === 'Transformer') {
+    return {
+      r_ohm: 2.0, x_ohm: 40, rate_mva: 40, status: 'CLOSED', switchable: false,
+      hv_kv: 110, lv_kv: 10.5, tap_step_pct: 2.5, tap_steps: 2, tap_pos: 0,
+    };
+  }
   return { r_ohm: 0.1, x_ohm: 0.3, rate_mva: 10, status: 'CLOSED', switchable: false };
 }
 
 export function createNodeElement(type: NodeType, id: string, name?: string): dia.Element {
-  const Ctor = { Bus: BusShape, Gen: GenShape, DG: DgShape, Load: LoadShape }[type];
+  const Ctor = { Bus: BusShape, Gen: GenShape, DG: DgShape, Load: LoadShape, Capacitor: CapacitorShape }[type];
   const el = new Ctor({ id });
   el.set('jgdoType', type);
   el.set('elec', defaultElec(type));
@@ -242,6 +255,25 @@ export function styleLink(link: dia.Link): void {
         txt: {
           text: closed ? '' : '╱', fontSize: 12, fontWeight: '700',
           fill: SWITCH_INK, textAnchor: 'middle', textVerticalAnchor: 'middle',
+        },
+      },
+    });
+  }
+  if (kind === 'Transformer') {
+    // 双绕组变压器符号（两个相交的圆）+ 当前变比，如「107.25/6.3 kV」
+    labels.push({
+      position: 0.5,
+      markup: [
+        { tagName: 'circle', selector: 'w1' },
+        { tagName: 'circle', selector: 'w2' },
+        { tagName: 'text', selector: 'ratio' },
+      ],
+      attrs: {
+        w1: { r: 8, cx: -5, cy: 0, fill: '#ffffff', stroke: XFMR_INK, strokeWidth: 1.6 },
+        w2: { r: 8, cx: 5, cy: 0, fill: 'none', stroke: XFMR_INK, strokeWidth: 1.6 },
+        ratio: {
+          text: transformerLabel(elec), y: 22, fontSize: 11, fontWeight: '600',
+          fill: XFMR_INK, textAnchor: 'middle', fontFamily: 'system-ui, sans-serif',
         },
       },
     });

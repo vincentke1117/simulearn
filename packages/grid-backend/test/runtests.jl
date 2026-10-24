@@ -885,3 +885,6 @@ end
 
 # 拓展入口与 HTTP 服务（src/server.jl）
 include("server.jl")
+
+# 变压器分接头与并联电容组（教材第十二章调压，例 12-3）
+include("transformer.jl")
