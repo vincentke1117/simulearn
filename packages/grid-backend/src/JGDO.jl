@@ -20,6 +20,25 @@ include("shortcircuit.jl")
 const DEFAULT_RUNS_DIR = joinpath(@__DIR__, "..", "runs")
 
 """
+    read_request(body) -> Dict{String,Any}
+
+把分析接口的请求体读成 JSON 对象。读不出来是调用方的输入问题，要归 GRID_VALIDATION（422）；
+直接让 JSON3 的 ArgumentError 冒上去会落到 GRID_INTERNAL（500），看起来像内核坏了。
+JSON3 对空串、语法错误、数组 / 数字 / null 等非对象一律抛 ArgumentError，其他异常照常上抛。
+"""
+function read_request(body::AbstractString)
+    isempty(strip(body)) && throw(ValidationError("请求体为空，需要一个 JSON 对象"))
+    try
+        return JSON3.read(body, Dict{String,Any})
+    catch err
+        err isa ArgumentError || rethrow()
+        pos = match(r"byte position (\d+)", err.msg)
+        where_ = pos === nothing ? "" : "（第 $(pos[1]) 字节附近）"
+        throw(ValidationError("请求体不是合法的 JSON 对象$(where_)"))
+    end
+end
+
+"""
     run_pf(topo_json::AbstractString; optimizer=default_optimizer())
 
 Runs an AC power flow using the provided topology JSON payload. Returns a JSON string
@@ -27,7 +46,7 @@ that matches the front-end contract specified in the PRD.
 """
 function run_pf(topo_json::AbstractString; optimizer=default_optimizer())
     try
-        request = JSON3.read(topo_json, Dict{String,Any})
+        request = read_request(topo_json)
         pm_data = topology_to_powermodels(request)
         result = execute_power_flow(pm_data; optimizer)
         payload = build_pf_payload(result)
@@ -45,7 +64,7 @@ string that conforms to the unified front-end response schema.
 """
 function run_reconfiguration_dg(topo_json::AbstractString; optimizer=default_reconfiguration_optimizer(), pf_optimizer=default_optimizer())
     try
-        request = JSON3.read(topo_json, Dict{String,Any})
+        request = read_request(topo_json)
         pm_data = topology_to_powermodels(request)
         payload = execute_reconfiguration(pm_data; optimizer=optimizer, pf_optimizer=pf_optimizer)
         return wrap_success("Topology reconfiguration completed", payload)
@@ -72,7 +91,7 @@ single tie switch is necessary *and sufficient*.
 """
 function run_n1(topo_json::AbstractString; optimizer=default_optimizer())
     try
-        request = JSON3.read(topo_json, Dict{String,Any})
+        request = read_request(topo_json)
         topology, restore = parse_n1_request(request)
         pm_data = topology_to_powermodels(topology)
         payload = execute_n1(pm_data; optimizer, restore)
@@ -93,7 +112,7 @@ per-generator dispatch with binding limits, per-bus voltages and LMPs
 """
 function run_opf(json::AbstractString; optimizer=default_optimizer())
     try
-        request = JSON3.read(json, Dict{String,Any})
+        request = read_request(json)
         topology = parse_opf_request(request)
         pm_data = topology_to_powermodels(topology)
         payload = execute_opf(pm_data; optimizer)
@@ -112,7 +131,7 @@ one point per scale factor plus an aggregate summary.
 """
 function run_timeseries(json::AbstractString; optimizer=default_optimizer())
     try
-        request = JSON3.read(json, Dict{String,Any})
+        request = read_request(json)
         topology, scales = parse_timeseries_request(request)
         pm_data = topology_to_powermodels(topology)
         payload = execute_timeseries(pm_data, scales; optimizer)
@@ -131,7 +150,7 @@ Returns a JSON string with the unified response envelope.
 """
 function run_transient(json::AbstractString; optimizer=default_optimizer())
     try
-        request = JSON3.read(json, Dict{String,Any})
+        request = read_request(json)
         topology, fault, sim, f_hz, find_cct = parse_transient_request(request)
         pm_data = topology_to_powermodels(topology)
         payload = execute_transient(pm_data, fault, sim, f_hz, find_cct; optimizer)
@@ -150,7 +169,7 @@ Runs a balanced three-phase short-circuit study for
 """
 function run_shortcircuit(json::AbstractString; optimizer=default_optimizer())
     try
-        request = JSON3.read(json, Dict{String,Any})
+        request = read_request(json)
         topology, fault_bus, zf = parse_shortcircuit_request(request)
         pm_data = topology_to_powermodels(topology)
         payload = execute_shortcircuit(pm_data, fault_bus, zf; optimizer)

@@ -100,6 +100,10 @@ end
             @test JSON3.read(String(pf.body))["status"] == "ok"
             @test isdir(runs) && !isempty(readdir(runs))
             @test 400 <= hpost("/api/grid/pf", "{}").status < 500
+            # 读不出 JSON 对象的请求体：422 + GRID_VALIDATION 封套，而不是 500
+            garbage = hpost("/api/grid/pf", "not json")
+            @test garbage.status == 422
+            @test JSON3.read(String(garbage.body))["code"] == "GRID_VALIDATION"
         finally
             JGDO.stop_server()
         end

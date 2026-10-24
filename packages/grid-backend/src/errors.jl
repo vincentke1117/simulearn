@@ -57,7 +57,8 @@ error_code(::Exception) = "GRID_INTERNAL"
   GRID_VALIDATION / GRID_TOPOLOGY     → 422（用户输入问题：请求体/拓扑可改）
   GRID_SNAPSHOT   / GRID_INTERNAL     → 500（服务端问题：学生改拓扑也没用）
 GRID_SNAPSHOT 归 500 的理由：快照写盘失败是服务端文件系统故障，与请求内容无关。
-未知/不可解析的 body 保守归 500。HTTP 层只读 code，body 一个字节都不改。
+这里读的是内核自己产出的响应：它不可解析说明内核出了问题，保守归 500（读不出的**请求体**在
+read_request 里已归 GRID_VALIDATION）。HTTP 层只读 code，body 一个字节都不改。
 """
 const ERROR_HTTP_STATUS = Dict(
     "GRID_VALIDATION" => 422,

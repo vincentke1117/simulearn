@@ -801,6 +801,18 @@ end
     @test JSON3.read(validation_err)["code"] == "GRID_VALIDATION"
     @test JGDO.http_status(validation_err) == 422
 
+    # 读不出 JSON 对象的请求体也是输入问题 → 422，不能落到 GRID_INTERNAL；七个分析入口都要一样
+    for run in (JGDO.run_pf, JGDO.run_reconfiguration_dg, JGDO.run_n1, JGDO.run_timeseries,
+                JGDO.run_transient, JGDO.run_shortcircuit, JGDO.run_opf),
+        body in ("", "   ", "not json", "{\"nodes\": [", "[1, 2]", "null")
+        raw = run(body)
+        @test JSON3.read(raw)["code"] == "GRID_VALIDATION"
+        @test JGDO.http_status(raw) == 422
+    end
+    @test JSON3.read(JGDO.run_pf(""))["message"] == "请求体为空，需要一个 JSON 对象"
+    # 位置取自 JSON3 的报错，只核对消息的格式，不钉具体字节数
+    @test startswith(JSON3.read(JGDO.run_pf("{\"nodes\": ["))["message"], "请求体不是合法的 JSON 对象（第 ")
+
     # 服务端问题 → 500
     snapshot_err = JGDO.Errors.wrap_error(SnapshotError("failed to write snapshot"; path="/nope"))
     @test JSON3.read(snapshot_err)["code"] == "GRID_SNAPSHOT"
