@@ -31,6 +31,7 @@
    - 页面里只用相对路径（页面实际位于 `/ext/<id>/ui/`）；不用 WebSocket，不用 Cookie。
    - 只写 `--data-dir`，不主动联网；标准输入关闭后 5 s 内退出，连同子进程。
    - 判分在内核里重算后核对，不信页面自报的数。
+   - 发布包 zip 的条目名必须用正斜杠：Windows PowerShell 5.1 的 `ZipFile.CreateFromDirectory` 会写反斜杠，知帆宿主解压时会以「不安全路径」拒装。一律用 `scripts/release-ext.ps1` 打包，它打包后会按宿主同样的规则逐条核对。
    - 嵌入页面里不能用 `confirm` / `alert` / `prompt`：宿主的 iframe 沙箱没有 `allow-modals`，浏览器会直接忽略弹窗（`confirm` 返回 `false`），按钮就成了「点了没反应」。需要确认时用页面内的两步确认（`grid-web/src/confirm.ts`）。
 3. **本机服务安全（D17）**：内核不发任何跨域头；令牌由宿主或网关在转发时注入，页面拿不到。开发态由 `start-all.ps1` 每次启动生成令牌（环境变量 `SIMULEARN_TOKEN`）；没设置时内核、Caddy、Vite 代理都退回开发令牌 `simulearn-dev`，它只用于本机开发，不进发布物。
 4. **响应封套**统一为 `{status, code?, message, data}`，错误码分域 `GRID_*` / `LAB_*`；封套到 HTTP 状态码的映射有测试守着。

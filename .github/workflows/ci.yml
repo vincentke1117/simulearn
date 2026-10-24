@@ -20,12 +20,12 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-      - name: Test PowerShell lifecycle scripts
+      - name: Test PowerShell scripts
         shell: powershell
         run: |
           # 测试用 Pester 3 语法（与 Windows 自带的 3.4.0 一致）；runner 默认会加载 Pester 5，这里显式钉到 3.x
           Import-Module Pester -MaximumVersion 3.99 -Force
-          $result = Invoke-Pester -Path tests/scripts/lifecycle.Tests.ps1 -PassThru
+          $result = Invoke-Pester -Path tests/scripts -PassThru
           if ($result.FailedCount -gt 0) { exit 1 }
 
   web:

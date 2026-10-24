@@ -13,6 +13,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+Import-Module (Join-Path $root 'scripts\ext-package.psm1') -Force
 if (-not $OutDir) { $OutDir = Join-Path $root 'dist\ext' }
 $id = 'simulearn-grid'
 $grid = Join-Path $root 'packages\grid-backend'
@@ -70,10 +71,18 @@ try {
         if ($relative -notcontains $required) { throw "发布包缺少 $required" }
     }
 
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    # 条目名必须用正斜杠：.NET Framework 的 CreateFromDirectory 会写反斜杠，知帆宿主据此拒装（见 ext-package.psm1）
     $zip = Join-Path $OutDir "$id-$version.zip"
-    if (Test-Path $zip) { Remove-Item -Force $zip }
-    [IO.Compression.ZipFile]::CreateFromDirectory($staging, $zip, [IO.Compression.CompressionLevel]::Optimal, $false)
+    [void](New-ForwardSlashZip -SourceDirectory $staging -ZipPath $zip)
+
+    # 读回 zip 里实际写入的条目名，按知帆宿主 safePath 的规则逐条核对
+    $entryNames = @(Get-ZipEntryNames -ZipPath $zip)
+    $bad = @($entryNames | ForEach-Object { $problem = Get-ZipEntryNameProblem -Name $_; if ($problem) { "$_（$problem）" } })
+    if ($bad.Count -gt 0) { throw ('zip 条目名不合约定：' + (($bad | Select-Object -First 5) -join '；')) }
+    if ($entryNames.Count -ne $files.Count) { throw "zip 条目数 $($entryNames.Count) 与文件数 $($files.Count) 不一致" }
+    foreach ($required in 'bin/simulearn-grid.exe', 'ui/index.html', 'LICENSES/index.html') {
+        if ($entryNames -cnotcontains $required) { throw "zip 里缺少条目 $required" }
+    }
 
     $bytes = (Get-Item $zip).Length
     $unpacked = ($files | Measure-Object -Property Length -Sum).Sum
