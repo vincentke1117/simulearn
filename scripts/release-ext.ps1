@@ -87,8 +87,9 @@ try {
     $bytes = (Get-Item $zip).Length
     $unpacked = ($files | Measure-Object -Property Length -Sum).Sum
     $sha = (Get-FileHash -Algorithm SHA256 -Path $zip).Hash.ToLowerInvariant()
+    # minHost 0.11.3：更早的知帆客户端安装拓展、导入课程包时会被杀毒软件的短暂占用卡住（EPERM）
     $summary = [ordered]@{
-        id = $id; version = $version; contract = 'zhifan-ext/1'; minHost = '0.11.0'
+        id = $id; version = $version; contract = 'zhifan-ext/1'; minHost = '0.11.3'
         file = "$id-$version.zip"; bytes = $bytes; unpackedBytes = $unpacked; sha256 = $sha
         entry = 'bin/simulearn-grid.exe'; licenses = 'LICENSES/index.html'; requires = @{ memoryMB = 2048 }
         files = $files.Count

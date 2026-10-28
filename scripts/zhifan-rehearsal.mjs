@@ -162,7 +162,7 @@ fs.writeFileSync(lecturePath, storedZip([
 // ---------------- 假下载站 ----------------
 const zipBuf = fs.readFileSync(zipPath);
 const ext = {
-  id: ID, name: '仿真实验 · 配电网', version, contract: 'zhifan-ext/1', minHost: '0.11.0', file,
+  id: ID, name: '仿真实验 · 配电网', version, contract: 'zhifan-ext/1', minHost: '0.11.3', file,
   bytes: zipBuf.length, unpackedBytes: unpackedBytes(zipBuf), sha256: sha256(zipBuf),
   entry: 'bin/simulearn-grid.exe', requires: { memoryMB: 2048 }, licenses: 'LICENSES/index.html',
   notes: '本机演练用（假下载站）', publishedAt: new Date().toISOString(),
