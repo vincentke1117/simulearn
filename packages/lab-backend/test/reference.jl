@@ -124,6 +124,30 @@ end
     @test isapprox(data["branch_currents"]["R2"], 0.002; atol = 1e-12)
 end
 
+@testset "参考点：两块互不导通的电路走瞬态（MTK）" begin
+    # 左边 RC 充电（τ = 1 ms），右边 E1 把电容电压放大 2 倍；两边都不接地，各取一个参考点后并成一点
+    components = [
+        ComponentPayload("V1", "vsource_dc", Dict("dc" => 5.0), Dict("pos" => "a1", "neg" => "a0")),
+        ComponentPayload("R1", "resistor", Dict("value" => 1000.0), Dict("p" => "a1", "n" => "a2")),
+        ComponentPayload("C1", "capacitor", Dict("value" => 1e-6), Dict("p" => "a2", "n" => "a0")),
+        ComponentPayload("E1", "vcvs", Dict("gain" => 2.0), Dict("pos" => "b1", "neg" => "b0", "ctrl_p" => "a2", "ctrl_n" => "a0")),
+        ComponentPayload("R2", "resistor", Dict("value" => 1000.0), Dict("p" => "b1", "n" => "b0")),
+        ComponentPayload("VP1", "voltage_probe", Dict{String, Float64}(), Dict("node" => "b1")),
+    ]
+    nets = [
+        NetPayload("a1", [["V1", "pos"], ["R1", "p"]]),
+        NetPayload("a2", [["R1", "n"], ["C1", "p"], ["E1", "ctrl_p"]]),
+        NetPayload("a0", [["V1", "neg"], ["C1", "n"], ["E1", "ctrl_n"]]),
+        NetPayload("b1", [["E1", "pos"], ["R2", "p"], ["VP1", "node"]]),
+        NetPayload("b0", [["E1", "neg"], ["R2", "n"]]),
+    ]
+    result = run_simulation(SimulationPayload(components, nets, SimulationSettings(5e-3, 101), "transient"))
+    @test result["status"] == "ok"
+    @test [point["net"] for point in result["data"]["reference"]] == ["a0", "b0"]
+    # 5τ 时电容充到 5(1 − e⁻⁵) = 4.966 V，探针读 2 倍
+    @test isapprox(last(result["data"]["signals"][1]["values"]), 2 * 5 * (1 - exp(-5)); atol = 0.05)
+end
+
 @testset "参考点：没有电源时取名字最小的网络；瞬态仍然要求电源" begin
     lone = SimulationPayload([
         ComponentPayload("R1", "resistor", Dict("value" => 100.0), Dict("p" => "n1", "n" => "n2")),
