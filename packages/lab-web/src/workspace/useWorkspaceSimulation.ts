@@ -127,10 +127,16 @@ export function useWorkspaceSimulation({
     }
   }, [simulationSettings.voltageDisplayMode, simulationSettings.showBranchCurrents, updateVoltageOverlay])
 
+  // 所有失败路径的唯一出口：错误只渲染在结果面板里，面板被学生关掉后若不重新打开，失败就「什么都没发生」
+  const failSimulation = useCallback((error: SimulationErrorInfo) => {
+    setSimulationResult(null)
+    setSimulationError(error)
+    setShowResultPanel(true)
+  }, [])
+
   const submitSingleRequest = useCallback(async (build: PayloadBuildResult) => {
     if (!build.ok || !build.payload) {
-      setSimulationResult(null)
-      setSimulationError({ message: build.errors.join('；') })
+      failSimulation({ message: build.errors.join('；') })
       return
     }
     const response = await runSimulationRequest(build.payload)
@@ -141,10 +147,9 @@ export function useWorkspaceSimulation({
       setLastMethodUsed('transient')
       setShowResultPanel(true)
     } else {
-      setSimulationResult(null)
-      setSimulationError({ message: response.message, code: response.code, data: response.data })
+      failSimulation({ message: response.message, code: response.code, data: response.data })
     }
-  }, [])
+  }, [failSimulation])
 
   const handleRunSimulation = useCallback(async () => {
     const start = performance.now()
@@ -172,8 +177,7 @@ export function useWorkspaceSimulation({
 
     try {
       if (currentDiagramMode === 'empty') {
-        setSimulationResult(null)
-        setSimulationError({ message: '请先在画布中放置元件' })
+        failSimulation({ message: '请先在画布中放置元件' })
         return
       }
 
@@ -221,33 +225,38 @@ export function useWorkspaceSimulation({
 
         const results = await Promise.all(promises)
         const newCache: Record<string, AnalysisResultData> = {}
+        const errorsBySignature: Record<string, SimulationErrorInfo> = {}
         let firstError: SimulationErrorInfo | null = null
         results.forEach((response, index) => {
           if (response.status === 'ok') newCache[signatures[index]] = response.data
-          else if (!firstError) {
-            firstError = { message: response.message, code: response.code, data: response.data }
+          else {
+            const error = { message: response.message, code: response.code, data: response.data }
+            errorsBySignature[signatures[index]] = error
+            firstError ??= error
           }
         })
 
         if (Object.keys(newCache).length === 0 && firstError) {
-          setSimulationResult(null)
-          setSimulationError(firstError)
+          failSimulation(firstError)
           return
         }
         setSimulationResultCache(newCache)
-        const currentResult = newCache[getSwitchStateSignature(currentNodes)]
+        const currentSignature = getSwitchStateSignature(currentNodes)
+        const currentResult = newCache[currentSignature]
         if (currentResult) {
           setSimulationResult(currentResult)
           setShowResultPanel(true)
           const currentBuild = buildSimulationPayload(currentNodes, currentEdges, simulationSettings)
           if (currentBuild.payload?.nets) applyResultToOverlay(currentResult, currentBuild.payload.nets)
           if (currentBuild.payload?.method) setLastMethodUsed(currentBuild.payload.method)
+        } else {
+          // 其他开关组合成功、唯独当前组合失败：同样要把当前组合的错误亮出来
+          failSimulation(errorsBySignature[currentSignature] ?? firstError ?? { message: '当前开关组合仿真失败' })
         }
       } else {
         const build = buildSimulationPayload(currentNodes, currentEdges, simulationSettings)
         if (!build.ok || !build.payload) {
-          setSimulationResult(null)
-          setSimulationError({ message: build.errors.join('；') })
+          failSimulation({ message: build.errors.join('；') })
           return
         }
         setLastMethodUsed(build.payload.method)
@@ -259,18 +268,16 @@ export function useWorkspaceSimulation({
           setShowResultPanel(true)
           if (build.payload.nets) applyResultToOverlay(response.data, build.payload.nets)
         } else {
-          setSimulationResult(null)
-          setSimulationError({ message: response.message, code: response.code, data: response.data })
+          failSimulation({ message: response.message, code: response.code, data: response.data })
         }
       }
     } catch (error) {
-      setSimulationResult(null)
-      setSimulationError({ message: error instanceof Error ? error.message : '仿真请求失败' })
+      failSimulation({ message: error instanceof Error ? error.message : '仿真请求失败' })
     } finally {
       setIsSimulating(false)
       setWorkspaceMessage({ tone: 'info', text: `仿真往返时间 ${Math.round(performance.now() - start)}ms` })
     }
-  }, [reactFlow, simulationSettings, setNodes, teachingMode, theveninPort, applyResultToOverlay, submitSingleRequest, setWorkspaceMessage])
+  }, [reactFlow, simulationSettings, setNodes, teachingMode, theveninPort, applyResultToOverlay, submitSingleRequest, failSimulation, setWorkspaceMessage])
 
   useEffect(() => {
     if (!simulationResultCache || detectDiagramMode(nodes) !== 'electrical') return
@@ -279,6 +286,8 @@ export function useWorkspaceSimulation({
     const cachedResult = simulationResultCache[signature]
     if (cachedResult && cachedResult !== simulationResult) {
       setSimulationResult(cachedResult)
+      // 从失败的开关组合切到有缓存结果的组合：旧错误不再适用，否则面板会继续盖住新结果
+      setSimulationError(null)
       const build = buildSimulationPayload(nodes, edges, simulationSettings)
       if (build.ok && build.payload?.nets) {
         applyResultToOverlay(cachedResult, build.payload.nets)
