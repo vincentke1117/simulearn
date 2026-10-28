@@ -13,8 +13,8 @@ describe('isRunDisabled', () => {
     expect(isRunDisabled('mixed', true)).toBe(false)
   })
 
-  it('requires ground only for electrical diagrams', () => {
-    expect(isRunDisabled('electrical', false)).toBe(true)
+  it('lets electrical diagrams run without ground (the kernel picks a reference node)', () => {
+    expect(isRunDisabled('electrical', false)).toBe(false)
     expect(isRunDisabled('electrical', true)).toBe(false)
   })
 

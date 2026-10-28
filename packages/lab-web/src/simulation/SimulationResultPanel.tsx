@@ -15,6 +15,7 @@ import type {
 import type { DiagramMode } from '@/types/control'
 import { classifyResult } from './resultKind'
 import { AcPhasorView } from './AcPhasorView'
+import { describeAutoReference, pickAutoReference } from './autoReference'
 import { formatEngineering } from './format'
 import {
   exportSimulationResultCSV,
@@ -36,6 +37,9 @@ export interface SimulationResultPanelProps {
   isRunning: boolean
   method?: string
   diagramMode?: DiagramMode
+  /** 元件 id → 画布标签，用来说明自动参考点取在哪个元件上 */
+  componentLabels?: Record<string, string>
+  hasGround?: boolean
   onClose?: () => void
 }
 
@@ -61,7 +65,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-export function SimulationResultPanel({ result, error, isRunning, method, diagramMode, onClose }: SimulationResultPanelProps) {
+export function SimulationResultPanel({ result, error, isRunning, method, diagramMode, componentLabels, hasGround = false, onClose }: SimulationResultPanelProps) {
   // 单一分派入口：以结果结构为主、method 仅用于消歧。
   // 旧代码按 `method === 'node_voltage'` 硬匹配，后端新增 dc_op / ac_phasor / frequency_sweep 后
   // 全部分支落空 → 面板显示"暂无仿真结果"。classifyResult 堵死这个洞。
@@ -78,6 +82,7 @@ export function SimulationResultPanel({ result, error, isRunning, method, diagra
   const hasSignals = Boolean(isTransientResult && (result as SimulationData).signals.length > 0)
   const teachingResult = isRecord(result) ? result as TeachingResult : null
   const transientMetrics = isTransientResult ? (result as SimulationData).metrics : undefined
+  const autoReference = useMemo(() => pickAutoReference(result), [result])
 
   const [showBranch, setShowBranch] = useState(true)
   const [showNode, setShowNode] = useState(true)
@@ -163,6 +168,11 @@ export function SimulationResultPanel({ result, error, isRunning, method, diagra
 
       {/* Body */}
       <div className="flex-1 overflow-auto bg-slate-900/50 p-4 simulation-result-content custom-scrollbar relative">
+        {!isRunning && !error && autoReference && (
+          <p className="mb-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-amber-200">
+            {describeAutoReference(autoReference, componentLabels ?? {}, hasGround)}
+          </p>
+        )}
         {isRunning ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-4">
             <div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />

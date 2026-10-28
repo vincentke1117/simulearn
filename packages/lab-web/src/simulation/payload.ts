@@ -377,7 +377,6 @@ export function buildSimulationPayload(
   errors.push(...netErrors)
 
   const components: SimulationPayload['components'] = []
-  let hasGround = false
   let hasSource = false
 
   for (const node of nodes) {
@@ -385,10 +384,6 @@ export function buildSimulationPayload(
     if (!definition) {
       errors.push(`未知元件类型：${node.type}`)
       continue
-    }
-
-    if (node.type === 'ground') {
-      hasGround = true
     }
 
     // 任何“源”均视为电源：独立电压/电流源 + 受控源
@@ -449,10 +444,7 @@ export function buildSimulationPayload(
     }
   }
 
-  if (!hasGround) {
-    errors.push('电路缺少地线：请从左侧元件面板添加地线 (Ground) 元件')
-  }
-
+  // 不接地不算错：内核会自动选参考点并在结果里说明（lab-backend/src/Reference.jl）
   if (!hasSource) {
     errors.push('电路必须包含至少一个电源：请添加独立源（直流/交流电压源或电流源）或受控源（VCVS/CCVS/VCCS/CCCS）')
   }

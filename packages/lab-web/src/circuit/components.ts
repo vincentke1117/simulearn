@@ -114,7 +114,7 @@ const electricalComponentLibrary: Record<ElectricalComponentType, CircuitCompone
     prefix: 'VP',
     accent: '#34d399',
     description: '测量某节点相对地的电压。',
-    handles: [{ id: 'node', position: Position.Top, label: '节点', hint: '将探针连接到待测节点（自动参考地）' }],
+    handles: [{ id: 'node', position: Position.Top, label: '节点', hint: '将探针连接到待测节点（读数相对地线；没接地时相对自动选的参考点）' }],
     parameters: [],
   },
   current_probe: {

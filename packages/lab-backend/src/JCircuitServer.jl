@@ -108,6 +108,7 @@ Base.showerror(io::IO, err::ValidationError) = print(io, err.message)
 
 include("ControlSimulation.jl")
 include("MixedSimulation.jl")
+include("Reference.jl")
 
 const COMPONENT_SCHEMAS = Dict(
     "resistor" => (; handles = ["p", "n"], params = ["value"]),
@@ -2101,6 +2102,11 @@ end
 
 function run_simulation(payload::SimulationPayload)
     try
+        # 没接地的电路先替学生选参考点，求解完把网络名改回学生的原名（见 Reference.jl）
+        original_port = payload.thevenin_port
+        payload, plan = assign_reference(payload)
+        restore(data) = plan === nothing ? data : restore_reference!(data, plan, original_port)
+
         # 确定分析方法
         method = payload.method
         @info "Received simulation request" method=method is_resistive=is_resistive_circuit(payload)
@@ -2113,7 +2119,7 @@ function run_simulation(payload::SimulationPayload)
         
         # 根据方法选择不同的求解器
         if method == "node_voltage"
-            data = solve_by_node_voltage(payload)
+            data = restore(solve_by_node_voltage(payload))
             return Dict(
                 "status" => "ok",
                 "message" => "节点电压法分析完成",
@@ -2121,7 +2127,7 @@ function run_simulation(payload::SimulationPayload)
                 "data" => data
             )
         elseif method == "branch_current"
-            data = solve_by_branch_current(payload)
+            data = restore(solve_by_branch_current(payload))
             return Dict(
                 "status" => "ok",
                 "message" => "支路电流法分析完成",
@@ -2129,7 +2135,7 @@ function run_simulation(payload::SimulationPayload)
                 "data" => data
             )
         elseif method == "mesh_current"
-            data = solve_by_mesh_current(payload)
+            data = restore(solve_by_mesh_current(payload))
             return Dict(
                 "status" => "ok",
                 "message" => "网孔电流法分析完成",
@@ -2143,7 +2149,7 @@ function run_simulation(payload::SimulationPayload)
             end
             port_pos = payload.thevenin_port["positive"]
             port_neg = payload.thevenin_port["negative"]
-            data = compute_thevenin_equivalent(payload, port_pos, port_neg)
+            data = restore(compute_thevenin_equivalent(payload, port_pos, port_neg))
             return Dict(
                 "status" => "ok",
                 "message" => "戴维南等效分析完成",
@@ -2151,7 +2157,7 @@ function run_simulation(payload::SimulationPayload)
                 "data" => data
             )
         elseif method == "dc_op"
-            data = solve_by_dc_op(payload)
+            data = restore(solve_by_dc_op(payload))
             return Dict(
                 "status" => "ok",
                 "message" => "直流工作点分析完成",
@@ -2159,7 +2165,7 @@ function run_simulation(payload::SimulationPayload)
                 "data" => data
             )
         elseif method == "ac_phasor"
-            data = solve_by_ac_phasor(payload)
+            data = restore(solve_by_ac_phasor(payload))
             return Dict(
                 "status" => "ok",
                 "message" => "交流相量分析完成",
@@ -2167,7 +2173,7 @@ function run_simulation(payload::SimulationPayload)
                 "data" => data
             )
         elseif method == "frequency_sweep"
-            data = solve_by_frequency_sweep(payload)
+            data = restore(solve_by_frequency_sweep(payload))
             return Dict(
                 "status" => "ok",
                 "message" => "频率扫描分析完成",
@@ -2175,7 +2181,7 @@ function run_simulation(payload::SimulationPayload)
                 "data" => data
             )
         elseif method == "transient"
-            data = simulate_payload(payload)
+            data = restore(simulate_payload(payload))
             return Dict(
                 "status" => "ok",
                 "message" => "瞬态分析完成",
@@ -2184,7 +2190,7 @@ function run_simulation(payload::SimulationPayload)
             )
         elseif method == "transient_modia"
             # Modia 集成占位：若依赖齐全则加载 Modia；否则给出清晰错误。
-            data = simulate_payload_modia(payload)
+            data = restore(simulate_payload_modia(payload))
             return Dict(
                 "status" => "ok",
                 "message" => "瞬态分析（Modia）完成",

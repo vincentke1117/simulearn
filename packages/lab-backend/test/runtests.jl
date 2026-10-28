@@ -71,18 +71,8 @@ end
     @test abs(data["branch_currents"]["V1"] + 0.01) < 1e-6   # 电压源电流 pos→neg（内部）= -0.01
 end
 
-@testset "validation" begin
-    payload = SimulationPayload([
-        ComponentPayload("R1", "resistor", Dict("value" => 100.0), Dict("p" => "n1", "n" => "n2")),
-    ], [
-        NetPayload("n1", [["R1", "p"]]),
-        NetPayload("n2", [["R1", "n"]]),
-    ], SimulationSettings(1e-3, 10))
-    result = run_simulation(payload)
-    @test result["status"] == "error"
-    @test occursin("ground", result["message"]) || occursin("地线", result["message"])
-end
-
+# 没接地的电路不再报错，改为自动选参考点（原先这里断言单个电阻会因缺地线报错）
+include("reference.jl")
 include("dc_op_ac_phasor.jl")
 include("control_simulation.jl")
 include("mixed_simulation.jl")

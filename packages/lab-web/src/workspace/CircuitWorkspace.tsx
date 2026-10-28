@@ -209,6 +209,10 @@ function CircuitWorkspaceInner() {
   }, [])
 
   const hasGround = useMemo(() => nodes.some((node) => node.type === 'ground'), [nodes])
+  const componentLabels = useMemo(
+    () => Object.fromEntries(nodes.map((node) => [node.id, node.data.label ?? node.id])),
+    [nodes],
+  )
   const diagramMode = useMemo<DiagramMode>(() => detectDiagramMode(nodes), [nodes])
 
   useEffect(() => {
@@ -355,6 +359,8 @@ function CircuitWorkspaceInner() {
                 isRunning={isSimulating}
                 method={lastMethodUsed}
                 diagramMode={diagramMode}
+                componentLabels={componentLabels}
+                hasGround={hasGround}
                 onClose={() => setShowResultPanel(false)}
               />
             </Suspense>

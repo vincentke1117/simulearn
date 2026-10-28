@@ -1,0 +1,114 @@
+{
+  "name": "lab-transient-rc-floating（不接地的 RC 充电：τ=1ms, 5τ 充至 4.966V，与接地时相同）",
+  "endpoint": "simulate",
+  "request": {
+    "components": [
+      {
+        "id": "V1",
+        "type": "vsource_dc",
+        "parameters": {
+          "dc": 5.0
+        },
+        "connections": {
+          "pos": "n1",
+          "neg": "n3"
+        }
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "parameters": {
+          "value": 1000.0
+        },
+        "connections": {
+          "p": "n1",
+          "n": "n2"
+        }
+      },
+      {
+        "id": "C1",
+        "type": "capacitor",
+        "parameters": {
+          "value": 1e-06
+        },
+        "connections": {
+          "p": "n2",
+          "n": "n3"
+        }
+      },
+      {
+        "id": "VP1",
+        "type": "voltage_probe",
+        "parameters": {},
+        "connections": {
+          "node": "n2"
+        }
+      }
+    ],
+    "nets": [
+      {
+        "name": "n1",
+        "nodes": [
+          [
+            "V1",
+            "pos"
+          ],
+          [
+            "R1",
+            "p"
+          ]
+        ]
+      },
+      {
+        "name": "n2",
+        "nodes": [
+          [
+            "R1",
+            "n"
+          ],
+          [
+            "C1",
+            "p"
+          ],
+          [
+            "VP1",
+            "node"
+          ]
+        ]
+      },
+      {
+        "name": "n3",
+        "nodes": [
+          [
+            "V1",
+            "neg"
+          ],
+          [
+            "C1",
+            "n"
+          ]
+        ]
+      }
+    ],
+    "sim": {
+      "t_stop": 0.005,
+      "n_samples": 101
+    },
+    "method": "transient"
+  },
+  "expect": [
+    {
+      "path": "status",
+      "equals": "ok"
+    },
+    {
+      "path": "data.signals.1.values.-1",
+      "approx": 4.966,
+      "atol": 0.06
+    },
+    {
+      "path": "data.reference.1.net",
+      "equals": "n3"
+    }
+  ]
+}
