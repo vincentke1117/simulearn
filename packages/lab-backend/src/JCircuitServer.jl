@@ -2006,18 +2006,26 @@ function simulate_payload(payload::SimulationPayload)
         end
     end
 
-    # 为所有未知数和参数提供明确的初始值，避免循环依赖
-    defs = ModelingToolkit.defaults(simplified)
+    # 数值一律取本次新建的 circuit：缓存键只看拓扑，缓存里的 simplified 带的是第一次请求的元件值。
+    # 原先从 simplified 取，学生只改电阻值、接法不变时，瞬态结果还是改之前的（缓存挤出前一直如此）。
+    # 化简结果只依赖结构，复用它照样省下 structural_simplify。
+    defs = ModelingToolkit.defaults(circuit)
     
     # 获取所有未知数和参数
     unknowns_list = ModelingToolkit.unknowns(simplified)
     params_list = ModelingToolkit.parameters(simplified)
     
-    # 构建初始值映射：所有未知数初始化为0.0
+    # 只有微分状态（电容电压、电感电流）从 0 起步；化简后剩下的代数未知数（撕裂出来的支路电流、
+    # 节点电位）由电路方程决定，只能当初值猜测给。把它们也钉成 0 会让初始化方程组超定：
+    # 纯电阻分压化简后只剩代数量 R2.i，R2.i = 0 与欧姆定律矛盾，求解器就报 InitialFailure。
+    differential = Set(ModelingToolkit.var_from_nested_derivative(eq.lhs)[1]
+                       for eq in equations(simplified) if ModelingToolkit.isdifferential(eq.lhs))
     u0_map = Dict()
+    guesses = Dict()
     for unknown in unknowns_list
         # 如果defaults中有值则使用，否则用0.0
-        u0_map[unknown] = get(defs, unknown, 0.0)
+        target = unknown in differential ? u0_map : guesses
+        target[unknown] = get(defs, unknown, 0.0)
     end
     
     # 构建参数映射：使用defaults中的值
@@ -2031,9 +2039,14 @@ function simulate_payload(payload::SimulationPayload)
     tspan = (0.0, payload.sim.t_stop)
     saveat = range(tspan[1], tspan[2], length = payload.sim.n_samples)
 
-    # 创建ODEProblem，明确禁用循环依赖检查
-    prob = ODEProblem(simplified, u0_map, tspan, p_map; warn_initialize_determined = false)
-    sol = solve(prob, Rodas5(); saveat)
+    # warn_initialize_determined 关掉的是「初始化方程组超定 / 欠定」告警（不是循环依赖检查）。
+    # 上面按微分 / 代数分好以后不应再超定；再出现 InitialFailure 时先把它打开看 MTK 怎么说。
+    prob = ODEProblem(simplified, u0_map, tspan, p_map; guesses, warn_initialize_determined = false)
+    # 代数未知数在步点上满足电路方程（元件全是线性的，Rodas5 刚性精确），步与步之间却没有误差控制：
+    # 纯电阻电路一步就跨过将近一个周期，saveat 按插值取值全错（实测交流源 + 电阻分压最大误差 0.58 V）。
+    # 有代数未知数时让积分步落在每个采样点上，取的就是步点值；全是微分状态的 RC / RL 照旧。
+    tstops = isempty(guesses) ? () : saveat
+    sol = solve(prob, Rodas5(); saveat, tstops)
 
     # 检查求解状态（SciMLBase.ReturnCode是枚举类型）
     if !SciMLBase.successful_retcode(sol)
@@ -2247,12 +2260,22 @@ function handle_simulate(req::HTTP.Request)
         )
     end
 
-    http_status = if get(response, "status", "ok") == "error"
-        get(response, "code", "LAB_INTERNAL") == "LAB_VALIDATION" ? 422 : 500
-    else
-        200
-    end
-    return HTTP.Response(http_status, collect(RESPONSE_HEADERS), JSON3.write(response))
+    return HTTP.Response(lab_http_status(response), collect(RESPONSE_HEADERS), JSON3.write(response))
+end
+
+# 封套 code → HTTP 状态码，与 grid-backend 的 ERROR_HTTP_STATUS 同一条规则：
+# 422 是学生改电路就能解决的（校验不过、电路矩阵奇异、求解发散），500 是内核自己的毛病，学生怎么改都没用。
+# LAB_SIM_FAILED 归 422：同一个电路重发多少次都一样失败，原因在电路本身。内核缺陷不该借这个码冒出来——
+# 纯电阻电路走瞬态报 InitialFailure 就是这种情况，已经修掉；没登记的码保守归 500。
+const LAB_ERROR_HTTP_STATUS = Dict(
+    "LAB_VALIDATION" => 422,
+    "LAB_SIM_FAILED" => 422,
+    "LAB_INTERNAL" => 500,
+)
+
+function lab_http_status(response)
+    get(response, "status", "ok") == "error" || return 200
+    return get(LAB_ERROR_HTTP_STATUS, get(response, "code", "LAB_INTERNAL"), 500)
 end
 
 """
