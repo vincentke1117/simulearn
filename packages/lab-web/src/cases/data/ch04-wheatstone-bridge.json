@@ -1,0 +1,262 @@
+{
+  "id": "ch04-wheatstone-bridge",
+  "chapter": 4,
+  "chapterTitle": "电路定理",
+  "section": "§4-3 戴维宁定理和诺顿定理",
+  "source": "例 4-8",
+  "title": "惠斯通电桥：不平衡时检流计里有多少电流",
+  "summary": "R3 从平衡值 500 Ω 只偏了 1 Ω，检流计里就有微安级的电流。把检流计以外的部分看成一个含源一端口，先求开路电压和等效电阻，任意检流计电阻下的电流都能一步写出来。这个案例让你验证这个思路。",
+  "tryIt": [
+    "检流计电阻 RG 依次改成 100、200、500 Ω，每次重新运行，在结果面板的「支路电流」表里读 RG 的电流：约 1.364、1.242、0.9787 μA（500 Ω 时表里显示 978.742 nA，画布上 RG 的读数是 978.7 nA）。教材给的是 1.363、1.241、0.978 μA。",
+    "把 R3 改回 500 Ω：电桥平衡，无论 RG 取多少，检流计电流都是 0。",
+    "把 RG 改成 1e9 Ω（相当于断开检流计）：RG 的电流约 1.387 pA，乘以 1e9 Ω 就是开路电压，约 1.387 mV（教材 1.386 mV）。直接拿 1、1′ 两点电压相减也行，但两个读数都在 4.17 V 左右，相减后只剩三位有效数字。",
+    "再把 RG 改成 1e-6 Ω（相当于把 1、1′ 短路）：RG 的电流约 1.513 μA 就是短路电流，开路电压除以它约 916.7 Ω，正是教材的等效电阻 Req。"
+  ],
+  "notes": [
+    "检流计 G 在电路里用一个电阻 RG 表示，它的电流就是 G 的读数。",
+    "教材把开路电压取成 1.386 mV（精确值约 1.3866 mV），所以软件读数的末位常比教材大 1。"
+  ],
+  "preset": {
+    "method": "node_voltage",
+    "showBranchCurrents": true
+  },
+  "checks": [
+    {
+      "label": "RG = 50 Ω 时检流计电流 I_G",
+      "path": "branch_currents.RG",
+      "expect": 1.434e-06,
+      "unit": "A",
+      "tol": 2e-09,
+      "fromBook": true
+    }
+  ],
+  "circuit": {
+    "nodes": [
+      {
+        "id": "V1",
+        "type": "vsource_dc",
+        "position": {
+          "x": 0,
+          "y": 220
+        },
+        "data": {
+          "label": "Us",
+          "type": "vsource_dc",
+          "parameters": {
+            "dc": 5
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "position": {
+          "x": 300,
+          "y": 60
+        },
+        "data": {
+          "label": "R1",
+          "type": "resistor",
+          "parameters": {
+            "value": 100
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "R3",
+        "type": "resistor",
+        "position": {
+          "x": 300,
+          "y": 380
+        },
+        "data": {
+          "label": "R3",
+          "type": "resistor",
+          "parameters": {
+            "value": 501
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "position": {
+          "x": 820,
+          "y": 60
+        },
+        "data": {
+          "label": "R2",
+          "type": "resistor",
+          "parameters": {
+            "value": 1000
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "R4",
+        "type": "resistor",
+        "position": {
+          "x": 820,
+          "y": 380
+        },
+        "data": {
+          "label": "R4",
+          "type": "resistor",
+          "parameters": {
+            "value": 5000
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "RG",
+        "type": "resistor",
+        "position": {
+          "x": 560,
+          "y": 220
+        },
+        "data": {
+          "label": "RG（检流计）",
+          "type": "resistor",
+          "parameters": {
+            "value": 50
+          },
+          "rotation": 0
+        }
+      },
+      {
+        "id": "VP1",
+        "type": "voltage_probe",
+        "position": {
+          "x": 470,
+          "y": 410
+        },
+        "data": {
+          "label": "1",
+          "type": "voltage_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "VP2",
+        "type": "voltage_probe",
+        "position": {
+          "x": 650,
+          "y": 410
+        },
+        "data": {
+          "label": "1′",
+          "type": "voltage_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "position": {
+          "x": 560,
+          "y": 560
+        },
+        "data": {
+          "label": "GND",
+          "type": "ground",
+          "parameters": {},
+          "rotation": 0
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "V1",
+        "target": "R1",
+        "sourceHandle": "pos",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e2",
+        "source": "R1",
+        "target": "R2",
+        "sourceHandle": "p",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e3",
+        "source": "R1",
+        "target": "R3",
+        "sourceHandle": "n",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e4",
+        "source": "R1",
+        "target": "RG",
+        "sourceHandle": "n",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e5",
+        "source": "VP1",
+        "target": "RG",
+        "sourceHandle": "node",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e6",
+        "source": "R2",
+        "target": "R4",
+        "sourceHandle": "n",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e7",
+        "source": "RG",
+        "target": "R2",
+        "sourceHandle": "n",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e8",
+        "source": "VP2",
+        "target": "RG",
+        "sourceHandle": "node",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e9",
+        "source": "R3",
+        "target": "V1",
+        "sourceHandle": "n",
+        "targetHandle": "neg"
+      },
+      {
+        "id": "e10",
+        "source": "R4",
+        "target": "V1",
+        "sourceHandle": "n",
+        "targetHandle": "neg"
+      },
+      {
+        "id": "e11",
+        "source": "G1",
+        "target": "V1",
+        "sourceHandle": "gnd",
+        "targetHandle": "neg"
+      }
+    ]
+  },
+  "demos": [
+    {
+      "id": "thevenin",
+      "kind": "steps",
+      "title": "戴维宁等效四步",
+      "summary": "断开负载 → 求 Uoc → 置零求 Req → 等效电路接回负载"
+    }
+  ]
+}

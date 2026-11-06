@@ -1,0 +1,167 @@
+{
+  "name": "lab-dc-thevenin-balanced-bridge（全 100Ω 平衡电桥、端口在两个中点：Uoc = 0，Req = 100Ω；原先 Uoc/Isc 失稳得到 1e12）",
+  "endpoint": "simulate",
+  "request": {
+    "components": [
+      {
+        "id": "V1",
+        "type": "vsource_dc",
+        "parameters": {
+          "dc": 10.0
+        },
+        "connections": {
+          "pos": "top",
+          "neg": "gnd"
+        }
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "parameters": {
+          "value": 100.0
+        },
+        "connections": {
+          "p": "top",
+          "n": "m1"
+        }
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "parameters": {
+          "value": 100.0
+        },
+        "connections": {
+          "p": "m1",
+          "n": "gnd"
+        }
+      },
+      {
+        "id": "R3",
+        "type": "resistor",
+        "parameters": {
+          "value": 100.0
+        },
+        "connections": {
+          "p": "top",
+          "n": "m2"
+        }
+      },
+      {
+        "id": "R4",
+        "type": "resistor",
+        "parameters": {
+          "value": 100.0
+        },
+        "connections": {
+          "p": "m2",
+          "n": "gnd"
+        }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "parameters": {},
+        "connections": {
+          "gnd": "gnd"
+        }
+      }
+    ],
+    "nets": [
+      {
+        "name": "top",
+        "nodes": [
+          [
+            "V1",
+            "pos"
+          ],
+          [
+            "R1",
+            "p"
+          ],
+          [
+            "R3",
+            "p"
+          ]
+        ]
+      },
+      {
+        "name": "m1",
+        "nodes": [
+          [
+            "R1",
+            "n"
+          ],
+          [
+            "R2",
+            "p"
+          ]
+        ]
+      },
+      {
+        "name": "m2",
+        "nodes": [
+          [
+            "R3",
+            "n"
+          ],
+          [
+            "R4",
+            "p"
+          ]
+        ]
+      },
+      {
+        "name": "gnd",
+        "nodes": [
+          [
+            "V1",
+            "neg"
+          ],
+          [
+            "R2",
+            "n"
+          ],
+          [
+            "R4",
+            "n"
+          ],
+          [
+            "G1",
+            "gnd"
+          ]
+        ]
+      }
+    ],
+    "sim": {
+      "t_stop": 0.001,
+      "n_samples": 10
+    },
+    "method": "thevenin",
+    "thevenin_port": {
+      "positive": "m1",
+      "negative": "m2"
+    }
+  },
+  "expect": [
+    {
+      "path": "status",
+      "equals": "ok"
+    },
+    {
+      "path": "data.vth",
+      "approx": 0.0,
+      "atol": 1e-09
+    },
+    {
+      "path": "data.rth",
+      "approx": 100.0,
+      "atol": 1e-06
+    },
+    {
+      "path": "data.isc",
+      "approx": 0.0,
+      "atol": 1e-09
+    }
+  ]
+}

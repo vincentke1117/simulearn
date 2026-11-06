@@ -1,0 +1,156 @@
+{
+  "caseId": "ch03-mesh-current",
+  "id": "kvl",
+  "kind": "kvl",
+  "title": "KVL 与参考方向",
+  "method": "node_voltage",
+  "branches": [
+    {
+      "name": "Ia",
+      "elements": [
+        "Us1",
+        "Ra"
+      ],
+      "ref": "Ra"
+    },
+    {
+      "name": "Ib",
+      "elements": [
+        "Us2",
+        "Rb"
+      ],
+      "ref": "Rb"
+    },
+    {
+      "name": "Ic",
+      "elements": [
+        "Rc"
+      ],
+      "ref": "Rc"
+    },
+    {
+      "name": "Id",
+      "elements": [
+        "Us3",
+        "Rd"
+      ],
+      "ref": "Rd"
+    }
+  ],
+  "intro": [
+    {
+      "title": "参考方向",
+      "text": "每条支路只画一个电流参考方向（教材图 3-10 的 Ia、Ib、Ic、Id，蓝色箭头）。电阻的电压取与它关联的参考方向（电流流入的一端为 +），电源按自身极性。参考方向是自己假定的，有了它才能写 u = R·i。"
+    },
+    {
+      "title": "读数与实际方向",
+      "text": "运行结果：Ia = 2 A、Ib = 0.5 A、Ic = 1.5 A、Id = −1 A。负号表示实际方向与参考方向相反：Rd 里的电流实际向下（红色虚线箭头），u_Rd = 40 × (−1) = −40 V，即实际上端比下端高 40 V。参考方向不用改，负号就是答案的一部分。",
+      "showActual": true
+    }
+  ],
+  "loops": [
+    {
+      "id": "m1",
+      "name": "网孔 1",
+      "start": "左下角结点（Us1 的 − 端）",
+      "elements": [
+        {
+          "id": "Us1",
+          "enter": "neg"
+        },
+        {
+          "id": "Ra",
+          "enter": "p"
+        },
+        {
+          "id": "Rb",
+          "enter": "n"
+        },
+        {
+          "id": "Us2",
+          "enter": "pos"
+        }
+      ],
+      "textbook": [
+        "电阻项留在左边、电源项移到右边并变号：60Ia − 20Ib = 180 − 70",
+        "代入网孔电流 Ia = I1、Ib = I2 − I1：80I1 − 20I2 = 110（教材网孔 1 的方程，Us11 = 180 − 70）"
+      ]
+    },
+    {
+      "id": "m2",
+      "name": "网孔 2",
+      "start": "Us2 的 − 端",
+      "elements": [
+        {
+          "id": "Us2",
+          "enter": "neg"
+        },
+        {
+          "id": "Rb",
+          "enter": "p"
+        },
+        {
+          "id": "Rc",
+          "enter": "p"
+        }
+      ],
+      "note": "Rb 是网孔 1、2 的公共支路：在网孔 1 里记 −u_Rb，在这里记 +u_Rb。",
+      "textbook": [
+        "20Ib + 40Ic = 70",
+        "代入 Ib = I2 − I1、Ic = I2 − I3：−20I1 + 60I2 − 40I3 = 70（教材网孔 2 的方程）"
+      ]
+    },
+    {
+      "id": "m3",
+      "name": "网孔 3",
+      "start": "Rc 的下端",
+      "elements": [
+        {
+          "id": "Rc",
+          "enter": "n"
+        },
+        {
+          "id": "Rd",
+          "enter": "n"
+        },
+        {
+          "id": "Us3",
+          "enter": "pos"
+        }
+      ],
+      "note": "走到 Rd 时注意两套正负号：项前的 − 来自参考方向，括号里的 − 来自读数，合起来 +40 V，正好是实际的电位降。",
+      "textbook": [
+        "−40Ic − 40Id = −20",
+        "代入 Ic = I2 − I3、Id = −I3：−40I2 + 80I3 = −20（教材网孔 3 的方程）"
+      ]
+    },
+    {
+      "id": "outer",
+      "name": "外回路（教材校验）",
+      "start": "左下角结点（Us1 的 − 端）",
+      "elements": [
+        {
+          "id": "Us1",
+          "enter": "neg"
+        },
+        {
+          "id": "Ra",
+          "enter": "p"
+        },
+        {
+          "id": "Rd",
+          "enter": "n"
+        },
+        {
+          "id": "Us3",
+          "enter": "pos"
+        }
+      ],
+      "note": "KVL 对任何闭合回路都成立，不只是网孔；教材第 (5) 步就用这个外回路校验结果。",
+      "textbook": [
+        "60Ia − 40Id = 180 − 20",
+        "代入 Ia = 2 A、Id = −1 A：120 + 40 = 160，结果正确"
+      ]
+    }
+  ]
+}

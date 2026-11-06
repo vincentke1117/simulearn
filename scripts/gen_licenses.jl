@@ -1,8 +1,10 @@
 # 生成拓展发布包里的第三方许可清单 LICENSES/index.html（设计记录 D18）。
 # 约定 zhifan-ext/1 §1：宿主把它放进不带脚本的沙箱里显示，所以只能是静态 HTML。
 #
-# 用法：julia --project=packages/grid-backend packages/grid-backend/scripts/gen_licenses.jl <create_app 产物目录> <输出 html> [<前端依赖目录>...]
-#   前端依赖目录：打进页面的 npm 包目录（如 node_modules/@joint/core），读它的 package.json 与 LICENSE。
+# 用法：julia --project=<内核目录> scripts/gen_licenses.jl <create_app 产物目录> <输出 html> [<前端依赖目录>...]
+#   内核目录：packages/grid-backend 或 packages/lab-backend，列出的 Julia 包就是它 Manifest 锁定的那些。
+#   前端依赖目录：打进页面的 npm 包目录（scripts/web-deps.mjs 列出），读它的 package.json 与 LICENSE。
+#   两个拓展都由 scripts/release-ext.ps1 调用。
 #
 # 这里只做「如实列出 + 标出需要注意的许可」，不替使用者下合规结论。
 using Pkg
@@ -12,6 +14,12 @@ length(ARGS) >= 2 || error("用法：gen_licenses.jl <产物目录> <输出 html
 const APP_DIR = abspath(ARGS[1])
 const OUT = abspath(ARGS[2])
 const WEB_DEPS = ARGS[3:end]
+# 本项目自身（Apache-2.0，见仓库根目录 LICENSE）不列；标题按当前内核写
+const SELF = Pkg.project().name
+const PRODUCT = get(Dict(
+    "JGDO" => "SimuLearn 配电网实验（simulearn-grid）",
+    "JCircuitServer" => "SimuLearn 电路实验（simulearn-lab）",
+), SELF, "SimuLearn")
 
 html_escape(s::AbstractString) = replace(s, "&" => "&amp;", "<" => "&lt;", ">" => "&gt;", "\"" => "&quot;")
 
@@ -76,7 +84,7 @@ for (_, info) in sort(collect(Pkg.dependencies()); by=p -> p[2].name)
         push!(stdlibs, info.name)
         continue
     end
-    info.name == "JGDO" && continue  # 本项目自身（Apache-2.0，见仓库根目录 LICENSE）
+    info.name == SELF && continue
     files = license_files(src)
     text = isempty(files) ? "（包目录里没有找到许可文件，请到源码仓库核实）" : join(read_text.(files), "\n\n")
     version = info.version === nothing ? "" : string(info.version)
@@ -98,7 +106,12 @@ if isdir(artifacts)
     end
 end
 
-# 4. 打进页面的前端依赖
+# 4. 启动程序 bin/<id>.exe：PackageCompiler 的 embedding_wrapper.c 改过一处（中文路径），源码在 scripts/ext-launcher/
+push!(entries, Entry("启动程序", "PackageCompiler embedding_wrapper（修改版）", "2.4.0",
+    "https://github.com/JuliaLang/PackageCompiler.jl（修改见本仓库 scripts/ext-launcher/embedding_wrapper.c）",
+    read_text(joinpath(@__DIR__, "ext-launcher", "LICENSE.PackageCompiler.md"))))
+
+# 5. 打进页面的前端依赖
 for dir in WEB_DEPS
     pkg = joinpath(dir, "package.json")
     isfile(pkg) || continue
@@ -113,14 +126,14 @@ end
 # ---- 输出静态 HTML ----
 io = IOBuffer()
 notable = [(e, notable_tags(e.text)) for e in entries]
-println(io, """<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>第三方许可 · SimuLearn 配电网实验</title>
+println(io, """<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>第三方许可 · $(html_escape(PRODUCT))</title>
 <style>body{font:14px/1.6 system-ui,"Segoe UI",sans-serif;margin:24px;color:#1d2433;max-width:960px}
 h1{font-size:20px}h2{font-size:16px;margin-top:28px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #d8dee8;padding:4px 8px;text-align:left;vertical-align:top}
 .tag{display:inline-block;background:#fde68a;border-radius:4px;padding:0 6px;margin-right:4px;font-size:12px}
 details{border:1px solid #d8dee8;border-radius:6px;margin:8px 0;padding:6px 10px}summary{cursor:pointer;font-weight:600}
 pre{white-space:pre-wrap;font-size:12px;background:#f6f8fb;padding:8px;border-radius:4px}</style></head><body>
 <h1>第三方许可</h1>
-<p>SimuLearn 配电网实验（simulearn-grid）本身以 Apache-2.0 发布。本页列出发布包中包含的第三方软件及其许可原文。生成时间：$(Dates.format(now(), "yyyy-mm-dd HH:MM"))。</p>
+<p>$(html_escape(PRODUCT)) 本身以 Apache-2.0 发布。本页列出发布包中包含的第三方软件及其许可原文。生成时间：$(Dates.format(now(), "yyyy-mm-dd HH:MM"))。</p>
 <h2>需要留意的许可</h2>
 <p>以下组件的许可带有分发义务（例如提供源码获取方式、保留声明、修改过的文件需公开），标注仅按许可原文自动识别，供核实用：</p>
 <table><tr><th>组件</th><th>类别</th><th>识别到的许可</th><th>源码获取</th></tr>""")

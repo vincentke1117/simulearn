@@ -95,8 +95,7 @@ function compile_mixed_payload(payload::MixedSimulationPayload)
         throw(ValidationError("混合仿真 payload.kind 必须为 mixed", Dict("kind" => payload.kind)))
     payload.sim.t_stop > 0 ||
         throw(ValidationError("仿真时长必须大于 0", Dict()))
-    payload.sim.n_samples > 1 ||
-        throw(ValidationError("采样点数至少为 2", Dict()))
+    check_samples(payload.sim.n_samples)
     !isempty(payload.blocks) ||
         throw(ValidationError("混合图缺少信号块", Dict()))
     !isempty(payload.bridges) ||
@@ -629,7 +628,7 @@ function run_simulation(payload::MixedSimulationPayload)
             return Dict("status" => "error", "code" => get(err.data, "code", "LAB_VALIDATION"), "message" => err.message, "data" => err.data)
         else
             @error "mixed simulation failed" exception = (err, catch_backtrace())
-            return Dict("status" => "error", "code" => "LAB_INTERNAL", "message" => "internal error", "data" => Dict("error" => string(err)))
+            return Dict("status" => "error", "code" => "LAB_INTERNAL", "message" => INTERNAL_ERROR_MESSAGE, "data" => Dict())
         end
     end
 end

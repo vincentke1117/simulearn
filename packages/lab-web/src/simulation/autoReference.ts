@@ -53,5 +53,5 @@ export function describeAutoReference(points: ReferencePoint[], labels: Record<s
     : points.length === 1
       ? `电路没有接地，已自动取 ${list}${gap}作参考点（0 V）。`
       : `电路分成 ${points.length} 部分互不导通，都没有接地，已各自取参考点（0 V）：${list}。`
-  return `${head}节点电压都是相对参考点的读数；元件两端的电压和支路电流与参考点选在哪无关。`
+  return `${head}结点电压都是相对参考点的读数；元件两端的电压和支路电流与参考点选在哪无关。`
 }

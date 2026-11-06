@@ -9,10 +9,15 @@ import {
   formatPowerFactor,
   reactiveNature,
 } from './format'
+import { componentRowLabel, withNetLabel } from './netLabels'
 import { PhasorDiagram, type Phasor } from './PhasorDiagram'
 
 export interface AcPhasorViewProps {
   result: AcPhasorResult
+  /** 网络名 → 学生对得上的说明（探针名、元件端子），见 netLabels.ts */
+  netLabels?: Record<string, string>
+  /** 元件 id → 画布标签 */
+  componentLabels?: Record<string, string>
 }
 
 type PhasorTab = 'voltage' | 'current'
@@ -30,10 +35,12 @@ function PhasorTable({
   phasors,
   unit,
   columns,
+  rowLabel = (id) => id,
 }: {
   phasors: Phasor[]
   unit: string
   columns: [string, string, string]
+  rowLabel?: (id: string) => string
 }) {
   return (
     <div className="overflow-hidden rounded-lg border border-slate-700">
@@ -48,7 +55,7 @@ function PhasorTable({
         <tbody className="divide-y divide-slate-700/50 bg-slate-900/50">
           {phasors.map((phasor) => (
             <tr key={phasor.id} className="transition-colors hover:bg-slate-800/50">
-              <td className="px-3 py-2 text-slate-400">{phasor.id}</td>
+              <td className="px-3 py-2 text-slate-400">{rowLabel(phasor.id)}</td>
               <td className="px-3 py-2 text-right font-mono text-slate-200">
                 {formatPhasor(phasor.magnitude, phasor.phaseDeg, unit)}
               </td>
@@ -64,7 +71,9 @@ function PhasorTable({
 }
 
 /** 交流相量分析结果：幅值∠相角表 + 功率表 + 复平面相量图 */
-export function AcPhasorView({ result }: AcPhasorViewProps) {
+export function AcPhasorView({ result, netLabels, componentLabels }: AcPhasorViewProps) {
+  const netRow = (net: string) => withNetLabel(net, netLabels)
+  const branchRow = (id: string) => componentRowLabel(id, componentLabels)
   const [tab, setTab] = useState<PhasorTab>('voltage')
 
   const voltagePhasors = useMemo(
@@ -105,7 +114,7 @@ export function AcPhasorView({ result }: AcPhasorViewProps) {
               }`}
               onClick={() => setTab('voltage')}
             >
-              节点电压
+              结点电压
             </button>
             <button
               className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
@@ -126,12 +135,12 @@ export function AcPhasorView({ result }: AcPhasorViewProps) {
       {/* 幅值∠相角表 */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
-          <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">节点电压相量</h4>
-          <PhasorTable phasors={voltagePhasors} unit="V" columns={['节点', '电压幅值（峰值）∠ 相角', '相角']} />
+          <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">结点电压相量</h4>
+          <PhasorTable phasors={voltagePhasors} unit="V" columns={['节点', '电压幅值（峰值）∠ 相角', '相角']} rowLabel={netRow} />
         </div>
         <div>
           <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">支路电流相量</h4>
-          <PhasorTable phasors={currentPhasors} unit="A" columns={['支路', '电流幅值（峰值）∠ 相角', '相角']} />
+          <PhasorTable phasors={currentPhasors} unit="A" columns={['支路', '电流幅值（峰值）∠ 相角', '相角']} rowLabel={branchRow} />
         </div>
       </div>
 

@@ -1,0 +1,352 @@
+{
+  "id": "ch03-node-voltage",
+  "chapter": 3,
+  "chapterTitle": "电阻电路的一般分析",
+  "section": "§3-6 结点电压法",
+  "source": "例 3-6",
+  "title": "三个独立结点：用结点电压求支路电流和输出电压",
+  "summary": "以 ⓪ 为参考结点，电路只剩 ①②③ 三个结点电压未知。三个电流源直接写进结点方程右边，30 V 电压源与 10 Ω 串联，折算成 Us/R 的电流也进右边。运行后读三个探针的结点电压，再由它们求各支路电流和输出电压 Uo = U② − U③。",
+  "tryIt": [
+    "把 2 A 电流源 Is3 改成 0（相当于断开）：结点电压变成 U① = 44 V、U② = 108 V、U③ = 36 V，输出电压 Uo 从默认参数下的 80 V（教材值）降到 72 V。",
+    "改回 2 A，再把 30 V 电压源 Us 改成 0（相当于短路）：结点电压变成 U① = 46 V、U② = 82 V、U③ = 14 V，结点 ①② 之间只剩 10 Ω 电阻。"
+  ],
+  "notes": [
+    "教材图里的元件没有编号：电阻按支路电流 I1～I4 记作 R1～R4；三个电流源按它连的结点记作 Is1（1 A，流入 ①）、Is2（7 A，流入 ②）、Is3（2 A，从 ③ 流出）。",
+    "内核里电流源的电流在源内从 + 端流到 − 端，也就是从 − 端流出到外电路。所以教材中箭头朝上的 Is1、Is2 在画布上 + 端朝下（旋转 270°）。",
+    "30 V 电压源竖放在 ② 的上方（+ 端朝下接 ②），这样不用让导线交叉；电路连接与教材相同。",
+    "结果表里还有一个 R2 与 30 V 电压源之间的中间网络（约 70 V），它不是教材的结点；教材的结点电压看标着「探针 ①②③」的那几行，或画布上的探针读数。"
+  ],
+  "preset": {
+    "method": "node_voltage",
+    "showBranchCurrents": true
+  },
+  "checks": [
+    {
+      "label": "结点电压 Un1",
+      "path": "node_voltages.{VP1}",
+      "expect": 40,
+      "unit": "V",
+      "tol": 0.001,
+      "fromBook": true
+    },
+    {
+      "label": "结点电压 Un2",
+      "path": "node_voltages.{VP2}",
+      "expect": 100,
+      "unit": "V",
+      "tol": 0.001,
+      "fromBook": true
+    },
+    {
+      "label": "结点电压 Un3",
+      "path": "node_voltages.{VP3}",
+      "expect": 20,
+      "unit": "V",
+      "tol": 0.001,
+      "fromBook": true
+    },
+    {
+      "label": "R2 支路电流 I2（① → ②）",
+      "path": "branch_currents.R2",
+      "expect": -3,
+      "unit": "A",
+      "tol": 0.001,
+      "fromBook": true
+    }
+  ],
+  "circuit": {
+    "nodes": [
+      {
+        "id": "VP1",
+        "type": "voltage_probe",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "data": {
+          "label": "①",
+          "type": "voltage_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "Is1",
+        "type": "isource_dc",
+        "position": {
+          "x": 0,
+          "y": 260
+        },
+        "data": {
+          "label": "Is1",
+          "type": "isource_dc",
+          "parameters": {
+            "dc": 1
+          },
+          "rotation": 270
+        }
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "position": {
+          "x": 300,
+          "y": 260
+        },
+        "data": {
+          "label": "R1",
+          "type": "resistor",
+          "parameters": {
+            "value": 10
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "position": {
+          "x": 330,
+          "y": 0
+        },
+        "data": {
+          "label": "R2",
+          "type": "resistor",
+          "parameters": {
+            "value": 10
+          },
+          "rotation": 0
+        }
+      },
+      {
+        "id": "Us",
+        "type": "vsource_dc",
+        "position": {
+          "x": 900,
+          "y": 0
+        },
+        "data": {
+          "label": "Us",
+          "type": "vsource_dc",
+          "parameters": {
+            "dc": 30
+          },
+          "rotation": 270
+        }
+      },
+      {
+        "id": "Is2",
+        "type": "isource_dc",
+        "position": {
+          "x": 600,
+          "y": 360
+        },
+        "data": {
+          "label": "Is2",
+          "type": "isource_dc",
+          "parameters": {
+            "dc": 7
+          },
+          "rotation": 270
+        }
+      },
+      {
+        "id": "VP2",
+        "type": "voltage_probe",
+        "position": {
+          "x": 1200,
+          "y": 200
+        },
+        "data": {
+          "label": "②",
+          "type": "voltage_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "R3",
+        "type": "resistor",
+        "position": {
+          "x": 900,
+          "y": 360
+        },
+        "data": {
+          "label": "R3",
+          "type": "resistor",
+          "parameters": {
+            "value": 20
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "VP3",
+        "type": "voltage_probe",
+        "position": {
+          "x": 1200,
+          "y": 560
+        },
+        "data": {
+          "label": "③",
+          "type": "voltage_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "R4",
+        "type": "resistor",
+        "position": {
+          "x": 900,
+          "y": 720
+        },
+        "data": {
+          "label": "R4",
+          "type": "resistor",
+          "parameters": {
+            "value": 10
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "Is3",
+        "type": "isource_dc",
+        "position": {
+          "x": 1200,
+          "y": 760
+        },
+        "data": {
+          "label": "Is3",
+          "type": "isource_dc",
+          "parameters": {
+            "dc": 2
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "position": {
+          "x": 600,
+          "y": 1000
+        },
+        "data": {
+          "label": "⓪",
+          "type": "ground",
+          "parameters": {},
+          "rotation": 0
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "Is1",
+        "target": "R1",
+        "sourceHandle": "neg",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e2",
+        "source": "R1",
+        "target": "R2",
+        "sourceHandle": "p",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e3",
+        "source": "VP1",
+        "target": "R2",
+        "sourceHandle": "node",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e4",
+        "source": "R2",
+        "target": "Us",
+        "sourceHandle": "n",
+        "targetHandle": "neg"
+      },
+      {
+        "id": "e5",
+        "source": "Us",
+        "target": "R3",
+        "sourceHandle": "pos",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e6",
+        "source": "Is2",
+        "target": "R3",
+        "sourceHandle": "neg",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e7",
+        "source": "VP2",
+        "target": "R3",
+        "sourceHandle": "node",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e8",
+        "source": "R3",
+        "target": "R4",
+        "sourceHandle": "n",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e9",
+        "source": "VP3",
+        "target": "R3",
+        "sourceHandle": "node",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e10",
+        "source": "Is3",
+        "target": "R4",
+        "sourceHandle": "pos",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e11",
+        "source": "Is1",
+        "target": "R1",
+        "sourceHandle": "pos",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e12",
+        "source": "G1",
+        "target": "R1",
+        "sourceHandle": "gnd",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e13",
+        "source": "G1",
+        "target": "Is2",
+        "sourceHandle": "gnd",
+        "targetHandle": "pos"
+      },
+      {
+        "id": "e14",
+        "source": "G1",
+        "target": "R4",
+        "sourceHandle": "gnd",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e15",
+        "source": "Is3",
+        "target": "R4",
+        "sourceHandle": "neg",
+        "targetHandle": "n"
+      }
+    ]
+  }
+}

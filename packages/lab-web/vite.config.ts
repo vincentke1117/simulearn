@@ -4,10 +4,10 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
 // https://vite.dev/config/
-// base 必须是绝对路径 '/circuit/'（而非 './'）：BrowserRouter 用 import.meta.env.BASE_URL
-// 作为 basename，相对 base 会让路由跳到站点根下的 /editor，刷新即 404。
+// 构建产物用相对 base：同一份 dist 既挂在开发态网关的 /circuit/，也挂在知帆拓展的 /ext/<id>/ui/
+// （约定 §3 要求页面只用相对路径）。路由走 hash，不依赖 base。
 export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/circuit/' : '/',
+  base: command === 'build' ? './' : '/',
   plugins: [react()],
   resolve: {
     alias: {

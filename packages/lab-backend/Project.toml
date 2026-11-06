@@ -11,6 +11,7 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
 ModelingToolkitStandardLibrary = "16a59e39-deab-5bd0-87e4-056b12336739"
 SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
 StructTypes = "856f2bd8-1eba-4b0a-8007-ebc267875bd4"
 
 [compat]
@@ -23,7 +24,15 @@ StructTypes = "1"
 julia = "1.10"
 
 [extras]
+LinearSolve = "7ed4a6bd-45f5-4d41-b270-4a48e9bafcae"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test"]
+
+# LinearSolve 默认会加载 MKL_jll（再带上 IntelOpenMP_jll、oneTBB_jll）。这三个的二进制库都是「按需下载」的 artifact，
+# PackageCompiler 不打进拓展包，程序一启动就去联网下载：断网的电脑上起不来，也违反约定「拓展不主动联网」
+# （2026-11-02 打包后在隔离环境里实测）。电路内核解的都是小规模方程，用不上 MKL，关掉它；
+# LinearSolve 是间接依赖，要列在 [extras] 里，这里的偏好才认得出是给它的。
+[preferences.LinearSolve]
+LoadMKL_JLL = false

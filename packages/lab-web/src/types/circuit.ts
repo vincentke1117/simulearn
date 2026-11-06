@@ -4,10 +4,10 @@ import type { ControlOutputPayload, ControlSimulationPayload, MixedBlockPayload 
 // 分析方法枚举
 export type AnalysisMethod =
   | 'transient'           // 瞬态分析（时域仿真）
-  | 'node_voltage'        // 节点电压法（直流稳态）
+  | 'node_voltage'        // 结点电压法（直流稳态）
   | 'branch_current'      // 支路电流法
   | 'mesh_current'        // 网孔电流法
-  | 'thevenin'           // 戴维南等效
+  | 'thevenin'           // 戴维宁等效
   | 'dc_op'              // 直流工作点（电容开路、电感短路、交流源置直流分量）
   | 'ac_phasor'          // 交流相量分析（单频正弦稳态）
   | 'frequency_sweep'    // 频率扫描（Bode 图）
@@ -46,8 +46,8 @@ export interface CircuitNodeData {
   rotation?: number
   // 字体大小 (px)，默认 12
   fontSize?: number
-  // 仿真结果数据（节点电压法）
-  voltage?: number  // 节点电压值
+  // 仿真结果数据（结点电压法）
+  voltage?: number  // 结点电压值
   // 元件两端的电压差（用于电压源副行或“元件电压差”显示）
   voltageDelta?: number
   // 元件电流值（用于电流表显示）
@@ -61,7 +61,7 @@ export interface SimulationSettings {
   nSamples: number
   method?: AnalysisMethod  // 分析方法，未指定则自动检测
   comparisonMethods?: AnalysisMethod[]  // 对比模式：同时运行的多个方法
-  // 电压显示模式：node 显示网络节点电压；element 显示元件两端电压差
+  // 电压显示模式：node 显示网络结点电压；element 显示元件两端电压差
   voltageDisplayMode?: 'node' | 'element'
   // 是否显示支路电流
   showBranchCurrents?: boolean
@@ -69,7 +69,7 @@ export interface SimulationSettings {
   sweep?: SweepSettings
 }
 
-// 戴维南端口配置
+// 戴维宁端口配置
 export interface TheveninPortConfig {
   positiveNode: string  // 正端节点ID
   negativeNode: string  // 负端节点ID（通常是地）
@@ -116,7 +116,7 @@ export interface SimulationPayload {
     n_samples: number
   }
   method?: AnalysisMethod  // 分析方法，默认为 transient
-  thevenin_port?: { positive: string; negative: string }  // 戴维南端口（后端格式）
+  thevenin_port?: { positive: string; negative: string }  // 戴维宁端口（后端格式）
   teaching_mode?: boolean  // 教学模式
   sweep?: SweepPayload  // 频率扫描参数（顶层字段，method === 'frequency_sweep' 时必需）
 }
@@ -175,17 +175,18 @@ export interface SimulationData {
   metrics?: Record<string, StepResponseMetrics>
 }
 
-// 节点电压法结果
+// 结点电压法结果
 export interface NodeVoltageResult {
   node_voltages: Record<string, number>  // 节点名 -> 电压值
   branch_currents: Record<string, number> // 元件ID -> 电流值
   steps?: string[]  // 教学模式：求解步骤（可选）
 }
 
-// 戴维南等效结果
+// 戴维宁等效结果
 export interface TheveninResult {
-  vth: number  // 戴维南电压（V）
-  rth: number  // 戴维南电阻（Ω）
+  vth: number  // 戴维宁电压（V）
+  rth: number  // 戴维宁电阻（Ω）
+  isc?: number  // 诺顿电流（端口短路电流，A）；等效电阻为 0 或无穷大时没有
   port: { positive: string; negative: string }  // 端口节点名称
 }
 
@@ -202,7 +203,7 @@ export interface MeshCurrentResult {
   node_voltages: Record<string, number>    // 节点名 -> 电压值
 }
 
-// 直流工作点结果（电容开路 / 电感短路 / 交流源取直流分量）——与节点电压法同构
+// 直流工作点结果（电容开路 / 电感短路 / 交流源取直流分量）——与结点电压法同构
 export interface DcOpResult {
   node_voltages: Record<string, number>
   branch_currents: Record<string, number>
@@ -256,8 +257,8 @@ export interface ComparisonResult {
 // 统一的分析结果数据
 export type AnalysisResultData =
   | SimulationData          // 瞬态分析
-  | NodeVoltageResult       // 节点电压法
-  | TheveninResult          // 戴维南等效
+  | NodeVoltageResult       // 结点电压法
+  | TheveninResult          // 戴维宁等效
   | BranchCurrentResult     // 支路电流法
   | MeshCurrentResult       // 网孔电流法
   | DcOpResult              // 直流工作点

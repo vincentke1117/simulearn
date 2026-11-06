@@ -1,0 +1,23 @@
+{
+  "name": "lab-transient-rc-discharge（电容初始电压 v0=10V 经 1kΩ 放电，零输入：τ=1ms 时降到 10/e）",
+  "endpoint": "simulate",
+  "request": {
+    "components": [
+      { "id": "C1", "type": "capacitor", "parameters": { "value": 1e-06, "v0": 10.0 }, "connections": { "p": "n1", "n": "gnd" } },
+      { "id": "R1", "type": "resistor", "parameters": { "value": 1000.0 }, "connections": { "p": "n1", "n": "gnd" } },
+      { "id": "G1", "type": "ground", "parameters": {}, "connections": { "gnd": "gnd" } },
+      { "id": "VP1", "type": "voltage_probe", "parameters": {}, "connections": { "node": "n1" } }
+    ],
+    "nets": [
+      { "name": "n1", "nodes": [["C1", "p"], ["R1", "p"], ["VP1", "node"]] },
+      { "name": "gnd", "nodes": [["C1", "n"], ["R1", "n"], ["G1", "gnd"]] }
+    ],
+    "sim": { "t_stop": 0.005, "n_samples": 101 }
+  },
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "data.signals.1.values.1", "approx": 10.0, "atol": 1e-06 },
+    { "path": "data.signals.1.values.21", "approx": 3.6787944117144233, "atol": 0.005 },
+    { "path": "data.signals.1.values.-1", "approx": 0.06737946999085467, "atol": 0.005 }
+  ]
+}

@@ -5,7 +5,8 @@ import {
   RotateCcw, 
   Play, 
   Loader2, 
-  Layout
+  Layout,
+  ChevronLeft
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useStore } from '@xyflow/react'
@@ -21,6 +22,7 @@ import {
 import type { DiagramMode } from '@/types/control'
 import { cancelSimulation } from '@/simulation/api'
 import { EditorTopBarSettingsControls } from './EditorTopBarSettingsControls'
+import { useTwoStep } from './useTwoStep'
 
 export interface EditorTopBarProps {
   // Project props
@@ -29,6 +31,10 @@ export interface EditorTopBarProps {
   onImportError?: (message: string) => void
   canExport: boolean
   onReset?: () => void
+  /** 嵌入模式：给了它就只留「恢复初始电路」，不显示导入 / 导出 / 清空（iframe 沙箱不许下载） */
+  onRestoreInitial?: () => void
+  /** 案例库里打开的案例：回到案例列表 */
+  onBack?: () => void
   
   // Simulation props
   settings: SimulationSettings
@@ -37,11 +43,20 @@ export interface EditorTopBarProps {
   disabled?: boolean
   isRunning?: boolean
   isResistive?: boolean
+  /**
+   * 有没有交流源 / 探针：工作区按自己的 nodes 状态算好传进来。
+   * 不能只读 React Flow 的 store：画布首帧 store 还是空的，下面那个 effect 会以为「交流相量不可用」，
+   * 把案例预设的 ac_phasor 清掉，学生一点运行跑的就是瞬态（例 11-2 是 7.96 MHz 电路，瞬态要算很久）
+   */
+  hasAcSource?: boolean
+  hasProbe?: boolean
   diagramMode?: DiagramMode
   hasResult?: boolean
   onShowResult?: () => void
   showResultPanel?: boolean
   availableNodes?: string[]
+  /** 网络名 → 探针名 / 元件端子：端口下拉里配在网络名后面 */
+  availableNodeLabels?: Record<string, string>
   theveninPort?: TheveninPortConfig
   onTheveninPortChange?: (config: TheveninPortConfig) => void
   teachingMode?: boolean
@@ -51,23 +66,30 @@ export interface EditorTopBarProps {
   message?: { tone: 'info' | 'error'; text: string } | null
 }
 
+const noop = () => {}
+
 export function EditorTopBar({
   onExport,
   onImport,
   onImportError,
   canExport,
   onReset,
+  onRestoreInitial,
+  onBack,
   settings,
   onSettingsChange,
   onRun,
   disabled,
   isRunning,
   isResistive,
+  hasAcSource: hasAcSourceProp,
+  hasProbe: hasProbeProp,
   diagramMode,
   hasResult,
   onShowResult,
   showResultPanel,
   availableNodes,
+  availableNodeLabels,
   theveninPort,
   onTheveninPortChange,
   teachingMode,
@@ -75,6 +97,7 @@ export function EditorTopBar({
   message
 }: EditorTopBarProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const restore = useTwoStep(onRestoreInitial ?? noop)
 
   const handleImportClick = () => {
     fileInputRef.current?.click()
@@ -106,14 +129,16 @@ export function EditorTopBar({
 
   // 是否存在交流源（与 payload.ts 读取 nodes 判断元件类型的模式一致；
   // EditorTopBar 处于 ReactFlowProvider 内，直接从 store 读取 nodes）
-  const hasAcSource = useStore((state) =>
+  const storeHasAcSource = useStore((state) =>
     state.nodes.some((node) => node.type === 'vsource_ac' || node.type === 'isource_ac'),
   )
+  const hasAcSource = hasAcSourceProp ?? storeHasAcSource
 
   // 频率扫描要求至少一个探针（Bode 曲线按探针出图）
-  const hasProbe = useStore((state) =>
+  const storeHasProbe = useStore((state) =>
     state.nodes.some((node) => node.type === 'voltage_probe' || node.type === 'current_probe'),
   )
+  const hasProbe = hasProbeProp ?? storeHasProbe
 
   // 根据电路类型可用的分析方法（dc_op 在任何电气电路下可选；ac_phasor / frequency_sweep 仅当存在交流源时可选）
   const availableMethods: AnalysisMethod[] = useMemo(
@@ -174,6 +199,30 @@ export function EditorTopBar({
     <header className="!h-12 !min-h-[48px] !py-0 !bg-slate-900 border-b border-slate-700 flex flex-wrap items-center justify-between !px-3 shrink-0 z-10 gap-y-0">
       {/* Left: Project Controls */}
       <div className="flex items-center gap-2">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-xs font-medium text-slate-300 hover:text-blue-400 transition-colors"
+            title="回到案例列表；你在这个案例里的修改会保留"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            案例列表
+          </button>
+        )}
+        {onRestoreInitial ? (
+          <button
+            onClick={restore.click}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+              restore.armed
+                ? 'border-amber-500/60 bg-amber-500/10 text-amber-300'
+                : 'border-slate-700 bg-slate-800 text-slate-300 hover:text-blue-400'
+            }`}
+            title="把电路恢复成课堂给的初始电路，你的修改会丢掉"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            {restore.armed ? '再点一次确认恢复' : '恢复初始电路'}
+          </button>
+        ) : (
         <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
           <button
             onClick={handleImportClick}
@@ -203,6 +252,7 @@ export function EditorTopBar({
             </button>
           )}
         </div>
+        )}
 
         {/* Workspace Message */}
         <AnimatePresence>
@@ -223,11 +273,12 @@ export function EditorTopBar({
                 <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
               )}
               <span>{message.text}</span>
-              <button
+              {/* 嵌入时不给「复制」：跨源 iframe 没有写剪贴板的权限，点了没反应 */}
+              {!onRestoreInitial && <button
                 className="ml-2 px-2 py-0.5 rounded border border-slate-700 hover:bg-slate-800 text-slate-300"
                 onClick={() => navigator.clipboard?.writeText(message.text).catch(() => {})}
                 title="复制提示"
-              >复制</button>
+              >复制</button>}
             </motion.div>
           )}
         </AnimatePresence>
@@ -261,7 +312,7 @@ export function EditorTopBar({
           availableMethods={availableMethods}
           sweep={sweep}
           updateSweep={updateSweep}
-          thevenin={showTheveninConfig ? { availableNodes, port: theveninPort, onPortChange: onTheveninPortChange } : undefined}
+          thevenin={showTheveninConfig ? { availableNodes, nodeLabels: availableNodeLabels, port: theveninPort, onPortChange: onTheveninPortChange } : undefined}
         />
 
         {/* Teaching Mode Toggle */}

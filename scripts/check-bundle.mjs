@@ -47,6 +47,7 @@ const forbiddenInitialPrefixes = [
   'Plot-',
   'BodePlot-',
   'StepResponseChart-',
+  'DemoPlayer-',
   'jspdf.',
   'html2canvas.'
 ]
@@ -56,7 +57,8 @@ for (const name of initialNames) {
   }
 }
 
-const requiredAsyncPrefixes = ['SimulationResultPanel-', 'Plot-', 'jspdf.', 'html2canvas.']
+// 课堂演示（演示播放器 + 各演示脚本）只在老师点开时才加载，不能进首屏
+const requiredAsyncPrefixes = ['SimulationResultPanel-', 'Plot-', 'DemoPlayer-', 'jspdf.', 'html2canvas.']
 for (const prefix of requiredAsyncPrefixes) {
   if (!asyncNames.some((name) => name.startsWith(prefix))) {
     failures.push(`expected async chunk is missing: ${prefix}`)

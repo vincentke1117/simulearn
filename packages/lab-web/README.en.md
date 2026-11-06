@@ -31,15 +31,15 @@ A browser-based editor for circuit design and simulation. Supports common analys
    npm install
    npm run dev:lab
    ```
-4. Open the Vite URL shown in the terminal (normally `http://127.0.0.1:3000/editor`)
+4. Open the Vite URL shown in the terminal (normally `http://127.0.0.1:3000/#/editor`)
 
 ## Environment Variables
 
-- `VITE_API_BASE_URL`: simulation API base URL; the development server proxies `/api/lab` to `127.0.0.1:8080`
+- `VITE_API_BASE_URL`: simulation API base URL, default `../api/lab` (relative to the page); the development server proxies `/api/lab` to `127.0.0.1:8080`. An override must stay relative, or the Zhifan extension would bypass the host's `/ext/<id>/` prefix
 
 ## Usage
 
-- Canvas: drag components from the left panel, connect ports, add `ground` before running
+- Canvas: drag components from the left panel, connect ports; a pure circuit runs without `ground` (the kernel picks a reference node and the result panel says which), mixed circuit + control diagrams still need one
 - Top Bar:
   - Select analysis method (node/branch/mesh/Thevenin/transient)
   - Transient params: `tStop`, `nSamples`

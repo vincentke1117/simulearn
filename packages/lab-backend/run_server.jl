@@ -9,7 +9,9 @@ Pkg.instantiate()
 using JCircuitServer
 
 println("Starting JCircuitServer...")
-result = JCircuitServer.bootstrap()
+# 构建过 lab-web 就把页面挂在 /ui/：开发态也能用假知帆宿主 --attach 走一遍嵌入链路（/ui/#/embed）
+ui_dir = normpath(joinpath(@__DIR__, "..", "lab-web", "dist"))
+result = JCircuitServer.bootstrap(; ui_dir = isfile(joinpath(ui_dir, "index.html")) ? ui_dir : nothing)
 println("Server started on $(result.host):$(result.port)")
 println("Press Ctrl+C to stop")
 

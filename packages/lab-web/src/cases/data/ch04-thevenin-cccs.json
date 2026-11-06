@@ -1,0 +1,237 @@
+{
+  "id": "ch04-thevenin-cccs",
+  "chapter": 4,
+  "chapterTitle": "电路定理",
+  "section": "§4-3 戴维宁定理和诺顿定理",
+  "source": "例 4-7",
+  "title": "含受控源的一端口：戴维宁与诺顿等效",
+  "summary": "一端口内部有一个电流控制电流源，输出 ic = 0.75 i1，i1 是 5 kΩ 电阻里的电流。等效电阻按「开路电压 ÷ 短路电流」求：端口开路和短路时 i1 不同，受控源的电流也跟着变。运行后读开路电压 Uoc 和等效电阻 Req，看受控源让等效电阻比单纯电阻网络小了多少。",
+  "tryIt": [
+    "结果面板直接给出诺顿电流 Isc = Uoc / Req = 35 V ÷ 2.5 kΩ = 14 mA（教材值）：诺顿等效电路就是 14 mA 电流源并联 2.5 kΩ。",
+    "把受控源的电流增益从 0.75 改成 0（受控源不起作用）：Uoc = 32 V，Req = 4 kΩ，正好是 5 kΩ 与 20 kΩ 并联。对比默认参数，受控源让 Req 从 4 kΩ 降到了 2.5 kΩ。",
+    "增益改回 0.75，把 40 V 电压源改成 80 V：Uoc 翻倍成 70 V，Req 仍是 2.5 kΩ——等效电阻只取决于电路结构和受控源，与独立源的大小无关。"
+  ],
+  "notes": [
+    "教材图里的元件没有编号：5 kΩ 电阻记作 R1（电流 i1），20 kΩ 电阻记作 R2（电流 i2），受控源记作 F1。",
+    "受控源的控制端 i+、i- 串在 5 kΩ 支路里，内核把从 i+ 流到 i- 的电流当作控制电流，就是 i1。",
+    "内核里受控电流源的电流在源内从 +out 流到 -out，也就是从 -out 端流出。为让 ic 像教材一样朝上流入端子 1，F1 旋转 270°，+out 朝下接 1′，-out 朝上接 1。",
+    "受控源的增益 k 初始为 0.75（教材的 ic = 0.75 i1），点 F1 可以改。",
+    "端子 1、1′ 各挂一个电压探针，戴维宁分析的端口就设在这两个探针上；1′ 接地，所以工具栏端口下拉里正端是「…（探针 1）」那个结点、负端是「地 (GND)」。"
+  ],
+  "preset": {
+    "method": "thevenin",
+    "theveninPort": {
+      "positive": "VP1",
+      "negative": "VP2"
+    }
+  },
+  "checks": [
+    {
+      "label": "开路电压 Uoc",
+      "path": "vth",
+      "expect": 35,
+      "unit": "V",
+      "tol": 0.001,
+      "fromBook": true
+    },
+    {
+      "label": "等效电阻 Req",
+      "path": "rth",
+      "expect": 2500,
+      "unit": "Ω",
+      "tol": 0.001,
+      "fromBook": true
+    },
+    {
+      "label": "诺顿电流 Isc（端口短路电流）",
+      "path": "isc",
+      "expect": 0.014,
+      "unit": "A",
+      "tol": 1e-06,
+      "fromBook": true
+    }
+  ],
+  "circuit": {
+    "nodes": [
+      {
+        "id": "Us",
+        "type": "vsource_dc",
+        "position": {
+          "x": 0,
+          "y": 240
+        },
+        "data": {
+          "label": "Us",
+          "type": "vsource_dc",
+          "parameters": {
+            "dc": 40
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "position": {
+          "x": 250,
+          "y": 0
+        },
+        "data": {
+          "label": "R1",
+          "type": "resistor",
+          "parameters": {
+            "value": 5000
+          },
+          "rotation": 0
+        }
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "position": {
+          "x": 400,
+          "y": 240
+        },
+        "data": {
+          "label": "R2",
+          "type": "resistor",
+          "parameters": {
+            "value": 20000
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "F1",
+        "type": "cccs",
+        "position": {
+          "x": 850,
+          "y": 240
+        },
+        "data": {
+          "label": "F1（ic = k·i1）",
+          "type": "cccs",
+          "parameters": {
+            "gain": 0.75
+          },
+          "rotation": 270
+        }
+      },
+      {
+        "id": "VP1",
+        "type": "voltage_probe",
+        "position": {
+          "x": 1150,
+          "y": 40
+        },
+        "data": {
+          "label": "1",
+          "type": "voltage_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "VP2",
+        "type": "voltage_probe",
+        "position": {
+          "x": 1150,
+          "y": 480
+        },
+        "data": {
+          "label": "1′",
+          "type": "voltage_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "position": {
+          "x": 300,
+          "y": 560
+        },
+        "data": {
+          "label": "GND",
+          "type": "ground",
+          "parameters": {},
+          "rotation": 0
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "Us",
+        "target": "R1",
+        "sourceHandle": "pos",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e2",
+        "source": "R1",
+        "target": "F1",
+        "sourceHandle": "n",
+        "targetHandle": "ctrl_p"
+      },
+      {
+        "id": "e3",
+        "source": "VP1",
+        "target": "F1",
+        "sourceHandle": "node",
+        "targetHandle": "neg"
+      },
+      {
+        "id": "e4",
+        "source": "R2",
+        "target": "F1",
+        "sourceHandle": "p",
+        "targetHandle": "neg"
+      },
+      {
+        "id": "e5",
+        "source": "VP1",
+        "target": "F1",
+        "sourceHandle": "node",
+        "targetHandle": "ctrl_n"
+      },
+      {
+        "id": "e6",
+        "source": "Us",
+        "target": "R2",
+        "sourceHandle": "neg",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e7",
+        "source": "R2",
+        "target": "F1",
+        "sourceHandle": "n",
+        "targetHandle": "pos"
+      },
+      {
+        "id": "e8",
+        "source": "VP2",
+        "target": "F1",
+        "sourceHandle": "node",
+        "targetHandle": "pos"
+      },
+      {
+        "id": "e9",
+        "source": "G1",
+        "target": "Us",
+        "sourceHandle": "gnd",
+        "targetHandle": "neg"
+      }
+    ]
+  },
+  "demos": [
+    {
+      "id": "thevenin-norton",
+      "kind": "steps",
+      "title": "含受控源的戴维宁与诺顿等效",
+      "summary": "开路求 uoc → 短路求 isc → Req = uoc / isc → 戴维宁、诺顿等效电路；附外加电源法（端口加 10 V）和「受控源也置零」的错误"
+    }
+  ]
+}

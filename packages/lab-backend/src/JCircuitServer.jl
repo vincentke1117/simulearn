@@ -10,6 +10,7 @@ using ModelingToolkitStandardLibrary.Blocks
 using DifferentialEquations
 using LinearAlgebra
 using SHA
+using Sockets
 
 const EPS_RESISTANCE = 1e-9
 const _SIMPLIFY_CACHE = Dict{String, Any}()
@@ -68,7 +69,7 @@ struct SimulationPayload
     nets::Vector{NetPayload}
     sim::SimulationSettings
     method::Union{String, Nothing}
-    thevenin_port::Union{Dict{String, String}, Nothing}  # 戴维南端口配置: {"positive" => 节点名, "negative" => 节点名}
+    thevenin_port::Union{Dict{String, String}, Nothing}  # 戴维宁端口配置: {"positive" => 节点名, "negative" => 节点名}
     teaching_mode::Union{Bool, Nothing}  # 教学模式：是否返回求解步骤
     sweep::Union{SweepSettings, Nothing}  # 频率扫描参数（仅 method == "frequency_sweep" 使用）
 end
@@ -105,6 +106,20 @@ struct ValidationError <: Exception
     data::Dict{String, Any}
 end
 Base.showerror(io::IO, err::ValidationError) = print(io, err.message)
+
+# 采样点数上限：瞬态 / 控制 / 混合三条路径都按它生成整条时间轴并整段序列化，没有上限时多敲几个 0
+# 就能让单线程内核算上几分钟、把内存撑爆（嵌入知帆时进程被杀，课堂里就是「仿真程序已退出」）。
+# 频率扫描的点数另有 2..401 的限制。
+const MAX_SAMPLES = 20_000
+
+function check_samples(n::Integer)
+    2 <= n <= MAX_SAMPLES ||
+        throw(ValidationError("采样点数要在 2 到 $(MAX_SAMPLES) 之间", Dict("n_samples" => n, "max" => MAX_SAMPLES)))
+    return nothing
+end
+
+# 内核自身出错（不是学生输入的问题）时给页面的话：异常原文只写日志，不进响应——学生看不懂，也不该看到内部细节
+const INTERNAL_ERROR_MESSAGE = "仿真程序内部出错，请先恢复初始电路或检查参数后再试"
 
 include("ControlSimulation.jl")
 include("MixedSimulation.jl")
@@ -181,6 +196,16 @@ function require_parameter(component::ComponentPayload, key::String)
     haskey(component.parameters, key) ||
         throw(ValidationError("缺少元件参数 $(key)", Dict("component" => component.id, "parameter" => key)))
     return Float64(component.parameters[key])
+end
+
+# 可选参数（电容 v0、电感 i0、交流源 phase）：不进 COMPONENT_SCHEMAS 的必填表，
+# 旧工程文件和旧页面不带它们照样能算；带了就必须是有限数，NaN 混进初值会让求解器静默发散
+function optional_parameter(component::ComponentPayload, key::String, default::Float64)
+    haskey(component.parameters, key) || return default
+    value = Float64(component.parameters[key])
+    isfinite(value) ||
+        throw(ValidationError("元件参数 $(key) 必须是有限数", Dict("component" => component.id, "parameter" => key)))
+    return value
 end
 
 function require_connections(component::ComponentPayload, handles::Vector{String})
@@ -296,9 +321,11 @@ function instantiate_component(component::ComponentPayload)
             Electrical.Resistor(; name, R = R)
         elseif component.type == "capacitor"
             C = require_parameter(component, "value")
+            # 初始电压 v0 不在这里给：见 simulate_payload 里 initial_values 的说明
             Electrical.Capacitor(; name, C = C)
         elseif component.type == "inductor"
             L = require_parameter(component, "value")
+            # 初始电流 i0 同上，只在 simulate_payload 里写进初值表
             Electrical.Inductor(; name, L = L)
         elseif component.type == "vsource_dc"
             dc = require_parameter(component, "dc")
@@ -316,7 +343,9 @@ function instantiate_component(component::ComponentPayload)
         elseif component.type == "vsource_ac"
             amplitude = require_parameter(component, "amplitude")
             frequency = require_parameter(component, "frequency")
-            driver = Blocks.Sine(; name = Symbol(component.id * "_drv"), amplitude = amplitude, frequency = frequency)
+            # 瞬态里交流源是 amplitude·sin(2πft + phase)，phase 以度给出，与相量分析的 amplitude∠phase 同一约定
+            driver = Blocks.Sine(; name = Symbol(component.id * "_drv"), amplitude = amplitude, frequency = frequency,
+                phase = deg2rad(optional_parameter(component, "phase", 0.0)))
             push!(extra_systems, driver)
             if isdefined(Electrical, :SignalVoltage)
                 voltage = Electrical.SignalVoltage(; name)
@@ -347,20 +376,23 @@ function instantiate_component(component::ComponentPayload)
                 push_connection_or_equation!(extra_equations, driver.output, current.i)
             else
                 current = Electrical.Current(; name)
-                push!(extra_equations, current.I ~ driver.output)
+                # current.I 是 RealInput 连接器：必须 connect，写成 `~` 会让 structural_simplify 抛 MethodError（原先带电流源的瞬态一律 500）
+                push_connection_or_equation!(extra_equations, driver.output, current.I)
             end
             current
         elseif component.type == "isource_ac"
             amplitude = require_parameter(component, "amplitude")
             frequency = require_parameter(component, "frequency")
-            driver = Blocks.Sine(; name = Symbol(component.id * "_drv"), amplitude = amplitude, frequency = frequency)
+            driver = Blocks.Sine(; name = Symbol(component.id * "_drv"), amplitude = amplitude, frequency = frequency,
+                phase = deg2rad(optional_parameter(component, "phase", 0.0)))
             push!(extra_systems, driver)
             if isdefined(Electrical, :SignalCurrent)
                 current = Electrical.SignalCurrent(; name)
                 push_connection_or_equation!(extra_equations, driver.output, current.i)
             else
                 current = Electrical.Current(; name)
-                push!(extra_equations, current.I ~ driver.output)
+                # current.I 是 RealInput 连接器：必须 connect，写成 `~` 会让 structural_simplify 抛 MethodError（原先带电流源的瞬态一律 500）
+                push_connection_or_equation!(extra_equations, driver.output, current.I)
             end
             current
         elseif component.type == "vcvs"
@@ -491,7 +523,7 @@ function instantiate_component(component::ComponentPayload)
                     push!(extra_systems, sensor)
                     push!(extra_systems, driver)
 
-                    push_connection_or_equation!(extra_equations, sensor.i, driver.input)
+                    push!(extra_equations, driver.input.u ~ sensor.i)
 
                     if isdefined(Electrical, :SignalVoltage)
                         voltage = Electrical.SignalVoltage(; name)
@@ -519,7 +551,7 @@ function instantiate_component(component::ComponentPayload)
                 push!(extra_systems, sensor)
                 push!(extra_systems, driver)
 
-                push_connection_or_equation!(extra_equations, sensor.i, driver.input)
+                push!(extra_equations, driver.input.u ~ sensor.i)
 
                 if isdefined(Electrical, :SignalVoltage)
                     voltage = Electrical.SignalVoltage(; name)
@@ -548,14 +580,14 @@ function instantiate_component(component::ComponentPayload)
                     push!(extra_systems, sensor)
                     push!(extra_systems, driver)
 
-                    push_connection_or_equation!(extra_equations, sensor.i, driver.input)
+                    push!(extra_equations, driver.input.u ~ sensor.i)
 
                     if isdefined(Electrical, :SignalCurrent)
                         current = Electrical.SignalCurrent(; name)
                         push_connection_or_equation!(extra_equations, driver.output, current.i)
                     else
                         current = Electrical.Current(; name)
-                        push!(extra_equations, current.I ~ driver.output)
+                        push_connection_or_equation!(extra_equations, driver.output, current.I)
                     end
 
                     handles["ctrl_p"] = getproperty(sensor, :p)
@@ -572,7 +604,7 @@ function instantiate_component(component::ComponentPayload)
                 push!(extra_systems, sensor)
                 push!(extra_systems, driver)
 
-                push_connection_or_equation!(extra_equations, sensor.i, driver.input)
+                push!(extra_equations, driver.input.u ~ sensor.i)
 
                 if isdefined(Electrical, :SignalCurrent)
                     current = Electrical.SignalCurrent(; name)
@@ -627,7 +659,7 @@ end
     is_resistive_circuit(payload::SimulationPayload)
 
 检测是否为纯电阻电路（只包含电阻、直流电源、地、探针）
-纯电阻电路可以使用节点电压法等直流分析方法
+纯电阻电路可以使用结点电压法等直流分析方法
 """
 function is_resistive_circuit(payload::SimulationPayload)
     resistive_types = Set(["resistor", "vsource_dc", "isource_dc", "ground", "voltage_probe", "current_probe", "vccs", "vcvs", "ccvs", "cccs"])
@@ -637,13 +669,13 @@ end
 """ solve_by_node_voltage(payload::SimulationPayload)
 
 使用修改节点分析（MNA）求解纯电阻直流电路。
-- 未知量：所有非地节点电压 + 每个直流电压源的支路电流
+- 未知量：所有非地结点电压 + 每个直流电压源的支路电流
 - 更稳健：同时支持接地与非接地电压源（超节点）
 """
 function solve_by_node_voltage(payload::SimulationPayload)
     # 验证是否为纯电阻电路
     is_resistive_circuit(payload) ||
-        throw(ValidationError("节点电压法仅适用于纯电阻电路", Dict()))
+        throw(ValidationError("结点电压法仅适用于纯电阻电路", Dict()))
 
     # 1) 识别地线网络名称（优先使用名为 "gnd" 的网络；否则从 ground 元件的连接中推断）
     ground_nets = Set{String}()
@@ -856,7 +888,7 @@ function solve_by_node_voltage(payload::SimulationPayload)
         end
     end
     # VCCS 贡献（受控电流源）：i_out = g * (V(ctrl_p) - V(ctrl_n))，方向 pos → neg
-    # MNA/节点电压法标准“跨导”戳记：
+    # MNA/结点电压法标准“跨导”戳记：
     #   A[pos, ctrl_p] += g
     #   A[pos, ctrl_n] -= g
     #   A[neg, ctrl_p] -= g
@@ -991,12 +1023,12 @@ function solve_by_node_voltage(payload::SimulationPayload)
         push!(steps, "Step 1: 识别非地节点并建立索引")
         push!(steps, "  非地节点: $(join(nodes, ", "))")
         push!(steps, "Step 2: 构建MNA矩阵 A 与向量 b")
-        push!(steps, "  未知量 = 节点电压($(n)) + 电压源支路电流($(m))")
+        push!(steps, "  未知量 = 结点电压($(n)) + 电压源支路电流($(m))")
         A_disp = [[round(A[i,j], digits=6) for j in 1:(n+m)] for i in 1:(n+m)]
         b_disp = [round(b[i], digits=6) for i in 1:(n+m)]
         matrices["A"] = A_disp
         matrices["b"] = b_disp
-        push!(steps, "Step 3: 求解 A x = b，得到节点电压与电压源电流")
+        push!(steps, "Step 3: 求解 A x = b，得到结点电压与电压源电流")
         V_disp = [round(x[i], digits=6) for i in 1:n]
         Iv_disp = [round(x[n+i], digits=6) for i in 1:m]
         matrices["V"] = V_disp
@@ -1067,7 +1099,7 @@ end
     solve_by_dc_op(payload::SimulationPayload)
 
 直流工作点分析：电容开路、电感短路、交流源置于其直流分量后，
-复用节点电压法（MNA）求解。响应形状与 node_voltage 完全一致。
+复用结点电压法（MNA）求解。响应形状与 node_voltage 完全一致。
 """
 function solve_by_dc_op(payload::SimulationPayload)
     return solve_by_node_voltage(transform_payload_for_dc_op(payload))
@@ -1117,7 +1149,7 @@ end
 `validate_ac_phasor_payload`；ac_phasor 与 frequency_sweep 共用）。
 交流源相量 = amplitude∠phase，与 ω 无关（幅频特性输入恒定）。
 返回 `(voltage_phasors, current_phasors)`：
-- voltage_phasors：节点电压相量（地节点为 0）；
+- voltage_phasors：结点电压相量（地节点为 0）；
 - current_phasors：支路电流相量（R/C/L 方向 p→n；电压源/电流探针为
   MNA 扩展变量，方向 pos→neg / p→n，即“内部”电流）。
 """
@@ -1149,7 +1181,7 @@ function solve_ac_phasor_core(payload::SimulationPayload, omega::Float64)
     # 交流源相量：amplitude∠phase（phase 单位为度，缺省 0）
     function ac_source_phasor(comp::ComponentPayload)
         amplitude = require_parameter(comp, "amplitude")
-        phase_deg = Float64(get(comp.parameters, "phase", 0.0))
+        phase_deg = optional_parameter(comp, "phase", 0.0)
         return amplitude * cis(deg2rad(phase_deg))
     end
 
@@ -1234,7 +1266,7 @@ function solve_ac_phasor_core(payload::SimulationPayload, omega::Float64)
     all(isfinite, x) ||
         throw(ValidationError("交流相量分析求解失败（结果包含 NaN/Inf）", Dict("code" => "LAB_SIM_FAILED")))
 
-    # 整理结果：节点电压相量
+    # 整理结果：结点电压相量
     voltage_phasors = Dict{String, ComplexF64}("gnd" => 0.0)
     if ground_name != "gnd"
         voltage_phasors[ground_name] = 0.0
@@ -1272,7 +1304,7 @@ end
 - 直流源按叠加原理置零：vsource_dc → 0V 短路（保留支路电流扩展变量），isource_dc → 开路；
 - 电压探针不改变电路；电流探针 = 0V 复数电压源（支路电流为 MNA 扩展变量，方向 p→n）；
 - 所有交流源频率必须一致；受控源（vcvs/vccs/ccvs/cccs）暂不支持；
-- 输出：节点电压/支路电流的幅值（node_voltages/branch_currents）与相角（度，
+- 输出：结点电压/支路电流的幅值（node_voltages/branch_currents）与相角（度，
   node_phases_deg/branch_phases_deg），外加 frequency_hz 与 power。
 
 功率约定（`power` 键）：amplitude 为峰值，功率为平均值（复功率 S̄ = V̄·Ī*/2，带 1/2 因子）。
@@ -1336,7 +1368,7 @@ end
 - 请求需携带顶层可选字段 `sweep`（见 [`SweepSettings`](@ref)），v1 仅支持对数刻度；
 - 交流源幅值/相位不随频率变化（幅频特性输入恒定）；源参数 frequency 不参与网格生成；
 - 元件校验沿用 ac_phasor（受控源拒绝、类型白名单等）；
-- 仅输出探针：voltage_probe → 所在节点电压，current_probe → 支路电流（方向 p→n）；
+- 仅输出探针：voltage_probe → 所在结点电压，current_probe → 支路电流（方向 p→n）；
   无任何探针时抛 ValidationError；
 - 响应 data：`freq_hz`（Hz 数组）+ `probes`（探针 id → mag / phase_deg / mag_db）；
   mag_db = 20·log10(mag)，mag 以 1e-300 为下限保护，避免 -Inf 无法序列化。
@@ -1402,20 +1434,21 @@ end
 """
     compute_thevenin_equivalent(payload::SimulationPayload, port_pos::String, port_neg::String)
 
-计算戴维南等效电路
+计算戴维宁等效电路
 - port_pos: 正端节点名称
 - port_neg: 负端节点名称（通常是"gnd"）
 
 返回：
-- vth: 戴维南电压（开路电压）
-- rth: 戴维南电阻（等效电阻）
+- vth: 戴维宁电压（开路电压）
+- rth: 戴维宁电阻（等效电阻，外加电源法：独立源置零后端口注入 1 A 读端口电压）
+- isc: 诺顿电流（短路电流 = vth / rth；rth ≈ 0 或无穷大时不给）
 """
 function compute_thevenin_equivalent(payload::SimulationPayload, port_pos::String, port_neg::String)
     # 验证是否为纯电阻电路
     is_resistive_circuit(payload) ||
-        throw(ValidationError("戴维南等效仅适用于纯电阻电路", Dict()))
+        throw(ValidationError("戴维宁等效仅适用于纯电阻电路", Dict()))
     
-    # 步骤1：计算开路电压 Vth（使用节点电压法）
+    # 步骤1：计算开路电压 Vth（使用结点电压法）
     result = solve_by_node_voltage(payload)
     node_voltages = result["node_voltages"]
     
@@ -1424,55 +1457,44 @@ function compute_thevenin_equivalent(payload::SimulationPayload, port_pos::Strin
     v_neg = get(node_voltages, port_neg, 0.0)
     vth = v_pos - v_neg
     
-    # 步骤2：计算等效电阻 Rth（短路电流法）
-    # 在端口处添加一个短路（电阻值很小），计算短路电流
-    # Rth = Vth / Isc
-    
-    # 创建修改后的payload（在端口间添加短路电阻）
-    modified_components = copy(payload.components)
-    short_circuit_id = "_thevenin_short"
-    short_resistor = ComponentPayload(
-        short_circuit_id,
-        "resistor",
-        Dict("value" => 1e-6),  # 很小的电阻模拟短路
-        Dict("p" => port_pos, "n" => port_neg)
-    )
-    push!(modified_components, short_resistor)
-    
-    modified_payload = SimulationPayload(
-        modified_components,
-        payload.nets,
-        payload.sim,
-        "node_voltage",
-        nothing,  # thevenin_port 在短路测试时不需要
-        nothing   # teaching_mode
-    )
-    
-    # 计算短路情况下的电流
-    short_result = solve_by_node_voltage(modified_payload)
-    isc = get(short_result["branch_currents"], short_circuit_id, 0.0)
-    
-    # 计算等效电阻
-    rth = if abs(isc) > 1e-12
-        vth / isc
-    else
-        # 如果短路电流为0，说明是开路，电阻为无穷大
-        1e12
+    # 步骤 2：等效电阻 Rth。独立源置零（电压源短路、电流源开路），受控源保留，在端口注入 1 A 测试电流，
+    # 端口电压就是 Rth（教材的「外加电源法」）。原先用「开路电压 / 短路电流」：电桥平衡时两者都≈0，
+    # 比值失稳，得到 0 或 1e12 Ω；一端口里没有独立源时开路电压为 0，同样算不出。
+    zeroed = ComponentPayload[
+        component.type in ("vsource_dc", "isource_dc") ?
+            ComponentPayload(component.id, component.type, merge(component.parameters, Dict("dc" => 0.0)), component.connections) :
+            component
+        for component in payload.components
+    ]
+    # 电流源在源内从 pos 流到 neg、从 neg 流出：pos 接端口负端、neg 接端口正端，1 A 就从正端注入一端口
+    push!(zeroed, ComponentPayload("_thevenin_test", "isource_dc", Dict("dc" => 1.0), Dict("pos" => port_neg, "neg" => port_pos)))
+    test_payload = SimulationPayload(zeroed, payload.nets, payload.sim, "node_voltage", nothing, nothing)
+    test_voltages = solve_by_node_voltage(test_payload)["node_voltages"]
+    rth = get(test_voltages, port_pos, 0.0) - get(test_voltages, port_neg, 0.0)
+    # 结点电压法遇到奇异矩阵会做极小的正则化而不报错：一端口从端口看进去开路（等效电阻无穷大），
+    # 或受控源使开路电压不存在时，会解出 1e12 以上的数。这类一端口没有戴维宁等效，明确告诉学生
+    if !isfinite(rth) || !isfinite(vth) || abs(rth) > 1e11 || abs(vth) > 1e11
+        throw(ValidationError(
+            "从端口看进去的等效电阻为无穷大（一端口内部开路，或受控源使开路电压不存在），这个一端口没有戴维宁等效",
+            Dict("port" => Dict("positive" => port_pos, "negative" => port_neg))))
     end
-    
-    return Dict(
+
+    data = Dict{String, Any}(
         "vth" => vth,
         "rth" => rth,
-        "port" => Dict("positive" => port_pos, "negative" => port_neg)
+        "port" => Dict("positive" => port_pos, "negative" => port_neg),
     )
+    # 诺顿等效的短路电流 Isc = Uoc / Req（方向：从端口正端经外部短路线流到负端）；Req ≈ 0 时诺顿等效不存在
+    abs(rth) > 1e-9 && (data["isc"] = vth / rth)
+    return data
 end
 
 """
     solve_by_branch_current(payload::SimulationPayload)
 
 使用支路电流法求解纯电阻直流电路
-支路电流法：实际上就是节点电压法的另一种形式
-为了简化实现，这里直接复用节点电压法，但返回格式符合支路电流法
+支路电流法：实际上就是结点电压法的另一种形式
+为了简化实现，这里直接复用结点电压法，但返回格式符合支路电流法
 """
 function solve_by_branch_current(payload::SimulationPayload)
     # 验证是否为纯电阻电路
@@ -1639,15 +1661,15 @@ function solve_by_branch_current(payload::SimulationPayload)
         end
     end
     
-    # KVL方程：对独立回路（简化处理，使用节点电压法辅助）
+    # KVL方程：对独立回路（简化处理，使用结点电压法辅助）
     if !isnothing(payload.teaching_mode) && payload.teaching_mode === true
         push!(steps, "")
         push!(steps, "Step 4: 对独立回路应用KVL（电压降之和=0）")
         push!(steps, "  说明：完整实现需要图论算法识别独立回路")
-        push!(steps, "  简化：使用节点电压法结果构建KVL方程")
+        push!(steps, "  简化：使用结点电压法结果构建KVL方程")
     end
     
-    # 使用节点电压法获取辅助结果，然后构建完整的支路电流
+    # 使用结点电压法获取辅助结果，然后构建完整的支路电流
     # 在实际完整实现中，这里应该：
     # 1. 识别独立回路
     # 2. 对每个回路应用KVL构建方程
@@ -1658,12 +1680,12 @@ function solve_by_branch_current(payload::SimulationPayload)
     # 直接继承 MNA 全部支路电流（含电压源/受控源/电流探针），下方循环仅按公式覆写电阻与电流源
     branch_currents = copy(node_result["branch_currents"])
     
-    # 继承节点电压法的矩阵数据
+    # 继承结点电压法的矩阵数据
     if !isnothing(payload.teaching_mode) && payload.teaching_mode === true && haskey(node_result, "matrices")
         matrices_data = node_result["matrices"]
     end
     
-    # 计算每条支路的电流（基于节点电压法结果）
+    # 计算每条支路的电流（基于结点电压法结果）
     for branch in branches
         if branch.type == "resistor"
             # 找到支路两端的节点
@@ -1759,10 +1781,10 @@ end
 2. 为每个网孔设置电流变量
 3. 对每个网孔列写KVL方程
 4. 求解网孔电流
-5. 从网孔电流计算支路电流和节点电压
+5. 从网孔电流计算支路电流和结点电压
 
 注意：网孔电流法的完整实现需要图论算法识别独立网孔。
-为简化实现，这里采用与支路电流法相同的策略，使用节点电压法求解。
+为简化实现，这里采用与支路电流法相同的策略，使用结点电压法求解。
 在教学场景中，可以手动指定网孔并验证结果。
 """
 function solve_by_mesh_current(payload::SimulationPayload)
@@ -1813,7 +1835,7 @@ function solve_by_mesh_current(payload::SimulationPayload)
         
         push!(steps, "Step 4: 对每个网孔应用KVL（电压降之和 = 电压升之和）")
         push!(steps, "  说明：完整实现需要图论算法识别独立网孔")
-        push!(steps, "  简化：使用节点电压法结果构建KVL方程")
+        push!(steps, "  简化：使用结点电压法结果构建KVL方程")
         push!(steps, "  KVL方程组示例（基于网孔电流方向）:")
         for i in 1:(n_meshes + 1)
             push!(steps, "    网孔 $i: Σ(电阻×网孔电流) = Σ电压源")
@@ -1835,13 +1857,13 @@ function solve_by_mesh_current(payload::SimulationPayload)
     # 3. 求解方程组得到网孔电流
     # 4. 从网孔电流计算支路电流
     
-    # 由于完整的网孔识别算法复杂，这里使用节点电压法结果
+    # 由于完整的网孔识别算法复杂，这里使用结点电压法结果
     node_result = solve_by_node_voltage(payload)
     node_voltages = node_result["node_voltages"]
     # 直接继承 MNA 全部支路电流（含电压源/受控源/电流探针），下方循环仅按公式覆写电阻与电流源
     branch_currents = copy(node_result["branch_currents"])
     
-    # 继承节点电压法的矩阵数据
+    # 继承结点电压法的矩阵数据
     if !isnothing(payload.teaching_mode) && payload.teaching_mode === true && haskey(node_result, "matrices")
         matrices_data = node_result["matrices"]
     end
@@ -1904,16 +1926,21 @@ end
 function simulate_payload(payload::SimulationPayload)
     payload.sim.t_stop > 0 ||
         throw(ValidationError("仿真时长必须大于 0", Dict()))
-    payload.sim.n_samples > 1 ||
-        throw(ValidationError("采样点数至少为 2", Dict()))
+    check_samples(payload.sim.n_samples)
     !isempty(payload.components) ||
         throw(ValidationError("电路为空", Dict()))
 
     has_ground = any(component.type == "ground" for component in payload.components)
     # 独立源应包含电压源与电流源（直流/交流）
     has_source = any(component.type in ("vsource_dc", "vsource_ac", "isource_dc", "isource_ac") for component in payload.components)
-    has_ground || throw(ValidationError("circuit has no ground", Dict("missing" => ["ground"])))
-    has_source || throw(ValidationError("circuit has no source", Dict("missing" => ["source"])))
+    # 没有电源但电容 / 电感带着初始值也能算：这就是零输入响应（电容放电、电感续流）
+    has_stored_energy = any(
+        (component.type == "capacitor" && optional_parameter(component, "v0", 0.0) != 0) ||
+        (component.type == "inductor" && optional_parameter(component, "i0", 0.0) != 0)
+        for component in payload.components)
+    has_ground || throw(ValidationError("电路缺少地线", Dict("missing" => ["ground"])))
+    has_source || has_stored_energy || throw(ValidationError(
+        "电路里没有电源（电压源或电流源），电容、电感也没有初始值，瞬态分析无从计算", Dict("missing" => ["source"])))
 
     systems = ODESystem[]
     connections = Equation[]
@@ -1992,7 +2019,16 @@ function simulate_payload(payload::SimulationPayload)
     end
     if simplified === nothing
         # structural_simplify 昂贵（秒~分钟级），绝不能在锁内执行；并发下同 key 重复计算是可接受的幂等浪费
-        simplified = structural_simplify(circuit)
+        simplified = try
+            structural_simplify(circuit)
+        catch err
+            err isa Union{ModelingToolkit.ExtraEquationsSystemException, ModelingToolkit.ExtraVariablesSystemException,
+                          ModelingToolkit.InvalidSystemException} || rethrow()
+            @warn "瞬态电路方程不成立" exception = (err, catch_backtrace())
+            throw(ValidationError(
+                "电路方程不成立：常见原因是电流源开路（电流无处可去）、两个电流不同的电流源串联，或两个电压不同的电压源并联。检查电源两端是否都接通",
+                Dict("code" => "LAB_VALIDATION")))
+        end
         lock(_STATE_LOCK) do
             if !haskey(_SIMPLIFY_CACHE, topo_key)
                 _SIMPLIFY_CACHE[topo_key] = simplified
@@ -2020,12 +2056,29 @@ function simulate_payload(payload::SimulationPayload)
     # 纯电阻分压化简后只剩代数量 R2.i，R2.i = 0 与欧姆定律矛盾，求解器就报 InitialFailure。
     differential = Set(ModelingToolkit.var_from_nested_derivative(eq.lhs)[1]
                        for eq in equations(simplified) if ModelingToolkit.isdifferential(eq.lhs))
+    # 电容 v0、电感 i0 只写进初值表，并且只给真正成为微分状态的 C.v / L.i。
+    # 不能当元件缺省值传给 Capacitor / Inductor：被电压源钉住（或与别的电容成环）的电容，C.v 化简成观测量，
+    # 带着缺省值 0 进初始化方程，和 C.v = Us 矛盾，原本能算的电路变成 InitialFailure；化简结果按拓扑缓存，
+    # 缓存里还会带着第一次请求的初值，同一电路是报错还是给错曲线取决于之前算过什么。
+    # 按符号名对（ModelingToolkit.getname）：元件 id 不是合法 Julia 标识符（C-1、"C 1"、1C）时，
+    # string(变量) 会写成 var"C-1₊v"(t)，按字符串永远对不上，初值就被悄悄丢掉
+    initial_values = Dict{Symbol, Tuple{String, String, Float64}}()  # 变量名 => (元件 id, 参数名, 值)
+    for component in payload.components
+        if component.type == "capacitor"
+            initial_values[Symbol(component.id, "₊v")] = (component.id, "v0", optional_parameter(component, "v0", 0.0))
+        elseif component.type == "inductor"
+            initial_values[Symbol(component.id, "₊i")] = (component.id, "i0", optional_parameter(component, "i0", 0.0))
+        end
+    end
+    # 状态被化简掉的储能元件（与电压源或别的电容成环的电容、与电流源或别的电感串联的电感）t=0 的值由电路决定：
+    # 它的初值只当初值猜测，求解后再核对（见下方 has_initial 那段），对不上就明确拒绝
+    differential_names = Set(ModelingToolkit.getname(x) for x in differential)
     u0_map = Dict()
     guesses = Dict()
     for unknown in unknowns_list
-        # 如果defaults中有值则使用，否则用0.0
-        target = unknown in differential ? u0_map : guesses
-        target[unknown] = get(defs, unknown, 0.0)
+        entry = get(initial_values, ModelingToolkit.getname(unknown), nothing)
+        value = entry === nothing ? get(defs, unknown, 0.0) : entry[3]
+        unknown in differential ? (u0_map[unknown] = value) : (guesses[unknown] = value)
     end
     
     # 构建参数映射：使用defaults中的值
@@ -2036,6 +2089,8 @@ function simulate_payload(payload::SimulationPayload)
         end
     end
     
+    has_initial = any(entry[3] != 0 for entry in values(initial_values))
+
     tspan = (0.0, payload.sim.t_stop)
     saveat = range(tspan[1], tspan[2], length = payload.sim.n_samples)
 
@@ -2050,7 +2105,52 @@ function simulate_payload(payload::SimulationPayload)
 
     # 检查求解状态（SciMLBase.ReturnCode是枚举类型）
     if !SciMLBase.successful_retcode(sol)
-        throw(ValidationError("仿真求解失败", Dict("code" => "LAB_SIM_FAILED", "retcode" => string(sol.retcode))))
+        message = has_initial ? "仿真求解失败：电路里有电容 / 电感初始值，可能与电路约束矛盾，先把初始值改回 0 试试" : "仿真求解失败"
+        throw(ValidationError(message, Dict("code" => "LAB_SIM_FAILED", "retcode" => string(sol.retcode))))
+    end
+
+    # 学生给了非零初值时，核对状态被化简掉的储能元件（与电压源 / 别的电容成环的电容、与电流源 / 别的电感串联的电感）。
+    # 它在 t=0 的值由电路决定：
+    # - 自己给了非零初值：t=0 的值必须等于它；
+    # - 没设（按 0）：和「全部初值取 0」的基线比——被电源钉住的电容，两次一样（照常放行）；
+    #   被带初值的电容拉过去的（两个初压不同的电容直接并联，物理上是 t=0 的电荷重新分配），两次不一样，明确拒绝。
+    # 没有任何非零初值的零状态电路不做这项核对（保持原行为）。
+    if has_initial
+        observed_vars = Dict{Symbol, Any}(ModelingToolkit.getname(eq.lhs) => eq.lhs for eq in ModelingToolkit.observed(simplified))
+        for unknown in unknowns_list
+            observed_vars[ModelingToolkit.getname(unknown)] = unknown
+        end
+        for (varname, (id, key, value)) in initial_values
+            value == 0 && continue
+            haskey(observed_vars, varname) || varname in differential_names ||
+                error("找不到元件 $(id) 的状态变量 $(varname)，初值 $(key) 无法写入")
+        end
+        algebraic = [(varname, entry) for (varname, entry) in initial_values
+                     if !(varname in differential_names) && haskey(observed_vars, varname)]
+        baseline = nothing
+        if any(entry[3] == 0 for (_, entry) in algebraic)
+            # 只要 t=0 的一致初值：时间区间取得极短，不重复整段积分
+            zero_u0 = Dict(k => 0.0 for k in keys(u0_map))
+            prob0 = ODEProblem(simplified, zero_u0, (0.0, payload.sim.t_stop * 1e-9), p_map; guesses, warn_initialize_determined = false)
+            baseline = solve(prob0, Rodas5(); saveat = [0.0])
+        end
+        for (varname, (id, key, value)) in algebraic
+            var = observed_vars[varname]
+            at_zero = sol[var][1]
+            expected = value != 0 ? value : baseline[var][1]
+            abs(at_zero - expected) <= 1e-6 * max(1.0, abs(at_zero), abs(expected)) && continue
+            shown = round(at_zero; sigdigits = 4)
+            message = if key == "v0"
+                value != 0 ?
+                    "电容 $(id) 的初始电压 $(value) V 和电路对不上：它与别的电容或电压源直接构成回路，t=0 时它的电压由电路定为约 $(shown) V。直接并联的电容初始电压必须相同；把相关电容的初始电压设成一致，或者串一个电阻把它隔开" :
+                    "电容 $(id) 没有设初始电压（按 0 V），但它和带初始电压的电容直接构成回路，t=0 时会被拉到约 $(shown) V（物理上是电荷在 t=0 瞬间重新分配）。把相关电容的初始电压设成一致，或者串一个电阻把它们隔开"
+            else
+                value != 0 ?
+                    "电感 $(id) 的初始电流 $(value) A 和电路对不上：它与别的电感或电流源串联，t=0 时它的电流由电路定为约 $(shown) A。串联的电感初始电流必须相同；把相关电感的初始电流设成一致，或者并一个电阻把它隔开" :
+                    "电感 $(id) 没有设初始电流（按 0 A），但它和带初始电流的电感串联，t=0 时会被拉到约 $(shown) A。把相关电感的初始电流设成一致，或者并一个电阻把它们隔开"
+            end
+            throw(ValidationError(message, Dict("component" => id, "parameter" => key)))
+        end
     end
 
     time = collect(sol.t)
@@ -2088,7 +2188,7 @@ end
 function simulate_payload_modia(payload::SimulationPayload)
     # 先做参数校验以给出一致错误
     payload.sim.t_stop > 0 || throw(ValidationError("仿真时长必须大于 0", Dict()))
-    payload.sim.n_samples > 1 || throw(ValidationError("采样点数至少为 2", Dict()))
+    check_samples(payload.sim.n_samples)
     !isempty(payload.components) || throw(ValidationError("电路为空", Dict()))
 
     # 检查依赖
@@ -2117,6 +2217,7 @@ function run_simulation(payload::SimulationPayload)
     try
         # 没接地的电路先替学生选参考点，求解完把网络名改回学生的原名（见 Reference.jl）
         original_port = payload.thevenin_port
+        payload.method == "thevenin" && original_port !== nothing && check_thevenin_port(payload, original_port)
         payload, plan = assign_reference(payload)
         restore(data) = plan === nothing ? data : restore_reference!(data, plan, original_port)
 
@@ -2125,7 +2226,7 @@ function run_simulation(payload::SimulationPayload)
         @info "Received simulation request" method=method is_resistive=is_resistive_circuit(payload)
         
         if method === nothing
-            # 自动检测：如果是纯电阻电路则使用节点电压法，否则使用瞬态分析
+            # 自动检测：如果是纯电阻电路则使用结点电压法，否则使用瞬态分析
             method = is_resistive_circuit(payload) ? "node_voltage" : "transient"
             @info "Auto-detected method" method=method
         end
@@ -2135,7 +2236,7 @@ function run_simulation(payload::SimulationPayload)
             data = restore(solve_by_node_voltage(payload))
             return Dict(
                 "status" => "ok",
-                "message" => "节点电压法分析完成",
+                "message" => "结点电压法分析完成",
                 "method" => method,
                 "data" => data
             )
@@ -2156,16 +2257,16 @@ function run_simulation(payload::SimulationPayload)
                 "data" => data
             )
         elseif method == "thevenin"
-            # 戴维南等效分析
+            # 戴维宁等效分析
             if payload.thevenin_port === nothing
-                throw(ValidationError("戴维南分析需要指定端口节点", Dict()))
+                throw(ValidationError("戴维宁分析需要指定端口节点", Dict()))
             end
             port_pos = payload.thevenin_port["positive"]
             port_neg = payload.thevenin_port["negative"]
             data = restore(compute_thevenin_equivalent(payload, port_pos, port_neg))
             return Dict(
                 "status" => "ok",
-                "message" => "戴维南等效分析完成",
+                "message" => "戴维宁等效分析完成",
                 "method" => method,
                 "data" => data
             )
@@ -2218,8 +2319,7 @@ function run_simulation(payload::SimulationPayload)
             return Dict("status" => "error", "code" => get(err.data, "code", "LAB_VALIDATION"), "message" => err.message, "data" => err.data)
         else
             @error "simulation failed" exception = (err, catch_backtrace())
-            # 调试增强：返回简化的错误字符串，便于定位问题
-            return Dict("status" => "error", "code" => "LAB_INTERNAL", "message" => "internal error", "data" => Dict("error" => string(err)))
+            return Dict("status" => "error", "code" => "LAB_INTERNAL", "message" => INTERNAL_ERROR_MESSAGE, "data" => Dict())
         end
     end
 end
@@ -2385,35 +2485,12 @@ function warmup!()
     return nothing
 end
 
-function bootstrap(; host::AbstractString = "127.0.0.1", port::Integer = 8080, start::Bool = true, warmup::Bool = true, token::AbstractString = resolve_token())
+function bootstrap(; host::AbstractString = "127.0.0.1", port::Integer = 8080, start::Bool = true, warmup::Bool = true, token::AbstractString = resolve_token(),
+                   ui_dir::Union{AbstractString, Nothing} = nothing)
     # 先预热再监听：端口一开、/health 一绿，服务就该是快的。
     # start-all.ps1 的 Wait-Health 本来就在等，这段等待对用户是免费的。
     start && warmup && warmup!()
-    router = HTTP.Router()
-    HTTP.register!(router, "GET", "/health", _ -> begin
-        body = JSON3.write(Dict("status" => "ok"))
-        HTTP.Response(200, collect(RESPONSE_HEADERS), body)
-    end)
-    HTTP.register!(router, "GET", "/metrics", _ -> begin
-        body = JSON3.write(lock(() -> copy(_METRICS), _STATE_LOCK))
-        HTTP.Response(200, collect(RESPONSE_HEADERS), body)
-    end)
-    HTTP.register!(router, "GET", "/version", _ -> begin
-        body = JSON3.write(Dict(
-            "server" => "JCircuitServer",
-            "julia" => string(VERSION),
-        ))
-        HTTP.Response(200, collect(RESPONSE_HEADERS), body)
-    end)
-    HTTP.register!(router, "POST", "/simulate", req -> begin
-        try
-            handle_simulate(req)
-        catch err
-            @error "请求处理失败" exception = (err, catch_backtrace())
-            body = JSON3.write(Dict("status" => "error", "code" => "LAB_VALIDATION", "message" => "invalid request", "data" => Dict()))
-            HTTP.Response(400, collect(RESPONSE_HEADERS), body)
-        end
-    end)
+    router = build_router(; ui_dir)
     handler = token_guard(router, token)
     server = nothing
     if start
@@ -2422,5 +2499,7 @@ function bootstrap(; host::AbstractString = "127.0.0.1", port::Integer = 8080, s
     end
     return (; host, port, router, handler, server)
 end
+
+include("Server.jl")
 
 end # module

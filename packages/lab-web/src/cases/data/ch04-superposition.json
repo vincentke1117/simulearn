@@ -1,0 +1,48 @@
+{
+  "id": "ch04-superposition",
+  "chapter": 4,
+  "chapterTitle": "电路定理",
+  "section": "§4-1 叠加定理",
+  "source": "例 4-1",
+  "title": "叠加定理：电压源和电流源各自贡献多少",
+  "summary": "四个电阻接成菱形，20 V 电压源接在左右两个顶点之间，0.5 A 电流源接在上下两个顶点之间。要求电流源两端电压 U1 和右上电阻的电流 I2。把两个电源轮流置零，分别算出各自单独作用的分量，相加就是两个电源同时作用的结果。",
+  "tryIt": [
+    "把电流源 Is 改成 0（电流源置零 = 开路），只剩电压源作用：U1′ = −2 V，I2′ = 0.5 A（教材值）。",
+    "把 Is 改回 0.5 A，再把电压源 Us 改成 0（电压源置零 = 短路），只剩电流源作用：U1″ = 11 V，I2″ = 0.25 A（教材值）。两次读数相加 −2 + 11 = 9 V、0.5 + 0.25 = 0.75 A，正是两个电源同时作用时的读数。",
+    "两个电源都恢复，再把 Us 改成 40 V：电压源的分量跟着翻倍，U1 = 2 × (−2) + 11 = 7 V，I2 = 2 × 0.5 + 0.25 = 1.25 A。"
+  ],
+  "notes": [
+    "教材图里的电阻没有编号：左上、右上、左下、右下依次记作 R1、R2、R3、R4，I2 就是 R2 中从上顶点流向右顶点的电流。",
+    "教材没有指定参考点。这里把地接在电流源下端（U1 的 − 端），上顶点探针 U1 的读数就是 U1。",
+    "内核里电流源的电流在源内从 + 端流到 − 端，也就是从 − 端流出。教材中电流源箭头朝上，所以画布上 Is 的 + 端朝下（旋转 270°）。"
+  ],
+  "preset": { "method": "node_voltage", "showBranchCurrents": true },
+  "checks": [
+    { "label": "电流源两端电压 U1（两个电源同时作用）", "path": "node_voltages.{VP1}", "expect": 9, "unit": "V", "tol": 0.001, "fromBook": true },
+    { "label": "R2 的电流 I2（两个电源同时作用）", "path": "branch_currents.R2", "expect": 0.75, "unit": "A", "tol": 0.001, "fromBook": true }
+  ],
+  "circuit": {
+    "nodes": [
+      { "id": "VP1", "type": "voltage_probe", "position": { "x": 450, "y": 0 }, "data": { "label": "U1", "type": "voltage_probe", "parameters": {}, "rotation": 0 } },
+      { "id": "R1", "type": "resistor", "position": { "x": 200, "y": 200 }, "data": { "label": "R1", "type": "resistor", "parameters": { "value": 20 }, "rotation": 0 } },
+      { "id": "R2", "type": "resistor", "position": { "x": 700, "y": 200 }, "data": { "label": "R2", "type": "resistor", "parameters": { "value": 20 }, "rotation": 0 } },
+      { "id": "Is", "type": "isource_dc", "position": { "x": 450, "y": 400 }, "data": { "label": "Is", "type": "isource_dc", "parameters": { "dc": 0.5 }, "rotation": 270 } },
+      { "id": "R3", "type": "resistor", "position": { "x": 200, "y": 620 }, "data": { "label": "R3", "type": "resistor", "parameters": { "value": 20 }, "rotation": 0 } },
+      { "id": "R4", "type": "resistor", "position": { "x": 700, "y": 620 }, "data": { "label": "R4", "type": "resistor", "parameters": { "value": 30 }, "rotation": 0 } },
+      { "id": "G1", "type": "ground", "position": { "x": 450, "y": 780 }, "data": { "label": "GND", "type": "ground", "parameters": {}, "rotation": 0 } },
+      { "id": "Us", "type": "vsource_dc", "position": { "x": 450, "y": 960 }, "data": { "label": "Us", "type": "vsource_dc", "parameters": { "dc": 20 }, "rotation": 0 } }
+    ],
+    "edges": [
+      { "id": "e1", "source": "R1", "target": "R3", "sourceHandle": "p", "targetHandle": "p" },
+      { "id": "e2", "source": "Us", "target": "R3", "sourceHandle": "pos", "targetHandle": "p" },
+      { "id": "e3", "source": "R1", "target": "R2", "sourceHandle": "n", "targetHandle": "p" },
+      { "id": "e4", "source": "Is", "target": "R1", "sourceHandle": "neg", "targetHandle": "n" },
+      { "id": "e5", "source": "VP1", "target": "Is", "sourceHandle": "node", "targetHandle": "neg" },
+      { "id": "e6", "source": "R2", "target": "R4", "sourceHandle": "n", "targetHandle": "n" },
+      { "id": "e7", "source": "Us", "target": "R4", "sourceHandle": "neg", "targetHandle": "n" },
+      { "id": "e8", "source": "R3", "target": "R4", "sourceHandle": "n", "targetHandle": "p" },
+      { "id": "e9", "source": "Is", "target": "R3", "sourceHandle": "pos", "targetHandle": "n" },
+      { "id": "e10", "source": "G1", "target": "Is", "sourceHandle": "gnd", "targetHandle": "pos" }
+    ]
+  }
+}

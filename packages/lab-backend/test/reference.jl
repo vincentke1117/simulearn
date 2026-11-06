@@ -162,5 +162,6 @@ end
     transient = SimulationPayload(lone.components, lone.nets, _settings(), "transient")
     result = run_simulation(transient)
     @test result["status"] == "error"
-    @test occursin("source", result["message"])
+    @test result["data"]["missing"] == ["source"]
+    @test occursin("电源", result["message"])
 end

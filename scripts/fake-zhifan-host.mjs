@@ -2,6 +2,9 @@
 //
 //   启动拓展程序：node scripts/fake-zhifan-host.mjs --entry <...\bin\simulearn-grid.exe> [--example ieee33 | --project <工程文件.json>]
 //   接已在跑的内核：node scripts/fake-zhifan-host.mjs --attach 8123 --token simulearn-dev [--example ieee33]
+//   电路拓展：加 --id simulearn-lab，算例用 --example voltage-divider（lab-web 的内置示例 id）或 --project；
+//     --library qiu-circuits 打开内置案例库（课程包里写 {"library": "qiu-circuits"}）；
+//     --attach 接 lab 开发态内核时，要先构建 lab-web：run_server.jl 只在 packages/lab-web/dist 存在时才挂 /ui/ 页面
 //   可选：--experiment ch12-demo（实验 id）、--task <任务.json>、--host-port 8200（宿主界面端口，拓展端口 = 它 + 1）
 //
 // 做的事情与真宿主一致：
@@ -28,7 +31,9 @@ const extPort = hostPort + 1;
 const experiment = opt('--experiment', 'ch12-demo');
 const projectFile = opt('--project');
 const taskFile = opt('--task');
-const project = projectFile ? JSON.parse(fs.readFileSync(projectFile, 'utf8')) : { example: opt('--example', 'ieee33') };
+const libraryId = opt('--library');
+const project = projectFile ? JSON.parse(fs.readFileSync(projectFile, 'utf8'))
+  : libraryId ? { library: libraryId } : { example: opt('--example', 'ieee33') };
 const task = taskFile ? JSON.parse(fs.readFileSync(taskFile, 'utf8')) : null;
 
 let child = null;

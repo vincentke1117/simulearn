@@ -40,3 +40,6 @@ packages/*/sysimage/
 
 # .samples/ 是对着活后端抓下来的响应样本，前端契约测试拿它当地面真相，必须入库（CI 依赖）
 scripts/.run/
+
+# 课本扫描件与 MinerU 转出的 Markdown：只作本机编写电路案例的参考，有版权，不进仓库
+docs/课本/

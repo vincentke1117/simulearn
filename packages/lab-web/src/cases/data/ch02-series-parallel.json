@@ -1,0 +1,204 @@
+{
+  "id": "ch02-series-parallel",
+  "chapter": 2,
+  "chapterTitle": "电阻电路的等效变换",
+  "section": "§2-3 电阻的串联和并联",
+  "source": "例 2-1",
+  "title": "三个电阻并联分流：电导大的分得多",
+  "summary": "电流源 IS 经过 RS 把电流送进三个并联电阻。并联支路按电导的比例分电流，电阻越小、电导越大，分到的电流就越多。运行后看 R1、R2、R3 的支路电流 I1、I2、I3。",
+  "tryIt": [
+    "把 RS 从 2 kΩ 改成 20 kΩ：I1、I2、I3 一点不变，并联部分的电压也还是 100 V；变的是 RS 上的压降和电流源两端的电压——电流源 + 端接地，它两端的电压就是结点电压表里「IS.neg」那一行，从 133 V 升到 430 V。与电流源串联的电阻不影响外面的电流分配。",
+    "把 R2 从 10 kΩ 改成 40 kΩ（与 R1 相等）：I1 = I2 ≈ 4.583 mA，I3 ≈ 7.333 mA。",
+    "把 IS 改成 33 mA（加倍）：三个电流一起翻倍，变成 5、20、8 mA。"
+  ],
+  "notes": [
+    "内核约定电流源的电流在元件内部从 + 端流到 − 端、从 − 端流出到外电路。教材的 IS 向上流出，所以电流源旋转了 270°，让 − 端朝上接 RS。",
+    "接地点放在三个电阻的公共下端。"
+  ],
+  "preset": {
+    "method": "node_voltage",
+    "showBranchCurrents": true
+  },
+  "checks": [
+    {
+      "label": "R1 支路电流 I1",
+      "path": "branch_currents.R1",
+      "expect": 0.0025,
+      "unit": "A",
+      "tol": 1e-06,
+      "fromBook": true
+    },
+    {
+      "label": "R2 支路电流 I2",
+      "path": "branch_currents.R2",
+      "expect": 0.01,
+      "unit": "A",
+      "tol": 1e-06,
+      "fromBook": true
+    },
+    {
+      "label": "R3 支路电流 I3",
+      "path": "branch_currents.R3",
+      "expect": 0.004,
+      "unit": "A",
+      "tol": 1e-06,
+      "fromBook": true
+    }
+  ],
+  "circuit": {
+    "nodes": [
+      {
+        "id": "Is",
+        "type": "isource_dc",
+        "position": {
+          "x": 0,
+          "y": 260
+        },
+        "data": {
+          "label": "IS",
+          "type": "isource_dc",
+          "parameters": {
+            "dc": 0.0165
+          },
+          "rotation": 270
+        }
+      },
+      {
+        "id": "Rs",
+        "type": "resistor",
+        "position": {
+          "x": 250,
+          "y": 60
+        },
+        "data": {
+          "label": "RS",
+          "type": "resistor",
+          "parameters": {
+            "value": 2000
+          },
+          "rotation": 0
+        }
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "position": {
+          "x": 500,
+          "y": 260
+        },
+        "data": {
+          "label": "R1",
+          "type": "resistor",
+          "parameters": {
+            "value": 40000
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "position": {
+          "x": 750,
+          "y": 260
+        },
+        "data": {
+          "label": "R2",
+          "type": "resistor",
+          "parameters": {
+            "value": 10000
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "R3",
+        "type": "resistor",
+        "position": {
+          "x": 1000,
+          "y": 260
+        },
+        "data": {
+          "label": "R3",
+          "type": "resistor",
+          "parameters": {
+            "value": 25000
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "position": {
+          "x": 500,
+          "y": 480
+        },
+        "data": {
+          "label": "GND",
+          "type": "ground",
+          "parameters": {},
+          "rotation": 0
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "Is",
+        "target": "Rs",
+        "sourceHandle": "neg",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e2",
+        "source": "Rs",
+        "target": "R1",
+        "sourceHandle": "n",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e3",
+        "source": "R1",
+        "target": "R2",
+        "sourceHandle": "p",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e4",
+        "source": "R2",
+        "target": "R3",
+        "sourceHandle": "p",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e5",
+        "source": "R1",
+        "target": "R2",
+        "sourceHandle": "n",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e6",
+        "source": "R2",
+        "target": "R3",
+        "sourceHandle": "n",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e7",
+        "source": "R1",
+        "target": "Is",
+        "sourceHandle": "n",
+        "targetHandle": "pos"
+      },
+      {
+        "id": "e8",
+        "source": "G1",
+        "target": "R1",
+        "sourceHandle": "gnd",
+        "targetHandle": "n"
+      }
+    ]
+  }
+}

@@ -49,11 +49,13 @@ const electricalComponentLibrary: Record<ElectricalComponentType, CircuitCompone
     accent: '#38bdf8',
     description: '储能元件，电压与电荷相关；可隔直通交，用于滤波。',
     handles: [
-      { id: 'p', position: Position.Left, label: 'p', hint: '左端节点（方向对仿真无影响）' },
-      { id: 'n', position: Position.Right, label: 'n', hint: '右端节点（方向对仿真无影响）' },
+      { id: 'p', position: Position.Left, label: 'p', hint: '左端节点；初始电压按 p 端减 n 端计' },
+      { id: 'n', position: Position.Right, label: 'n', hint: '右端节点' },
     ],
     parameters: [
       { key: 'value', label: '电容值', unit: 'F', defaultValue: 1e-6, min: 0, description: '电容值，决定充放电速度与滤波能力。' },
+      // 只用于瞬态：零输入响应、全响应从这里开始；直流、相量、扫频都是稳态，不看它
+      { key: 'v0', optional: true, label: '初始电压', unit: 'V', defaultValue: 0, description: '瞬态分析开始（t=0）时电容两端电压，p 端减 n 端。只影响瞬态分析。' },
     ],
   },
   inductor: {
@@ -63,11 +65,12 @@ const electricalComponentLibrary: Record<ElectricalComponentType, CircuitCompone
     accent: '#a855f7',
     description: '储能元件，抵抗电流变化；直通直流、阻碍交流。',
     handles: [
-      { id: 'p', position: Position.Left, label: 'p', hint: '左端节点（方向对仿真无影响）' },
-      { id: 'n', position: Position.Right, label: 'n', hint: '右端节点（方向对仿真无影响）' },
+      { id: 'p', position: Position.Left, label: 'p', hint: '左端节点；初始电流以 p→n 为正' },
+      { id: 'n', position: Position.Right, label: 'n', hint: '右端节点' },
     ],
     parameters: [
       { key: 'value', label: '电感值', unit: 'H', defaultValue: 1e-3, min: 0, description: '电感值，影响电流变化率与滤波特性。' },
+      { key: 'i0', optional: true, label: '初始电流', unit: 'A', defaultValue: 0, description: '瞬态分析开始（t=0）时流过电感的电流，从 p 流向 n 为正。只影响瞬态分析。' },
     ],
   },
   vsource_dc: {
@@ -97,6 +100,7 @@ const electricalComponentLibrary: Record<ElectricalComponentType, CircuitCompone
     parameters: [
       { key: 'amplitude', label: '幅值', unit: 'V', defaultValue: 5, min: 0, description: '峰值幅值（非有效值）。' },
       { key: 'frequency', label: '频率', unit: 'Hz', defaultValue: 1000, min: 0, description: '正弦频率（Hz）。' },
+      { key: 'phase', optional: true, label: '初相', unit: '°', defaultValue: 0, description: '瞬态里输出 幅值·sin(2πft + 初相)；相量分析里就是相量的角度。多个交流源之间只看相位差。' },
     ],
   },
   ground: {
@@ -148,10 +152,10 @@ const electricalComponentLibrary: Record<ElectricalComponentType, CircuitCompone
     label: '直流电流源',
     prefix: 'I',
     accent: '#facc15',
-    description: '提供恒定电流的理想源，方向为 pos→neg。',
+    description: '提供恒定电流的理想源。箭头即电流方向：源内从 + 流向 −，从 − 端流出到外电路。',
     handles: [
-      { id: 'pos', position: Position.Left, label: '+', hint: '电流流出端（方向 pos→neg）' },
-      { id: 'neg', position: Position.Right, label: '-', hint: '电流流入端（返回或接地）' },
+      { id: 'pos', position: Position.Left, label: '+', hint: '箭尾：外电路的电流从这一端流进电流源' },
+      { id: 'neg', position: Position.Right, label: '-', hint: '箭头：电流从这一端流出到外电路' },
     ],
     parameters: [
       { key: 'dc', label: '电流', unit: 'A', defaultValue: 0.001, description: '输出恒定电流的幅值。' },
@@ -162,14 +166,15 @@ const electricalComponentLibrary: Record<ElectricalComponentType, CircuitCompone
     label: '交流电流源',
     prefix: 'IAC',
     accent: '#fb7185',
-    description: '提供正弦交流电流的理想源，方向为 pos→neg。',
+    description: '提供正弦交流电流的理想源。箭头是电流的参考方向：源内从 + 流向 −，从 − 端流出到外电路。',
     handles: [
-      { id: 'pos', position: Position.Left, label: '+', hint: '电流流出端（瞬时方向由正弦决定）' },
-      { id: 'neg', position: Position.Right, label: '-', hint: '电流流入端（返回或接地）' },
+      { id: 'pos', position: Position.Left, label: '+', hint: '箭尾：参考方向下外电路的电流从这一端流进电流源' },
+      { id: 'neg', position: Position.Right, label: '-', hint: '箭头：参考方向下电流从这一端流出到外电路' },
     ],
     parameters: [
       { key: 'amplitude', label: '幅值', unit: 'A', defaultValue: 0.001, min: 0, description: '峰值幅值（非有效值）。' },
       { key: 'frequency', label: '频率', unit: 'Hz', defaultValue: 1000, min: 0, description: '正弦频率（Hz）。' },
+      { key: 'phase', optional: true, label: '初相', unit: '°', defaultValue: 0, description: '瞬态里输出 幅值·sin(2πft + 初相)；相量分析里就是相量的角度。多个交流源之间只看相位差。' },
     ],
   },
   vcvs: {
@@ -211,8 +216,8 @@ const electricalComponentLibrary: Record<ElectricalComponentType, CircuitCompone
     accent: '#10b981',
     description: '输出电流 = 跨导 × (控制端电压差)。',
     handles: [
-      { id: 'pos', position: Position.Left, label: '+out', hint: '输出端正极（电流方向 pos→neg）' },
-      { id: 'neg', position: Position.Right, label: '-out', hint: '输出端负极（返回或接地）' },
+      { id: 'pos', position: Position.Left, label: '+out', hint: '输出箭尾：源内电流从这一端流向 -out' },
+      { id: 'neg', position: Position.Right, label: '-out', hint: '输出箭头：受控电流从这一端流出到外电路' },
       { id: 'ctrl_p', position: Position.Top, label: '+in', hint: '控制端正极（测量电压差的正端）' },
       { id: 'ctrl_n', position: Position.Bottom, label: '-in', hint: '控制端负极（测量电压差的负端）' },
     ],
@@ -227,8 +232,8 @@ const electricalComponentLibrary: Record<ElectricalComponentType, CircuitCompone
     accent: '#f59e0b',
     description: '输出电流 = 电流增益 × 参考支路电流。',
     handles: [
-      { id: 'pos', position: Position.Left, label: '+out', hint: '输出端正极（电流方向 pos→neg）' },
-      { id: 'neg', position: Position.Right, label: '-out', hint: '输出端负极（返回或接地）' },
+      { id: 'pos', position: Position.Left, label: '+out', hint: '输出箭尾：源内电流从这一端流向 -out' },
+      { id: 'neg', position: Position.Right, label: '-out', hint: '输出箭头：受控电流从这一端流出到外电路' },
       { id: 'ctrl_p', position: Position.Top, label: 'i+', hint: '参考支路端点（串联在参考支路中）' },
       { id: 'ctrl_n', position: Position.Bottom, label: 'i-', hint: '参考支路端点（串联在参考支路中）' },
     ],
@@ -244,7 +249,7 @@ const bridgeComponentLibrary: Record<BridgeComponentType, CircuitComponentDefini
     label: '电压传感器',
     prefix: 'VSEN',
     accent: '#14b8a6',
-    description: '采样电路两节点电压差，并输出信号到控制图。',
+    description: '采样电路两结点电压差，并输出信号到控制图。',
     handles: [
       { id: 'p', position: Position.Left, label: '+', hint: '被测正端电节点' },
       { id: 'n', position: Position.Bottom, label: '-', hint: '被测负端电节点（通常接地）' },

@@ -1,0 +1,46 @@
+{
+  "id": "ch09-power-factor",
+  "chapter": 9,
+  "chapterTitle": "正弦稳态电路的分析",
+  "section": "§9-5 复功率",
+  "source": "例 9-10",
+  "title": "并联电容提高功率因数",
+  "summary": "380 V、50 Hz 的电源给 20 kW、功率因数 0.6 的感性负载供电，在负载两端并一个电容，用电容发出的无功功率抵消一部分感性无功，电源侧的功率因数就提高到 0.9。看电源的功率因数和有功功率，再对比并电容前后电源电流的大小。",
+  "tryIt": [
+    "把 C 改成 0（拆掉电容）：电源功率因数回到 0.6，电流表 I 的有效值约 87.72 A，和负载电流一样；并上 374.51 μF 时它只有约 58.47 A，而有功功率始终约 20 kW、负载电流也不变。",
+    "把 C 改成 200e-6 F：补偿不足，功率因数约 0.75，电源电流有效值约 70.10 A，介于两者之间。",
+    "把 C 改成 588e-6 F：电容的无功正好抵掉负载的感性无功，功率因数约 1.000，电源电流降到最小，有效值约 52.63 A。",
+    "把 C 改成 801e-6 F：功率因数又约是 0.9，电源电流也还是约 58.46 A，但电源无功 Q 变成负值，电路成了容性（过补偿）。这是教材提到的另一解，电容大了一倍多却换不来更小的电流，不划算。"
+  ],
+  "notes": [
+    "教材只给了感性负载的功率和功率因数，这里把它建成 R 与 L 串联：负载电流 I1 = P1/(Uλ1) ≈ 87.72 A，R = P1/I1² ≈ 2.5992 Ω，感抗 X = R·tanφ1 ≈ 3.4656 Ω，L = X/(2π·50) ≈ 11.031 mH。",
+    "电压源幅值填峰值 380√2 ≈ 537.4 V（教材有效值 380 V）。结果里的电压、电流都是峰值，除以 √2 才是有效值；功率表给的是平均功率，可以直接和教材比。",
+    "电容取教材答案 374.51 μF。教材按 ω ≈ 314 rad/s 算出这个值，软件用的是 2π·50 ≈ 314.16 rad/s，所以功率因数读数约 0.9002，不是正好 0.9。",
+    "电源支路里串了一个电流表 I（电流探针），读电源电流；负载电流读 R 的电流，电容电流读 C 的电流。电压源 U 自己那一行的电流相角和电流表差 180°，因为软件按「在源内部从 + 流到 −」计电源电流，看电流表即可。"
+  ],
+  "preset": { "method": "ac_phasor", "showBranchCurrents": true },
+  "checks": [
+    { "label": "并联 C = 374.51 μF 后电源的功率因数 λ", "path": "power.sources.Us.pf", "expect": 0.9, "unit": "", "tol": 0.001, "fromBook": true },
+    { "label": "电源发出的有功功率 P（等于负载功率 P1）", "path": "power.sources.Us.p_w", "expect": 20000, "unit": "W", "tol": 10, "fromBook": true },
+    { "label": "感性负载电流 I1 有效值（P1 / (Uλ1)）", "path": "branch_currents.R", "expect": 87.72, "unit": "A", "tol": 0.01, "rms": true, "fromBook": false }
+  ],
+  "circuit": {
+    "nodes": [
+      { "id": "Us", "type": "vsource_ac", "position": { "x": 0, "y": 280 }, "data": { "label": "U", "type": "vsource_ac", "parameters": { "amplitude": 537.4011537017761, "frequency": 50, "phase": 0 }, "rotation": 90 } },
+      { "id": "IP1", "type": "current_probe", "position": { "x": 260, "y": 80 }, "data": { "label": "I（电源电流）", "type": "current_probe", "parameters": {}, "rotation": 0 } },
+      { "id": "R", "type": "resistor", "position": { "x": 540, "y": 180 }, "data": { "label": "R（负载）", "type": "resistor", "parameters": { "value": 2.5992 }, "rotation": 90 } },
+      { "id": "L", "type": "inductor", "position": { "x": 540, "y": 400 }, "data": { "label": "L（负载）", "type": "inductor", "parameters": { "value": 0.011031 }, "rotation": 90 } },
+      { "id": "C", "type": "capacitor", "position": { "x": 820, "y": 290 }, "data": { "label": "C（补偿电容）", "type": "capacitor", "parameters": { "value": 3.7451e-4 }, "rotation": 90 } },
+      { "id": "G1", "type": "ground", "position": { "x": 400, "y": 620 }, "data": { "label": "GND", "type": "ground", "parameters": {}, "rotation": 0 } }
+    ],
+    "edges": [
+      { "id": "e1", "source": "Us", "target": "IP1", "sourceHandle": "pos", "targetHandle": "p" },
+      { "id": "e2", "source": "IP1", "target": "R", "sourceHandle": "n", "targetHandle": "p" },
+      { "id": "e3", "source": "R", "target": "L", "sourceHandle": "n", "targetHandle": "p" },
+      { "id": "e4", "source": "L", "target": "Us", "sourceHandle": "n", "targetHandle": "neg" },
+      { "id": "e5", "source": "C", "target": "R", "sourceHandle": "p", "targetHandle": "p" },
+      { "id": "e6", "source": "C", "target": "L", "sourceHandle": "n", "targetHandle": "n" },
+      { "id": "e7", "source": "G1", "target": "Us", "sourceHandle": "gnd", "targetHandle": "neg" }
+    ]
+  }
+}

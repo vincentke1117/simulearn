@@ -7,20 +7,13 @@ import {
   type SweepSettings,
   type TheveninPortConfig,
 } from '@/types/circuit'
+import { ANALYSIS_METHOD_LABELS } from './methodLabels'
+import { withNetLabel } from '@/simulation/netLabels'
 
-const ANALYSIS_METHOD_LABELS: Record<AnalysisMethod, string> = {
-  transient: '瞬态分析 (Transient)',
-  node_voltage: '节点电压法 (Node Voltage)',
-  branch_current: '支路电流法 (Branch Current)',
-  mesh_current: '网孔电流法 (Mesh Current)',
-  thevenin: '戴维南等效 (Thevenin)',
-  dc_op: '直流工作点',
-  ac_phasor: '交流相量分析',
-  frequency_sweep: '频率扫描 (Bode)',
-}
 
 export interface TheveninPortPickerProps {
   availableNodes?: string[]
+  nodeLabels?: Record<string, string>
   port?: TheveninPortConfig
   onPortChange?: (config: TheveninPortConfig) => void
 }
@@ -39,7 +32,7 @@ const THEVENIN_POLARITY_CONFIG = {
   positive: {
     marker: '+',
     title: '正端节点',
-    ariaLabel: '戴维南正端节点',
+    ariaLabel: '戴维宁正端节点',
     optionValue: '',
     optionLabel: '正极 (+)',
     markerHoverClass: 'group-hover:text-red-300',
@@ -48,7 +41,7 @@ const THEVENIN_POLARITY_CONFIG = {
   negative: {
     marker: '-',
     title: '负端节点',
-    ariaLabel: '戴维南负端节点',
+    ariaLabel: '戴维宁负端节点',
     optionValue: 'gnd',
     optionLabel: '地 (GND)',
     markerHoverClass: 'group-hover:text-blue-300',
@@ -80,12 +73,12 @@ function TheveninPortSelect({ polarity, picker }: { polarity: TheveninPolarity; 
           positiveNode: isPositive ? e.target.value : (picker.port?.positiveNode ?? ''),
           negativeNode: isPositive ? (picker.port?.negativeNode ?? 'gnd') : e.target.value,
         })}
-        className={`appearance-none bg-slate-800 text-slate-200 text-xs font-medium rounded-lg pl-8 pr-8 py-2 border border-slate-700 hover:border-slate-600 transition-all w-32 ${config.focusClass}`}
+        className={`appearance-none bg-slate-800 text-slate-200 text-xs font-medium rounded-lg pl-8 pr-8 py-2 border border-slate-700 hover:border-slate-600 transition-all w-44 ${config.focusClass}`}
         aria-label={config.ariaLabel}
       >
         <option value={config.optionValue}>{config.optionLabel}</option>
         {nodes.map(node => (
-          <option key={node} value={node}>{node}</option>
+          <option key={node} value={node}>{withNetLabel(node, picker.nodeLabels)}</option>
         ))}
       </select>
       <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
@@ -222,7 +215,7 @@ export function EditorTopBarSettingsControls({
           className="appearance-none bg-slate-800 text-slate-200 text-xs font-medium rounded-lg pl-8 pr-8 py-2 border border-slate-700 focus:outline-none focus:border-blue-500 hover:border-slate-600 transition-all w-32"
           aria-label="电压显示模式"
         >
-          <option value="node">节点电压</option>
+          <option value="node">结点电压</option>
           <option value="element">元件电压</option>
         </select>
         <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />

@@ -2,9 +2,9 @@
 
 ## Overview
 
-- Frontend: `web/` (React + TypeScript + Vite)
-- Backend: `server/` (Julia, HTTP simulation service)
-- Routing: `/editor` entry (`/` redirects to `/editor`)
+- Frontend: `packages/lab-web/` (React + TypeScript + Vite)
+- Backend: `packages/lab-backend/` (Julia, HTTP simulation service; the Zhifan extension entry is `julia_main` in `src/Server.jl`)
+- Routing (hash): `#/editor` entry (`#/` redirects to `#/editor`); `#/embed` is the page embedded in Zhifan classrooms
 
 ## Local Development
 
@@ -13,28 +13,29 @@
 - Julia ≥ 1.9
 
 ### Start Services
-1. Backend (project root):
+1. Backend (repository root):
    ```powershell
-   julia --project=server server/start_server.jl
+   julia --project=packages/lab-backend packages/lab-backend/run_server.jl
    ```
-2. Frontend (`web/`):
+2. Frontend (repository root):
    ```powershell
    npm install
-   npm run dev
+   npm run dev:lab
    ```
-3. Open: `http://localhost:3000/editor`
+3. Open: `http://localhost:3000/#/editor`
 
 ## Structure (key)
 
 ```
-server/
-web/
+packages/lab-backend/
+packages/lab-web/
   ├── src/
   │   ├── workspace/         # editor workspace & top bar
   │   ├── simulation/        # requests, result panel, mapping & payload
   │   ├── canvas/            # nodes & custom edges
   │   ├── circuit/           # component library & icons (including switch)
-  │   ├── pages/Editor.tsx   # single route (editor)
+  │   ├── pages/Editor.tsx   # editor route (#/editor)
+  │   ├── embed/             # Zhifan classroom embed page (#/embed): protocol, drafts, topology lock
   │   ├── types/             # TypeScript types
   │   └── utils/             # helpers
   ├── README.md / README.en.md
@@ -44,7 +45,7 @@ web/
 
 ## Key Modules
 
-- `simulation/payload.ts`: build backend payload (rotation port mapping, switch->resistor)
+- `simulation/payload.ts`: build backend payload (switch->resistor; rotation is visual only, handle ids are sent as-is)
 - `workspace/CircuitWorkspace.tsx`: main editor logic, orchestration, result cache & overlay
 - `canvas/CircuitNode.tsx`: node rendering & interactions (switch click toggling)
 - `circuit/components.ts`: component definitions (ports, params, labels)

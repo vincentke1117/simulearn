@@ -1,0 +1,47 @@
+{
+  "id": "ch01-cccs",
+  "chapter": 1,
+  "chapterTitle": "电路模型和电路定律",
+  "section": "§1-8 基尔霍夫定律",
+  "source": "例 1-4",
+  "title": "电流控制电流源：先求控制量 i1，再求 u3",
+  "summary": "R3 支路里串着一个电流控制电流源，它送进结点①的电流 id 是 R1 支路电流 i1 的 5 倍。思路是先把控制量 i1 当未知量：对结点①用 KCL、对左边回路用 KVL 解出 i1，再由 id 得到 R3 上的电压 u3。运行后看 R1 的支路电流 i1 和探针 u3 的读数。",
+  "tryIt": [
+    "把受控源的增益从 5 改成 0（受控源不再输出）：i1 变成 uS ÷ (R1 + R2) = 4.8 mA，u3 变成 0。",
+    "把增益改成 10：i1 = uS ÷ (R1 + 11R2) = 1.6 mA，u3 = −3.2 V。",
+    "把 R3 从 200 Ω 改成 400 Ω：i1 仍是 2.4 mA，u3 翻倍成 −4.8 V。R3 支路的电流被受控源定死了，R3 取多少都不影响左边。"
+  ],
+  "notes": [
+    "受控源的控制端 i+、i- 串在 R1 支路里，i1 从 i+ 流进、从 i- 流出，正好是教材 i1 的参考方向。",
+    "内核约定受控电流源的电流在元件内部从 +out 流到 -out、再从 -out 流到外电路。所以 -out 接结点①、+out 接 R3 上端，id 从 R3 一侧流进结点①，与教材箭头一致。为了让输出端一上一下，受控源旋转了 270°。",
+    "加了电压探针 u3（接 R3 上端）；接地点在结点②。"
+  ],
+  "preset": { "method": "node_voltage", "showBranchCurrents": true },
+  "checks": [
+    { "label": "R3 两端电压 u3（uS = 12 V，增益 5）", "path": "node_voltages.{VP3}", "expect": -2.4, "unit": "V", "tol": 0.001, "fromBook": true },
+    { "label": "R1 支路电流 i1", "path": "branch_currents.R1", "expect": 0.0024, "unit": "A", "tol": 0.000001, "fromBook": true },
+    { "label": "受控源电流 id = 5 i1", "path": "branch_currents.CCCS", "expect": 0.012, "unit": "A", "tol": 0.000001, "fromBook": false }
+  ],
+  "circuit": {
+    "nodes": [
+      { "id": "Us", "type": "vsource_dc", "position": { "x": 0, "y": 300 }, "data": { "label": "uS", "type": "vsource_dc", "parameters": { "dc": 12 }, "rotation": 90 } },
+      { "id": "R1", "type": "resistor", "position": { "x": 250, "y": 100 }, "data": { "label": "R1", "type": "resistor", "parameters": { "value": 2000 }, "rotation": 0 } },
+      { "id": "CCCS", "type": "cccs", "position": { "x": 1000, "y": 100 }, "data": { "label": "id（CCCS）", "type": "cccs", "parameters": { "gain": 5 }, "rotation": 270 } },
+      { "id": "R2", "type": "resistor", "position": { "x": 500, "y": 300 }, "data": { "label": "R2", "type": "resistor", "parameters": { "value": 500 }, "rotation": 90 } },
+      { "id": "R3", "type": "resistor", "position": { "x": 1000, "y": 300 }, "data": { "label": "R3", "type": "resistor", "parameters": { "value": 200 }, "rotation": 90 } },
+      { "id": "VP3", "type": "voltage_probe", "position": { "x": 1250, "y": 220 }, "data": { "label": "u3", "type": "voltage_probe", "parameters": {}, "rotation": 0 } },
+      { "id": "G1", "type": "ground", "position": { "x": 500, "y": 500 }, "data": { "label": "GND（②）", "type": "ground", "parameters": {}, "rotation": 0 } }
+    ],
+    "edges": [
+      { "id": "e1", "source": "Us", "target": "R1", "sourceHandle": "pos", "targetHandle": "p" },
+      { "id": "e2", "source": "R1", "target": "CCCS", "sourceHandle": "n", "targetHandle": "ctrl_p" },
+      { "id": "e3", "source": "CCCS", "target": "CCCS", "sourceHandle": "ctrl_n", "targetHandle": "neg" },
+      { "id": "e4", "source": "CCCS", "target": "R2", "sourceHandle": "neg", "targetHandle": "p" },
+      { "id": "e5", "source": "CCCS", "target": "R3", "sourceHandle": "pos", "targetHandle": "p" },
+      { "id": "e6", "source": "VP3", "target": "R3", "sourceHandle": "node", "targetHandle": "p" },
+      { "id": "e7", "source": "R2", "target": "Us", "sourceHandle": "n", "targetHandle": "neg" },
+      { "id": "e8", "source": "R3", "target": "R2", "sourceHandle": "n", "targetHandle": "n" },
+      { "id": "e9", "source": "G1", "target": "R2", "sourceHandle": "gnd", "targetHandle": "n" }
+    ]
+  }
+}

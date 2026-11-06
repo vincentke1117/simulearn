@@ -15,8 +15,9 @@ import type {
 import type { DiagramMode } from '@/types/control'
 import { classifyResult } from './resultKind'
 import { AcPhasorView } from './AcPhasorView'
+import { componentRowLabel, withNetLabel } from './netLabels'
 import { describeAutoReference, pickAutoReference } from './autoReference'
-import { formatEngineering } from './format'
+import { formatEngineering, formatReading } from './format'
 import {
   exportSimulationResultCSV,
   exportSimulationResultJSON,
@@ -39,7 +40,13 @@ export interface SimulationResultPanelProps {
   diagramMode?: DiagramMode
   /** 元件 id → 画布标签，用来说明自动参考点取在哪个元件上 */
   componentLabels?: Record<string, string>
+  /** 网络名 → 学生对得上的说明（探针名、元件端子）：结果表的行名用 */
+  netLabels?: Record<string, string>
   hasGround?: boolean
+  /** 嵌入知帆课堂时关掉：宿主 iframe 沙箱不许触发下载（约定 §3） */
+  allowExport?: boolean
+  /** 结果算完后参数或连线又改过：数字保留方便对比，但标明是改动前的 */
+  stale?: boolean
   onClose?: () => void
 }
 
@@ -65,7 +72,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-export function SimulationResultPanel({ result, error, isRunning, method, diagramMode, componentLabels, hasGround = false, onClose }: SimulationResultPanelProps) {
+export function SimulationResultPanel({ result, error, isRunning, method, diagramMode, componentLabels, netLabels, hasGround = false, allowExport = true, stale = false, onClose }: SimulationResultPanelProps) {
   // 单一分派入口：以结果结构为主、method 仅用于消歧。
   // 旧代码按 `method === 'node_voltage'` 硬匹配，后端新增 dc_op / ac_phasor / frequency_sweep 后
   // 全部分支落空 → 面板显示"暂无仿真结果"。classifyResult 堵死这个洞。
@@ -125,7 +132,7 @@ export function SimulationResultPanel({ result, error, isRunning, method, diagra
         </div>
         
         <div className="flex items-center gap-2">
-          {result && (
+          {result && allowExport && (
             <div className="flex items-center bg-slate-700/50 rounded-lg p-1 border border-slate-600/50 mr-2">
               <button
                 className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-600 rounded-md transition-colors"
@@ -168,6 +175,11 @@ export function SimulationResultPanel({ result, error, isRunning, method, diagra
 
       {/* Body */}
       <div className="flex-1 overflow-auto bg-slate-900/50 p-4 simulation-result-content custom-scrollbar relative">
+        {!isRunning && !error && stale && result && (
+          <p role="status" className="mb-3 rounded-lg border border-sky-500/40 bg-sky-500/10 px-3 py-2 text-xs leading-relaxed text-sky-200">
+            参数已改动，下面是改动前的结果；重新运行后更新
+          </p>
+        )}
         {!isRunning && !error && autoReference && (
           <p className="mb-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-amber-200">
             {describeAutoReference(autoReference, componentLabels ?? {}, hasGround)}
@@ -181,7 +193,7 @@ export function SimulationResultPanel({ result, error, isRunning, method, diagra
         ) : error ? (
           <SimulationErrorView error={error} />
         ) : kind.kind === 'ac_phasor' ? (
-          <AcPhasorView result={kind.data as AcPhasorResult} />
+          <AcPhasorView result={kind.data as AcPhasorResult} netLabels={netLabels} componentLabels={componentLabels} />
         ) : kind.kind === 'frequency_sweep' ? (
           <div className="space-y-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -198,7 +210,7 @@ export function SimulationResultPanel({ result, error, isRunning, method, diagra
             </div>
             <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-2">
               <Suspense fallback={<div className="p-6 text-sm text-slate-500">正在加载曲线组件…</div>}>
-                <BodePlot result={kind.data as FrequencySweepResult} />
+                <BodePlot result={kind.data as FrequencySweepResult} labels={componentLabels} />
               </Suspense>
             </div>
             <p className="text-[11px] leading-relaxed text-slate-500">
@@ -206,6 +218,7 @@ export function SimulationResultPanel({ result, error, isRunning, method, diagra
               <br />
               注意：这是探针处的<strong className="text-slate-400">绝对幅值</strong>，不是传递函数 |H| = Vout/Vin。
               若要读 −3 dB 截止频率，需自行减去源幅值的 20·log₁₀(A_src)（源幅值 = 1 V 时两者才重合）。
+              相角同样是探针相对 0° 参考的绝对相位：源的初相不为 0 时，整条相频曲线会平移这个角度。
             </p>
           </div>
         ) : comparisonResults ? (
@@ -220,10 +233,10 @@ export function SimulationResultPanel({ result, error, isRunning, method, diagra
             >
               {Object.entries(comparisonResults).map(([methodKey, methodResult]) => {
                 const methodName: Record<string, string> = {
-                  'node_voltage': '节点电压法',
+                  'node_voltage': '结点电压法',
                   'branch_current': '支路电流法',
                   'mesh_current': '网孔电流法',
-                  'thevenin': '戴维南等效'
+                  'thevenin': '戴维宁等效'
                 }
                 const methodTeaching = isRecord(methodResult) ? methodResult as TeachingResult : null
                 const methodNodeVoltages =
@@ -243,11 +256,11 @@ export function SimulationResultPanel({ result, error, isRunning, method, diagra
                       <div className="space-y-3">
                         <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
                           <div className="text-xs text-slate-500 mb-1">V<sub>th</sub></div>
-                          <div className="text-lg font-bold text-blue-400">{(methodResult.vth as number).toFixed(6)} V</div>
+                          <div className="text-lg font-bold text-blue-400">{formatReading(methodResult.vth as number, 'V', 6)}</div>
                         </div>
                         <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
                           <div className="text-xs text-slate-500 mb-1">R<sub>th</sub></div>
-                          <div className="text-lg font-bold text-blue-400">{(methodResult.rth as number).toFixed(6)} Ω</div>
+                          <div className="text-lg font-bold text-blue-400">{formatReading(methodResult.rth as number, 'Ω', 6)}</div>
                         </div>
                       </div>
                     ) : (
@@ -265,7 +278,7 @@ export function SimulationResultPanel({ result, error, isRunning, method, diagra
                         
                         {/* 简略结果显示 */}
                         <div>
-                          <h5 className="text-xs font-semibold text-slate-400 mb-2">节点电压</h5>
+                          <h5 className="text-xs font-semibold text-slate-400 mb-2">结点电压</h5>
                           <div className="space-y-1">
                             {Object.entries(methodNodeVoltages ?? {}).slice(0, 5).map(([node, voltage]) => (
                               <div key={node} className="flex justify-between text-xs border-b border-slate-700/30 pb-1 last:border-0">
@@ -284,16 +297,22 @@ export function SimulationResultPanel({ result, error, isRunning, method, diagra
           </div>
         ) : isTheveninResult ? (
           <div className="space-y-6">
-            <h3 className="text-lg font-medium text-slate-200">戴维南等效电路</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <h3 className="text-lg font-medium text-slate-200">戴维宁等效电路</h3>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
               <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 text-center">
-                <div className="text-sm text-slate-400 mb-2">戴维南电压 (V<sub>th</sub>)</div>
-                <div className="text-2xl font-bold text-blue-400">{(result as TheveninResult).vth.toFixed(6)} V</div>
+                <div className="text-sm text-slate-400 mb-2">开路电压 U<sub>oc</sub>（V<sub>th</sub>）</div>
+                <div className="text-2xl font-bold text-blue-400">{formatReading((result as TheveninResult).vth, 'V', 6)}</div>
               </div>
               <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 text-center">
-                <div className="text-sm text-slate-400 mb-2">戴维南电阻 (R<sub>th</sub>)</div>
-                <div className="text-2xl font-bold text-emerald-400">{(result as TheveninResult).rth.toFixed(6)} Ω</div>
+                <div className="text-sm text-slate-400 mb-2">等效电阻 R<sub>eq</sub>（R<sub>th</sub>）</div>
+                <div className="text-2xl font-bold text-emerald-400">{formatReading((result as TheveninResult).rth, 'Ω', 6)}</div>
               </div>
+              {(result as TheveninResult).isc !== undefined && (
+                <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 text-center">
+                  <div className="text-sm text-slate-400 mb-2">诺顿电流 I<sub>sc</sub>（端口短路电流）</div>
+                  <div className="text-2xl font-bold text-amber-400">{formatReading((result as TheveninResult).isc as number, 'A', 6)}</div>
+                </div>
+              )}
             </div>
             
             <div className="flex justify-center py-8 bg-slate-800/30 rounded-xl border border-slate-700/50">
@@ -326,7 +345,7 @@ export function SimulationResultPanel({ result, error, isRunning, method, diagra
                     ? '支路电流'
                     : isMeshCurrentResult
                       ? '网孔电流'
-                      : '节点电压'}
+                      : '结点电压'}
                 结果
               </h3>
               {isDcOpResult && (
@@ -342,7 +361,7 @@ export function SimulationResultPanel({ result, error, isRunning, method, diagra
               </label>
               <label className="flex items-center gap-1">
                 <input type="checkbox" checked={showNode} onChange={(e) => setShowNode(e.target.checked)} />
-                显示节点电压
+                显示结点电压
               </label>
             </div>
             
@@ -390,7 +409,7 @@ export function SimulationResultPanel({ result, error, isRunning, method, diagra
                 <div>
                   <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">支路电流</h4>
                   <div className="overflow-hidden rounded-lg border border-slate-700">
-                    <VirtualResultTable entries={Object.entries((result as BranchCurrentResult).branch_currents)} columns={["支路", "电流 (A)"]} />
+                    <VirtualResultTable entries={Object.entries((result as BranchCurrentResult).branch_currents).map(([id, value]) => [componentRowLabel(id, componentLabels), value])} columns={["支路", "电流"]} unit="A" />
                   </div>
                 </div>
               )}
@@ -398,9 +417,9 @@ export function SimulationResultPanel({ result, error, isRunning, method, diagra
               {/* Node Voltages Table */}
               {showNode && (result as NodeVoltageResult).node_voltages && (
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">节点电压</h4>
+                  <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">结点电压</h4>
                   <div className="overflow-hidden rounded-lg border border-slate-700">
-                    <VirtualResultTable entries={Object.entries((result as NodeVoltageResult).node_voltages)} columns={["节点", "电压 (V)"]} />
+                    <VirtualResultTable entries={Object.entries((result as NodeVoltageResult).node_voltages).map(([net, value]) => [withNetLabel(net, netLabels), value])} columns={["节点", "电压"]} unit="V" />
                   </div>
                 </div>
               )}

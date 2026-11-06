@@ -5,10 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { runSimulationRequest } from '@/simulation/api'
 import { buildSimulationPayload } from '@/simulation/payload'
 import type { CircuitNodeData, NodeVoltageResult, SimulationPayload, SimulationResponse } from '@/types/circuit'
+import { initialSimulationSettings } from '@/workspace/circuitWorkspaceHelpers'
 import { useWorkspaceSimulation } from '@/workspace/useWorkspaceSimulation'
 
-vi.mock('@/simulation/api', () => ({ runSimulationRequest: vi.fn() }))
-vi.mock('@/simulation/payload', () => ({ buildSimulationPayload: vi.fn() }))
+vi.mock('@/simulation/api', () => ({ runSimulationRequest: vi.fn(), beginSimulationRun: vi.fn(), cancelSimulation: vi.fn() }))
+vi.mock('@/simulation/payload', () => ({ buildSimulationPayload: vi.fn(), buildNets: vi.fn(() => ({ nets: [], handleNetMap: new Map(), errors: [] })) }))
 
 const runMock = vi.mocked(runSimulationRequest)
 const buildMock = vi.mocked(buildSimulationPayload)
@@ -137,5 +138,160 @@ describe('useWorkspaceSimulation error visibility', () => {
     act(() => setNodes(opened))
     expect(result.current.simulationError).toBeNull()
     expect(result.current.simulationResult).toEqual(okData)
+  })
+})
+
+describe('useWorkspaceSimulation keeps old results off a changed circuit', () => {
+  beforeEach(() => buildMock.mockReturnValue({ ok: true, errors: [], payload }))
+  afterEach(() => vi.clearAllMocks())
+
+  it('drops a response that comes back after the circuit was replaced (restore initial / import)', async () => {
+    const { result } = setup(resistiveCircuit)
+    let respond: (value: SimulationResponse) => void = () => {}
+    runMock.mockReturnValueOnce(new Promise((resolve) => { respond = resolve }))
+
+    let running: Promise<void> = Promise.resolve()
+    act(() => { running = result.current.handleRunSimulation() })
+    act(() => result.current.resetSimulation())
+    await act(async () => {
+      respond(okResponse)
+      await running
+    })
+
+    expect(result.current.simulationResult).toBeNull()
+    expect(result.current.isSimulating).toBe(false)
+  })
+
+  it('marks the result stale and drops the switch cache when a parameter changes', async () => {
+    const closed = [...resistiveCircuit, createNode('S1', 'switch', { state: 0 })]
+    const { result, setNodes } = setup(closed)
+    runMock.mockResolvedValueOnce(okResponse).mockResolvedValueOnce(okResponse)
+    await act(() => result.current.handleRunSimulation())
+    expect(result.current.resultStale).toBe(false)
+
+    // 改了 R1 的阻值：面板数字还在，但标成过期；再切开关不能从缓存里套回改动前算的结果
+    const edited = closed.map((node) => node.id === 'R1' ? createNode('R1', 'resistor', { value: 2200 }) : node)
+    act(() => setNodes(edited))
+    expect(result.current.resultStale).toBe(true)
+    const before = result.current.simulationResult
+    act(() => setNodes(edited.map((node) => node.id === 'S1' ? createNode('S1', 'switch', { state: 1 }) : node)))
+    expect(result.current.simulationResult).toBe(before)
+
+    // 只拨开关不算改参数
+    runMock.mockResolvedValueOnce(okResponse).mockResolvedValueOnce(okResponse)
+    await act(() => result.current.handleRunSimulation())
+    expect(result.current.resultStale).toBe(false)
+    act(() => setNodes(edited))
+    expect(result.current.resultStale).toBe(false)
+  })
+})
+
+describe('useWorkspaceSimulation parameter change while a request is in flight', () => {
+  beforeEach(() => buildMock.mockReturnValue({ ok: true, errors: [], payload }))
+  afterEach(() => vi.clearAllMocks())
+
+  it('keeps the late result in the panel (marked stale) but does not paint it onto the edited canvas', async () => {
+    let currentNodes = resistiveCircuit
+    const setNodesSpy = vi.fn()
+    const reactFlow = { getNodes: () => currentNodes, getEdges: () => [] } as unknown as ReactFlowInstance<Node<CircuitNodeData>, Edge>
+    const { result, rerender } = renderHook(
+      ({ nodes }) => useWorkspaceSimulation({
+        nodes, edges: [], diagramMode: 'electrical', reactFlow, setNodes: setNodesSpy, setWorkspaceMessage: vi.fn(),
+      }),
+      { initialProps: { nodes: resistiveCircuit } },
+    )
+    let respond: (value: SimulationResponse) => void = () => {}
+    runMock.mockReturnValueOnce(new Promise((resolve) => { respond = resolve }))
+    let running: Promise<void> = Promise.resolve()
+    act(() => { running = result.current.handleRunSimulation() })
+
+    // 请求还在路上，学生改了 R1
+    currentNodes = resistiveCircuit.map((node) => node.id === 'R1' ? createNode('R1', 'resistor', { value: 2200 }) : node)
+    act(() => rerender({ nodes: currentNodes }))
+    const callsBeforeResponse = setNodesSpy.mock.calls.length
+    await act(async () => {
+      respond(okResponse)
+      await running
+    })
+
+    expect(result.current.simulationResult).toBe(okData)
+    expect(result.current.resultStale).toBe(true)
+    expect(setNodesSpy.mock.calls.length).toBe(callsBeforeResponse)
+  })
+})
+
+describe('useWorkspaceSimulation case presets', () => {
+  it('starts from the case preset (method, sweep, Thevenin port) instead of the editor defaults', () => {
+    const settings = { ...initialSimulationSettings, method: 'thevenin' as const, tStop: 2e-3 }
+    const port = { positiveNode: 'n2', negativeNode: 'gnd' }
+    const reactFlow = { getNodes: () => [], getEdges: () => [] } as unknown as ReactFlowInstance<Node<CircuitNodeData>, Edge>
+    const { result } = renderHook(() => useWorkspaceSimulation({
+      nodes: [],
+      edges: [],
+      diagramMode: 'electrical',
+      reactFlow,
+      setNodes: vi.fn(),
+      setWorkspaceMessage: vi.fn(),
+      initialSettings: settings,
+      initialTheveninPort: port,
+    }))
+    expect(result.current.simulationSettings).toBe(settings)
+    expect(result.current.theveninPort).toBe(port)
+  })
+})
+
+describe('useWorkspaceSimulation switch cache and staleness (round 3)', () => {
+  beforeEach(() => buildMock.mockReturnValue({ ok: true, errors: [], payload }))
+  afterEach(() => vi.clearAllMocks())
+
+  it('with more than 4 switches there is no combination cache, so toggling a switch marks the result stale', async () => {
+    const switches = ['S1', 'S2', 'S3', 'S4', 'S5'].map((id) => createNode(id, 'switch', { state: 0 }))
+    const circuit = [...resistiveCircuit, ...switches]
+    const { result, setNodes } = setup(circuit)
+    runMock.mockResolvedValueOnce(okResponse)
+    await act(() => result.current.handleRunSimulation())
+    expect(runMock).toHaveBeenCalledTimes(1)
+    expect(result.current.resultStale).toBe(false)
+    act(() => setNodes(circuit.map((node) => node.id === 'S1' ? createNode('S1', 'switch', { state: 1 }) : node)))
+    expect(result.current.resultStale).toBe(true)
+  })
+
+  it('changing a result-affecting setting (tStop) marks the result stale and drops the switch cache', async () => {
+    const closed = [...resistiveCircuit, createNode('S1', 'switch', { state: 0 })]
+    const { result, setNodes } = setup(closed)
+    runMock.mockResolvedValueOnce(okResponse).mockResolvedValueOnce({ ...okResponse, data: { node_voltages: { N1: 2 }, branch_currents: {} } })
+    await act(() => result.current.handleRunSimulation())
+    const before = result.current.simulationResult
+    act(() => result.current.handleSimulationSettingsChange({ ...result.current.simulationSettings, tStop: 5e-3 }))
+    expect(result.current.resultStale).toBe(true)
+    // 缓存已作废：再拨开关不能把旧设置下算出的另一组结果套上来
+    act(() => setNodes(closed.map((node) => node.id === 'S1' ? createNode('S1', 'switch', { state: 1 }) : node)))
+    expect(result.current.simulationResult).toBe(before)
+  })
+
+  it('display-only settings (show branch currents) do not invalidate the result', async () => {
+    const { result } = setup(resistiveCircuit)
+    runMock.mockResolvedValueOnce(okResponse)
+    await act(() => result.current.handleRunSimulation())
+    act(() => result.current.handleSimulationSettingsChange({ ...result.current.simulationSettings, showBranchCurrents: true }))
+    expect(result.current.resultStale).toBe(false)
+  })
+
+  it('toggling onto a combination that failed at run time surfaces that combination\'s own error', async () => {
+    const closed = [...resistiveCircuit, createNode('S1', 'switch', { state: 0 })]
+    const { result, setNodes } = setup(closed)
+    runMock.mockResolvedValueOnce(okResponse).mockResolvedValueOnce(backendError)
+    await act(() => result.current.handleRunSimulation())
+    expect(result.current.simulationResult).toBe(okData)
+    act(() => setNodes(closed.map((node) => node.id === 'S1' ? createNode('S1', 'switch', { state: 1 }) : node)))
+    expect(result.current.simulationResult).toBeNull()
+    expect(result.current.simulationError?.code).toBe('LAB_SIM_FAILED')
+  })
+
+  it('resetSimulation forgets the Thevenin port of the previous circuit', () => {
+    const { result } = setup(resistiveCircuit)
+    act(() => result.current.setTheveninPort({ positiveNode: 'n7', negativeNode: 'gnd' }))
+    act(() => result.current.resetSimulation())
+    expect(result.current.theveninPort).toBeUndefined()
   })
 })

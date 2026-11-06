@@ -1,0 +1,252 @@
+{
+  "id": "ch11-series-resonance",
+  "chapter": 11,
+  "chapterTitle": "电路的频率响应",
+  "section": "§11-2 RLC 串联电路的谐振",
+  "source": "例 11-2",
+  "title": "RLC 串联谐振：0.1 V 的电源让电感、电容各分到 10 V",
+  "summary": "电源频率正好等于 1/(2π√LC) 时，感抗和容抗抵消，整个电路只剩 1 Ω 电阻：电流最大（0.1 A）且与电压同相。这时电感、电容上的电压都是电源电压的 Q = 100 倍，但两者方向相反、互相抵消。看电流 i、探针 a（读 UL）和探针 b（读 UC）。",
+  "tryIt": [
+    "把电源频率从 7957747 Hz 改成 8000000 Hz（只高了约 0.5%）：电流读数从 0.1414 A 掉到 97.09 mA（都是峰值；有效值从 0.1 A 降到约 68.65 mA），相角约 −46.6°，电流滞后电压，电路呈感性；UL 也变得比 UC 大（a 读 9.76 V、b 读 9.66 V，有效值 6.90 V、6.83 V）。",
+    "频率改回 7957747 Hz，把 R 从 1 Ω 改成 10 Ω：电流有效值变成 0.01 A，UL = UC = 1 V，Q 降到 10。R 越小 Q 越大，谐振时 L、C 上的电压越高。",
+    "R 改回 1 Ω，把分析方法切到「频率扫描 (Bode)」（扫描范围已预设为 7～9 MHz、401 点），运行后看曲线 i：峰在约 7.96 MHz，峰值约 −17.0 dB（即峰值 0.1414 A、有效值 0.1 A）；比峰值低 3 dB 的两个频率约为 7.918 MHz 和 7.998 MHz，相差约 80 kHz，正好是 f0/Q。",
+    "在频率扫描里把 R 改成 10 Ω 再跑一次：曲线 i 的峰降到约 −37.0 dB（峰值 0.01414 A），曲线明显变宽（低 3 dB 的两点约 7.57 MHz 和 8.37 MHz，带宽约 0.8 MHz）；a、b 两条曲线的峰也分开了，UL 的峰在约 7.98 MHz、UC 的峰在约 7.94 MHz。"
+  ],
+  "notes": [
+    "幅值填峰值：Us = 0.1 V（有效值）对应幅值 0.1√2 ≈ 0.1414 V；结果里的读数也都是峰值，有效值要除以 √2。",
+    "教材求的是角频率 ω0 = 5 × 10⁷ rad/s，这里电源频率填 f0 = ω0/2π ≈ 7957747 Hz（7.958 MHz）。",
+    "为了让 UL、UC 各用一个探针直接读出来，参考点（接地）放在 L 与 C 的连接点，而不是电源负极：探针 a 读的就是 L 两端电压，探针 b 读的是 C 下端相对参考点的电压，大小等于 UC，相位与 U̇C 相差 180°。接地点放在哪里不影响电流和各元件电压。",
+    "谐振时 a、b 两个探针读数完全相同（大小、相位都一样），说明 L 和 C 串起来的两端等电位——整个 LC 串联段相当于短路。",
+    "加了一个电流探针 i 串在电源支路里，频率扫描时用它画电流的谐振曲线。"
+  ],
+  "preset": {
+    "method": "ac_phasor",
+    "showBranchCurrents": true,
+    "sweep": {
+      "fStartHz": 7000000,
+      "fStopHz": 9000000,
+      "nPoints": 401
+    }
+  },
+  "checks": [
+    {
+      "label": "谐振时电流 I 的有效值",
+      "path": "branch_currents.R",
+      "expect": 0.1,
+      "unit": "A",
+      "tol": 0.0005,
+      "rms": true,
+      "fromBook": true
+    },
+    {
+      "label": "谐振时电流的初相（与电源电压同相）",
+      "path": "branch_phases_deg.R",
+      "expect": 0,
+      "unit": "°",
+      "tol": 0.1,
+      "fromBook": true
+    },
+    {
+      "label": "电感电压 UL 的有效值（探针 a）",
+      "path": "node_voltages.{VPa}",
+      "expect": 10,
+      "unit": "V",
+      "tol": 0.05,
+      "rms": true,
+      "fromBook": true
+    },
+    {
+      "label": "电容电压 UC 的有效值（探针 b）",
+      "path": "node_voltages.{VPb}",
+      "expect": 10,
+      "unit": "V",
+      "tol": 0.05,
+      "rms": true,
+      "fromBook": true
+    }
+  ],
+  "circuit": {
+    "nodes": [
+      {
+        "id": "Us",
+        "type": "vsource_ac",
+        "position": {
+          "x": 0,
+          "y": 220
+        },
+        "data": {
+          "label": "us",
+          "type": "vsource_ac",
+          "parameters": {
+            "amplitude": 0.1414214,
+            "frequency": 7957747,
+            "phase": 0
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "IP1",
+        "type": "current_probe",
+        "position": {
+          "x": 250,
+          "y": 60
+        },
+        "data": {
+          "label": "i",
+          "type": "current_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "R",
+        "type": "resistor",
+        "position": {
+          "x": 500,
+          "y": 60
+        },
+        "data": {
+          "label": "R",
+          "type": "resistor",
+          "parameters": {
+            "value": 1
+          },
+          "rotation": 0
+        }
+      },
+      {
+        "id": "L",
+        "type": "inductor",
+        "position": {
+          "x": 750,
+          "y": 60
+        },
+        "data": {
+          "label": "L",
+          "type": "inductor",
+          "parameters": {
+            "value": 2e-06
+          },
+          "rotation": 0
+        }
+      },
+      {
+        "id": "C",
+        "type": "capacitor",
+        "position": {
+          "x": 1000,
+          "y": 220
+        },
+        "data": {
+          "label": "C",
+          "type": "capacitor",
+          "parameters": {
+            "value": 2e-10
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "VPa",
+        "type": "voltage_probe",
+        "position": {
+          "x": 660,
+          "y": -120
+        },
+        "data": {
+          "label": "a",
+          "type": "voltage_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "VPb",
+        "type": "voltage_probe",
+        "position": {
+          "x": 520,
+          "y": 440
+        },
+        "data": {
+          "label": "b",
+          "type": "voltage_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "position": {
+          "x": 1250,
+          "y": 120
+        },
+        "data": {
+          "label": "GND",
+          "type": "ground",
+          "parameters": {},
+          "rotation": 0
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "Us",
+        "target": "IP1",
+        "sourceHandle": "pos",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e2",
+        "source": "IP1",
+        "target": "R",
+        "sourceHandle": "n",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e3",
+        "source": "R",
+        "target": "L",
+        "sourceHandle": "n",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e4",
+        "source": "VPa",
+        "target": "L",
+        "sourceHandle": "node",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e5",
+        "source": "L",
+        "target": "C",
+        "sourceHandle": "n",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e6",
+        "source": "G1",
+        "target": "C",
+        "sourceHandle": "gnd",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e7",
+        "source": "C",
+        "target": "Us",
+        "sourceHandle": "n",
+        "targetHandle": "neg"
+      },
+      {
+        "id": "e8",
+        "source": "VPb",
+        "target": "Us",
+        "sourceHandle": "node",
+        "targetHandle": "neg"
+      }
+    ]
+  }
+}

@@ -22,8 +22,8 @@ export function InspectorPanel({ node, definition, onParameterChange, onRotation
             <Settings2 className="w-8 h-8 opacity-50" />
           </div>
           <div>
-            <h3 className="text-sm font-medium text-slate-200">No Selection</h3>
-            <p className="text-xs mt-1 text-slate-300">Select a component to edit its properties</p>
+            <h3 className="text-sm font-medium text-slate-200">未选中元件</h3>
+            <p className="text-xs mt-1 text-slate-300">点一下画布上的元件，就能在这里改它的参数</p>
           </div>
         </div>
       </aside>
@@ -54,11 +54,11 @@ export function InspectorPanel({ node, definition, onParameterChange, onRotation
         {/* Transform Section */}
         <div className="space-y-3">
           <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-            <RotateCw className="w-3 h-3" /> Transform
+            <RotateCw className="w-3 h-3" /> 摆放
           </h3>
           <div className="grid grid-cols-2 gap-3">
             <label className="space-y-1.5">
-              <span className="text-xs text-slate-300">Rotation</span>
+              <span className="text-xs text-slate-300">旋转</span>
               <select
                 className="w-full bg-slate-800 text-slate-200 text-xs rounded-md px-2 py-1.5 border border-slate-700 focus:outline-none focus:border-blue-500 transition-colors"
                 value={node.rotation ?? 0}
@@ -71,7 +71,7 @@ export function InspectorPanel({ node, definition, onParameterChange, onRotation
               </select>
             </label>
             <label className="space-y-1.5">
-              <span className="text-xs text-slate-300">Font Size (px)</span>
+              <span className="text-xs text-slate-300">字号 (px)</span>
               <input
                 className="w-full bg-slate-800 text-slate-200 text-xs rounded-md px-2 py-1.5 border border-slate-700 focus:outline-none focus:border-blue-500 transition-colors"
                 type="number"
@@ -88,7 +88,7 @@ export function InspectorPanel({ node, definition, onParameterChange, onRotation
         {hasParameters ? (
           <div className="space-y-3">
             <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-              <Settings2 className="w-3 h-3" /> Parameters
+              <Settings2 className="w-3 h-3" /> 参数
             </h3>
             <div className="space-y-3">
               {definition.parameters.map((parameter) => {
@@ -126,7 +126,7 @@ export function InspectorPanel({ node, definition, onParameterChange, onRotation
           </div>
         ) : (
           <div className="p-3 rounded bg-slate-800/30 border border-slate-700 text-xs text-slate-300 text-center">
-            No configurable parameters
+            这个元件没有可调参数
           </div>
         )}
 
@@ -134,7 +134,7 @@ export function InspectorPanel({ node, definition, onParameterChange, onRotation
         {definition.handles?.length ? (
           <div className="space-y-3">
             <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-              <Link2 className="w-3 h-3" /> Connections
+              <Link2 className="w-3 h-3" /> 端子
             </h3>
             <div className="bg-slate-800/50 rounded-lg border border-slate-700 overflow-hidden">
               {definition.handles.map((h, idx) => (
@@ -147,7 +147,7 @@ export function InspectorPanel({ node, definition, onParameterChange, onRotation
                   <span className="w-6 h-6 rounded bg-slate-900 border border-slate-600 flex items-center justify-center text-[10px] font-mono text-slate-200 mr-3">
                     {h.label ?? h.id}
                   </span>
-                  <span className="text-xs text-slate-300">{h.hint ?? 'Connect to node'}</span>
+                  <span className="text-xs text-slate-300">{h.hint ?? '接到电路节点'}</span>
                 </div>
               ))}
             </div>

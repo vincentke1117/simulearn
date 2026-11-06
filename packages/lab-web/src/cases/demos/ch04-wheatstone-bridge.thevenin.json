@@ -1,0 +1,988 @@
+{
+  "caseId": "ch04-wheatstone-bridge",
+  "id": "thevenin",
+  "kind": "steps",
+  "title": "戴维宁等效：一次等效，换几次负载都只算一个除法",
+  "steps": [
+    {
+      "title": "题目与思路",
+      "text": "检流计电阻 RG 要换 50、100、200、500 Ω 四次。每换一次都重解整个电桥太费事：把 G 以外的部分看成一个含源一端口，只等效一次。现在 RG = 50 Ω，检流计电流 I_G = {ig}。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "V1",
+            "type": "vsource_dc",
+            "position": {
+              "x": 0,
+              "y": 400
+            },
+            "data": {
+              "label": "Us",
+              "type": "vsource_dc",
+              "parameters": {
+                "dc": 5
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R1",
+            "type": "resistor",
+            "position": {
+              "x": 300,
+              "y": 0
+            },
+            "data": {
+              "label": "R1",
+              "type": "resistor",
+              "parameters": {
+                "value": 100
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R3",
+            "type": "resistor",
+            "position": {
+              "x": 300,
+              "y": 400
+            },
+            "data": {
+              "label": "R3",
+              "type": "resistor",
+              "parameters": {
+                "value": 501
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R2",
+            "type": "resistor",
+            "position": {
+              "x": 1100,
+              "y": 0
+            },
+            "data": {
+              "label": "R2",
+              "type": "resistor",
+              "parameters": {
+                "value": 1000
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R4",
+            "type": "resistor",
+            "position": {
+              "x": 1100,
+              "y": 400
+            },
+            "data": {
+              "label": "R4",
+              "type": "resistor",
+              "parameters": {
+                "value": 5000
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "RG",
+            "type": "resistor",
+            "position": {
+              "x": 700,
+              "y": 210
+            },
+            "data": {
+              "label": "RG（检流计）",
+              "type": "resistor",
+              "parameters": {
+                "value": 50
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 500,
+              "y": 420
+            },
+            "data": {
+              "label": "1",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 900,
+              "y": 420
+            },
+            "data": {
+              "label": "1′",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "G1",
+            "type": "ground",
+            "position": {
+              "x": 700,
+              "y": 660
+            },
+            "data": {
+              "label": "GND",
+              "type": "ground",
+              "parameters": {},
+              "rotation": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "V1",
+            "target": "R1",
+            "sourceHandle": "pos",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "R1",
+            "target": "R2",
+            "sourceHandle": "p",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e3",
+            "source": "R1",
+            "target": "R3",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e4",
+            "source": "R1",
+            "target": "RG",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e5",
+            "source": "VP1",
+            "target": "RG",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e6",
+            "source": "R2",
+            "target": "R4",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e7",
+            "source": "RG",
+            "target": "R2",
+            "sourceHandle": "n",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e8",
+            "source": "VP2",
+            "target": "RG",
+            "sourceHandle": "node",
+            "targetHandle": "n"
+          },
+          {
+            "id": "gnd0",
+            "source": "V1",
+            "sourceHandle": "neg",
+            "target": "G1",
+            "targetHandle": "gnd"
+          },
+          {
+            "id": "gnd1",
+            "source": "R3",
+            "sourceHandle": "n",
+            "target": "G1",
+            "targetHandle": "gnd"
+          },
+          {
+            "id": "gnd2",
+            "source": "R4",
+            "sourceHandle": "n",
+            "target": "G1",
+            "targetHandle": "gnd"
+          }
+        ]
+      },
+      "compute": {
+        "method": "node_voltage"
+      },
+      "values": [
+        {
+          "key": "ig",
+          "label": "I_G（RG = 50 Ω）",
+          "path": "branch_currents.RG",
+          "unit": "A",
+          "expect": 1.434e-06,
+          "tol": 2e-09,
+          "fromBook": true
+        }
+      ],
+      "notes": [
+        {
+          "id": "load",
+          "anchor": "RG",
+          "dx": -10,
+          "dy": -70,
+          "text": "负载：检流计 G（电阻 RG）",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "① 先把负载圈出来",
+      "text": "端子 1、1′ 以外是要等效的一端口，RG 是负载。下一步把它断开。",
+      "highlight": [
+        "RG"
+      ],
+      "notes": [
+        {
+          "id": "cut",
+          "anchor": "RG",
+          "dx": -10,
+          "dy": -70,
+          "text": "断开它，端口 1-1′ 就开路了",
+          "tone": "warn"
+        }
+      ]
+    },
+    {
+      "title": "② 断开负载",
+      "text": "开路后 G 支路没有电流，左右两边各是一个简单的分压：V(1) = {v1}，V(1′) = {v1p}（6 位有效数字）。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "V1",
+            "type": "vsource_dc",
+            "position": {
+              "x": 0,
+              "y": 400
+            },
+            "data": {
+              "label": "Us",
+              "type": "vsource_dc",
+              "parameters": {
+                "dc": 5
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R1",
+            "type": "resistor",
+            "position": {
+              "x": 300,
+              "y": 0
+            },
+            "data": {
+              "label": "R1",
+              "type": "resistor",
+              "parameters": {
+                "value": 100
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R3",
+            "type": "resistor",
+            "position": {
+              "x": 300,
+              "y": 400
+            },
+            "data": {
+              "label": "R3",
+              "type": "resistor",
+              "parameters": {
+                "value": 501
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R2",
+            "type": "resistor",
+            "position": {
+              "x": 1100,
+              "y": 0
+            },
+            "data": {
+              "label": "R2",
+              "type": "resistor",
+              "parameters": {
+                "value": 1000
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R4",
+            "type": "resistor",
+            "position": {
+              "x": 1100,
+              "y": 400
+            },
+            "data": {
+              "label": "R4",
+              "type": "resistor",
+              "parameters": {
+                "value": 5000
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 500,
+              "y": 420
+            },
+            "data": {
+              "label": "1",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 900,
+              "y": 420
+            },
+            "data": {
+              "label": "1′",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "G1",
+            "type": "ground",
+            "position": {
+              "x": 700,
+              "y": 660
+            },
+            "data": {
+              "label": "GND",
+              "type": "ground",
+              "parameters": {},
+              "rotation": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "V1",
+            "target": "R1",
+            "sourceHandle": "pos",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "R1",
+            "target": "R2",
+            "sourceHandle": "p",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e3",
+            "source": "R1",
+            "target": "R3",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e6",
+            "source": "R2",
+            "target": "R4",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e20",
+            "source": "VP1",
+            "target": "R1",
+            "sourceHandle": "node",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e21",
+            "source": "VP2",
+            "target": "R2",
+            "sourceHandle": "node",
+            "targetHandle": "n"
+          },
+          {
+            "id": "gnd0",
+            "source": "V1",
+            "sourceHandle": "neg",
+            "target": "G1",
+            "targetHandle": "gnd"
+          },
+          {
+            "id": "gnd1",
+            "source": "R3",
+            "sourceHandle": "n",
+            "target": "G1",
+            "targetHandle": "gnd"
+          },
+          {
+            "id": "gnd2",
+            "source": "R4",
+            "sourceHandle": "n",
+            "target": "G1",
+            "targetHandle": "gnd"
+          }
+        ]
+      },
+      "compute": {
+        "method": "node_voltage"
+      },
+      "values": [
+        {
+          "key": "v1",
+          "label": "V(1)",
+          "path": "node_voltages.{VP1}",
+          "unit": "V",
+          "digits": 6,
+          "expect": 4.168053244592346,
+          "tol": 1e-06
+        },
+        {
+          "key": "v1p",
+          "label": "V(1′)",
+          "path": "node_voltages.{VP2}",
+          "unit": "V",
+          "digits": 6,
+          "expect": 4.166666666666667,
+          "tol": 1e-06
+        }
+      ]
+    },
+    {
+      "title": "③ 求开路电压 Uoc",
+      "text": "Uoc = u_R3 − u_R4 = (501/601 − 5000/6000) × 5 V = {uoc}（教材取 1.386 mV）。两个电位只差 1.4 mV，拿 4 位读数相减不够准，所以直接读开路电压。",
+      "compute": {
+        "method": "thevenin",
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "uoc",
+          "label": "开路电压 Uoc",
+          "path": "vth",
+          "unit": "V",
+          "expect": 0.001386577925679422,
+          "tol": 2e-08,
+          "fromBook": true
+        }
+      ],
+      "highlight": [
+        "R3",
+        "R4"
+      ],
+      "notes": [
+        {
+          "id": "plus",
+          "anchor": "VP1",
+          "dx": 175,
+          "dy": 15,
+          "text": "← Uoc 的 + 端：1",
+          "tone": "accent"
+        },
+        {
+          "id": "minus",
+          "anchor": "VP2",
+          "dx": -120,
+          "dy": 75,
+          "text": "− 端：1′ →",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "④ 独立源置零（先圈出）",
+      "text": "求等效电阻要把一端口内部的独立源置零，电阻一个都不动。",
+      "highlight": [
+        "V1"
+      ],
+      "notes": [
+        {
+          "id": "zero",
+          "anchor": "V1",
+          "dx": -260,
+          "dy": 60,
+          "text": "电压源置零 → 短路\n（电流源置零 → 开路）",
+          "tone": "warn"
+        }
+      ]
+    },
+    {
+      "title": "⑤ 置零后求等效电阻 Req",
+      "text": "Us = 0 就是一根短路线：上、下母线成了同一个结点。从 1-1′ 看进去，R1∥R3 与 R2∥R4 串联：83.36 Ω + 833.33 Ω = {req}（教材图 4-15b 标 917 Ω）。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "V1",
+            "type": "vsource_dc",
+            "position": {
+              "x": 0,
+              "y": 400
+            },
+            "data": {
+              "label": "Us",
+              "type": "vsource_dc",
+              "parameters": {
+                "dc": 0
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R1",
+            "type": "resistor",
+            "position": {
+              "x": 300,
+              "y": 0
+            },
+            "data": {
+              "label": "R1",
+              "type": "resistor",
+              "parameters": {
+                "value": 100
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R3",
+            "type": "resistor",
+            "position": {
+              "x": 300,
+              "y": 400
+            },
+            "data": {
+              "label": "R3",
+              "type": "resistor",
+              "parameters": {
+                "value": 501
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R2",
+            "type": "resistor",
+            "position": {
+              "x": 1100,
+              "y": 0
+            },
+            "data": {
+              "label": "R2",
+              "type": "resistor",
+              "parameters": {
+                "value": 1000
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R4",
+            "type": "resistor",
+            "position": {
+              "x": 1100,
+              "y": 400
+            },
+            "data": {
+              "label": "R4",
+              "type": "resistor",
+              "parameters": {
+                "value": 5000
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 500,
+              "y": 420
+            },
+            "data": {
+              "label": "1",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 900,
+              "y": 420
+            },
+            "data": {
+              "label": "1′",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "G1",
+            "type": "ground",
+            "position": {
+              "x": 700,
+              "y": 660
+            },
+            "data": {
+              "label": "GND",
+              "type": "ground",
+              "parameters": {},
+              "rotation": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "V1",
+            "target": "R1",
+            "sourceHandle": "pos",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "R1",
+            "target": "R2",
+            "sourceHandle": "p",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e3",
+            "source": "R1",
+            "target": "R3",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e6",
+            "source": "R2",
+            "target": "R4",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e20",
+            "source": "VP1",
+            "target": "R1",
+            "sourceHandle": "node",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e21",
+            "source": "VP2",
+            "target": "R2",
+            "sourceHandle": "node",
+            "targetHandle": "n"
+          },
+          {
+            "id": "gnd0",
+            "source": "V1",
+            "sourceHandle": "neg",
+            "target": "G1",
+            "targetHandle": "gnd"
+          },
+          {
+            "id": "gnd1",
+            "source": "R3",
+            "sourceHandle": "n",
+            "target": "G1",
+            "targetHandle": "gnd"
+          },
+          {
+            "id": "gnd2",
+            "source": "R4",
+            "sourceHandle": "n",
+            "target": "G1",
+            "targetHandle": "gnd"
+          }
+        ]
+      },
+      "compute": {
+        "method": "thevenin",
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "req",
+          "label": "等效电阻 Req",
+          "path": "rth",
+          "unit": "Ω",
+          "expect": 916.6943982251803,
+          "tol": 0.05,
+          "fromBook": true
+        }
+      ],
+      "dim": [
+        "V1"
+      ],
+      "highlight": [
+        "R1",
+        "R3",
+        "R2",
+        "R4"
+      ],
+      "notes": [
+        {
+          "id": "short",
+          "anchor": "V1",
+          "dx": -260,
+          "dy": 60,
+          "text": "Us = 0 V：相当于短路",
+          "tone": "warn"
+        }
+      ]
+    },
+    {
+      "title": "⑥ 戴维宁等效电路，接回负载",
+      "text": "一端口换成 Uoc 串 Req，电压源的 + 对着端子 1（Uoc 参考方向的 + 端）。接回 RG：I_G = Uoc / (Req + RG) = {ig}，和第一步原电路的读数一样。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "Ueq",
+            "type": "vsource_dc",
+            "position": {
+              "x": 120,
+              "y": 240
+            },
+            "data": {
+              "label": "Uoc",
+              "type": "vsource_dc",
+              "parameters": {
+                "dc": 0.001386578
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "Req",
+            "type": "resistor",
+            "position": {
+              "x": 360,
+              "y": 60
+            },
+            "data": {
+              "label": "Req",
+              "type": "resistor",
+              "parameters": {
+                "value": 916.6944
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "RG",
+            "type": "resistor",
+            "position": {
+              "x": 640,
+              "y": 240
+            },
+            "data": {
+              "label": "RG（检流计）",
+              "type": "resistor",
+              "parameters": {
+                "value": 50
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 820,
+              "y": 60
+            },
+            "data": {
+              "label": "1",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 820,
+              "y": 420
+            },
+            "data": {
+              "label": "1′",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "G1",
+            "type": "ground",
+            "position": {
+              "x": 400,
+              "y": 520
+            },
+            "data": {
+              "label": "GND",
+              "type": "ground",
+              "parameters": {},
+              "rotation": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "Ueq",
+            "target": "Req",
+            "sourceHandle": "pos",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "Req",
+            "target": "RG",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e3",
+            "source": "VP1",
+            "target": "RG",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e4",
+            "source": "RG",
+            "target": "Ueq",
+            "sourceHandle": "n",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e5",
+            "source": "VP2",
+            "target": "RG",
+            "sourceHandle": "node",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e6",
+            "source": "G1",
+            "target": "Ueq",
+            "sourceHandle": "gnd",
+            "targetHandle": "neg"
+          }
+        ]
+      },
+      "compute": {
+        "method": "node_voltage"
+      },
+      "values": [
+        {
+          "key": "ig",
+          "label": "I_G（RG = 50 Ω）",
+          "path": "branch_currents.RG",
+          "unit": "A",
+          "expect": 1.434e-06,
+          "tol": 2e-09,
+          "fromBook": true
+        }
+      ],
+      "highlight": [
+        "Ueq",
+        "Req"
+      ],
+      "notes": [
+        {
+          "id": "eq",
+          "anchor": "Req",
+          "dx": -20,
+          "dy": -80,
+          "text": "等效电路：Uoc 串 Req（图 4-15b）",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "⑦ 四个 RG 一次算完",
+      "text": "一端口只等效一次，RG 换几次都只需要算一个除法。表里是等效电路算出的 I_G，右边是教材给的值。",
+      "table": {
+        "param": {
+          "id": "RG",
+          "key": "value",
+          "label": "RG",
+          "unit": "Ω"
+        },
+        "values": [
+          50,
+          100,
+          200,
+          500
+        ],
+        "method": "node_voltage",
+        "columns": [
+          {
+            "label": "I_G = Uoc / (Req + RG)",
+            "path": "branch_currents.RG",
+            "unit": "A",
+            "book": [
+              1.434e-06,
+              1.363e-06,
+              1.241e-06,
+              9.78e-07
+            ]
+          }
+        ],
+        "caption": "末位常比教材大 1：教材把 Uoc 截成了 1.386 mV（精确值约 1.3866 mV）。把 R3 改回 500 Ω，电桥平衡，Uoc = 0，I_G 也就是 0。"
+      }
+    }
+  ]
+}

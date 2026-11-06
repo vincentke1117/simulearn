@@ -8,6 +8,7 @@ import type { CircuitNodeData } from '@/types/circuit'
 
 import styles from './CircuitNode.module.css'
 import { ComponentIcon } from '@/circuit/icons'
+import { formatParameterValue, formatReading } from '@/simulation/format'
 
 function formatParameter(definition: CircuitComponentDefinition, data: CircuitNodeData) {
   if (!definition.parameters.length) {
@@ -17,7 +18,7 @@ function formatParameter(definition: CircuitComponentDefinition, data: CircuitNo
   const firstParam = definition.parameters[0]
   const value = data.parameters[firstParam.key]
   if (typeof value === 'number' && Number.isFinite(value)) {
-    return `${value}${firstParam.unit ?? ''}`
+    return formatParameterValue(value, firstParam.unit ?? '')
   }
   return ''
 }
@@ -116,17 +117,17 @@ const CircuitNode = memo(({ id, type, data }: NodeProps<Node<CircuitNodeData>>) 
       </div>
       {data.voltage !== undefined && (
         <div className={styles.voltage}>
-          {data.voltage.toFixed(3)} V
+          {formatReading(data.voltage, 'V')}
         </div>
       )}
       {data.current !== undefined && (
         <div className={styles.current}>
-          {data.current.toFixed(4)} A
+          {formatReading(data.current, 'A')}
         </div>
       )}
       {data.voltageDelta !== undefined && (type === 'vsource_dc' || type === 'vsource_ac') && (
         <div className={styles.voltageSecondary}>
-          ΔV: {data.voltageDelta.toFixed(3)} V
+          ΔV: {formatReading(data.voltageDelta, 'V')}
         </div>
       )}
       <div 
@@ -213,6 +214,13 @@ const CircuitNode = memo(({ id, type, data }: NodeProps<Node<CircuitNodeData>>) 
   if (p.voltage !== n.voltage) return false
   if (p.voltageDelta !== n.voltageDelta) return false
   if (p.current !== n.current) return false
+  // 结点黑圈按端子上的连线数画：只有连线数变了也要重绘
+  const pCounts = (p.handleCounts ?? {}) as Record<string, number>
+  const nCounts = (n.handleCounts ?? {}) as Record<string, number>
+  const countKeys = new Set([...Object.keys(pCounts), ...Object.keys(nCounts)])
+  for (const k of countKeys) {
+    if (pCounts[k] !== nCounts[k]) return false
+  }
   const pParams = p.parameters
   const nParams = n.parameters
   const pKeys = Object.keys(pParams)

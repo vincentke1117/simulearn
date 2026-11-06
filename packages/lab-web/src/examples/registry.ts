@@ -9,11 +9,12 @@ export interface ExampleCircuit {
 }
 
 export async function loadExamples(): Promise<ExampleCircuit[]> {
-  const [voltageDividerData, rlcSeriesData, wheatstoneBridgeData, controlStepResponseData] = await Promise.all([
+  const [voltageDividerData, rlcSeriesData, wheatstoneBridgeData, controlStepResponseData, rcDischargeData] = await Promise.all([
     import('./data/voltage-divider.json'),
     import('./data/rlc-series.json'),
     import('./data/wheatstone-bridge.json'),
     import('./data/control-step-response.json'),
+    import('./data/rc-discharge.json'),
   ])
   return [
     {
@@ -33,6 +34,13 @@ export async function loadExamples(): Promise<ExampleCircuit[]> {
       title: 'Wheatstone Bridge',
       description: 'A bridge circuit used to measure an unknown electrical resistance by balancing two legs of a bridge circuit.',
       data: wheatstoneBridgeData.default as unknown as CircuitProject,
+    },
+    {
+      // 电容初始电压 v0 的示例（零输入响应），与 contracts/lab/transient-rc-discharge.json 同一电路
+      id: 'rc-discharge',
+      title: 'RC 放电（零输入响应）',
+      description: '电容带 10 V 初始电压经 1 kΩ 放电，没有电源；瞬态分析看 τ = RC = 1 ms 的指数衰减。',
+      data: rcDischargeData.default as unknown as CircuitProject,
     },
     {
       id: 'control-step-response',

@@ -45,7 +45,7 @@ powershell -File scripts/stop-all.ps1
 
 配电网内核可选加速：`julia packages/grid-backend/scripts/build_sysimage.jl` 构建 sysimage（一次约 20 分钟，产物 ~680MB），
 此后 start-all 自动使用，启动从 ~30s 降到 ~7s（实测 4.2×）。JGDO 源码大改后建议重建。
-（电路内核**没有** sysimage：MTK 栈在本机的 PackageCompiler 上构建失败，且如上所述它也治不了真正的瓶颈。）
+（开发态的电路内核**没有** sysimage，如上所述它也治不了真正的瓶颈。知帆拓展 `simulearn-lab` 另用 `packages/lab-backend/scripts/build_ext.jl`（PackageCompiler `create_app`）打包，要单线程出镜像、给 Random123 换不含 AES-NI 的缓存，原因写在脚本注释和设计记录 2026-11-04 的修订记录里。）
 
 ## 仓库结构
 
@@ -83,7 +83,7 @@ julia --project=packages/lab-backend  -e "using Pkg; Pkg.test()"
 - `contracts/{grid,lab}/*.json` 是两个内核共享的**金标准契约夹具**，数值全部对拍解析解——改内核先看它红不红。
 - 工程数据 localStorage 键一律 `slp:<module>:*` 命名空间；两后端与网关都只绑 `127.0.0.1`，跨域由网关同源化解决，内核不发任何跨域头。
 - 两个内核只认带 `X-Zhifan-Ext-Token` 的请求，否则一律 401（与知帆拓展约定 `zhifan-ext/1` 一致）。`start-all` 每次启动生成随机令牌（环境变量 `SIMULEARN_TOKEN`），由 Caddy 在转发时注入；手工起内核、跑 `npm run dev:*` 时，没设置这个变量，内核和 Vite 代理两边都退回开发令牌 `simulearn-dev`。
-- lab-web 用 BrowserRouter，其 `basename` 取自 Vite `base`（构建时为 `/circuit/`），网关侧配套 `try_files` 回退——两者必须一起改，否则刷新深链 404。
+- 两个前端都用 hash 路由（`#/editor`、嵌入知帆时 `#/embed`），构建 `base` 为 `./`，接口地址相对页面（lab-web `../api/lab`、grid-web `../api/grid/`）。同一份构建产物既挂在网关的 `/circuit/`、`/grid/`，也挂在知帆拓展的 `/ext/<id>/ui/`，所以网关不做 SPA 回退，页面里不能写以 `/` 开头的地址。
 
 ## 项目源流
 

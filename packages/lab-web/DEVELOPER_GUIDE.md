@@ -4,9 +4,9 @@
 
 ## 项目概览
 
-- 前端：`web/`（React + TypeScript + Vite）
-- 后端：`server/`（Julia，HTTP 仿真服务）
-- 入口路由：`/editor`（`/` 重定向到 `/editor`）
+- 前端：`packages/lab-web/`（React + TypeScript + Vite）
+- 后端：`packages/lab-backend/`（Julia，HTTP 仿真服务；打包成知帆拓展时入口是 `src/Server.jl` 的 `julia_main`）
+- 入口路由（hash 路由）：`#/editor`（`#/` 重定向到 `#/editor`）；`#/embed` 是知帆课堂里的嵌入页
 
 ## 本地开发
 
@@ -17,26 +17,27 @@
 ### 启动服务
 1. 启动后端（仓库根目录）：
    ```powershell
-   julia --project=server server/start_server.jl
+   julia --project=packages/lab-backend packages/lab-backend/run_server.jl
    ```
-2. 启动前端（`web/` 目录）：
+2. 启动前端（仓库根目录）：
    ```powershell
    npm install
-   npm run dev
+   npm run dev:lab
    ```
-3. 访问地址：`http://localhost:3000/editor`
+3. 访问地址：`http://localhost:3000/#/editor`
 
 ## 目录结构（关键）
 
 ```
-server/
-web/
+packages/lab-backend/
+packages/lab-web/
   ├── src/
   │   ├── workspace/         # 编辑器工作区与顶栏
   │   ├── simulation/        # 仿真请求、结果面板、映射与载荷构建
   │   ├── canvas/            # 画布节点与自定义边
   │   ├── circuit/           # 元件库与图标（含开关）
-  │   ├── pages/Editor.tsx   # 单一路由页面（编辑器）
+  │   ├── pages/Editor.tsx   # 编辑器路由页（#/editor）
+  │   ├── embed/             # 知帆课堂嵌入页（#/embed）：协议、草稿、拓扑锁定
   │   ├── types/             # 类型定义
   │   └── utils/             # 工具函数
   ├── README.md              # 使用说明（中文）
@@ -49,7 +50,7 @@ web/
 
 ## 关键模块说明
 
-- `simulation/payload.ts`：构建后端仿真载荷（含旋转端口映射、开关转电阻等）
+- `simulation/payload.ts`：构建后端仿真载荷（开关转电阻等；旋转只是外观，端子 id 原样发给内核）
 - `workspace/CircuitWorkspace.tsx`：编辑器主逻辑、仿真 orchestrator、结果缓存与覆盖应用
 - `canvas/CircuitNode.tsx`：节点渲染与交互（开关点击切换）
 - `circuit/components.ts`：元件定义（端口、参数、标签）

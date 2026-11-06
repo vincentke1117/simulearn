@@ -1,0 +1,243 @@
+{
+  "id": "ch08-phasor-rlc",
+  "chapter": 8,
+  "chapterTitle": "相量法",
+  "section": "§8-4 电路定律的相量形式",
+  "source": "例 8-4",
+  "title": "电流源驱动 RLC 串联：用相量求 u_ad 和 u_bd",
+  "summary": "电流源 iS（有效值 5 A、初相 30°、ω = 10³ rad/s）流过串联的 R、L、C，各元件电压由相量形式的 VCR 写出，再按 KVL 相量相加。看 a、b 两点对 d 的电压：u_bd 是 L、C 电压相量之和，u_ad 再加上 R 的电压，L、C 的电压会比总电压大得多。",
+  "tryIt": [
+    "运行后读 c 点（C 两端电压 u_cd）：有效值 400 V（峰值约 565.7 V）、初相 −60°，比 a 点的总电压 250 V 还高。b、c 两点相量相减就是 L 的电压 600∠120° V（教材值），也比总电压高。",
+    "把 C 改成 8.3333e-6 F，使容抗 1/(ωC) 与感抗 ωL 都约 120 Ω：L、C 串联谐振相当于短路，b 点电压降到约 0，a 点只剩 R 上的电压，有效值 150 V、初相 30°，和 iS 同相；c 点却升到有效值约 600 V（页面峰值约 848.5 V）：U_L 仍是 600 V，U_C 从 400 V 升到 600 V，L、C 各自的电压一点没少。",
+    "把 R 改成 60 Ω：只有 R 上的电压翻倍，b 点不变（仍是 200∠120° V），a 点变成有效值约 360.6 V、初相约 63.69°。"
+  ],
+  "notes": [
+    "电流源幅值填峰值 5√2 ≈ 7.071 A（教材有效值 5 A），频率填 ω/2π = 10³/2π ≈ 159.15 Hz，初相 30°。结果里的电压、电流都是峰值，除以 √2 才是教材的有效值。",
+    "本软件的电流源在源内部从「+」端流向「−」端，也就是从「−」端流出到外电路。教材 iS 向上流入 a 点，所以 Is 竖放时让「−」端朝上接 a、「+」端朝下接 d。",
+    "d 点接地作参考点，a、b、c 三点各挂一个电压探针，读数就是 u_ad、u_bd、u_cd。"
+  ],
+  "preset": {
+    "method": "ac_phasor",
+    "showBranchCurrents": true
+  },
+  "checks": [
+    {
+      "label": "u_ad 有效值",
+      "path": "node_voltages.{VPa}",
+      "expect": 250,
+      "unit": "V",
+      "tol": 0.1,
+      "rms": true,
+      "fromBook": true
+    },
+    {
+      "label": "u_ad 初相",
+      "path": "node_phases_deg.{VPa}",
+      "expect": 83.13,
+      "unit": "°",
+      "tol": 0.01,
+      "fromBook": true
+    },
+    {
+      "label": "u_bd 有效值",
+      "path": "node_voltages.{VPb}",
+      "expect": 200,
+      "unit": "V",
+      "tol": 0.1,
+      "rms": true,
+      "fromBook": true
+    },
+    {
+      "label": "u_bd 初相",
+      "path": "node_phases_deg.{VPb}",
+      "expect": 120,
+      "unit": "°",
+      "tol": 0.01,
+      "fromBook": true
+    }
+  ],
+  "circuit": {
+    "nodes": [
+      {
+        "id": "Is",
+        "type": "isource_ac",
+        "position": {
+          "x": 0,
+          "y": 260
+        },
+        "data": {
+          "label": "iS",
+          "type": "isource_ac",
+          "parameters": {
+            "amplitude": 7.0710678118654755,
+            "frequency": 159.15494309189535,
+            "phase": 30
+          },
+          "rotation": 270
+        }
+      },
+      {
+        "id": "R",
+        "type": "resistor",
+        "position": {
+          "x": 300,
+          "y": 100
+        },
+        "data": {
+          "label": "R",
+          "type": "resistor",
+          "parameters": {
+            "value": 30
+          },
+          "rotation": 0
+        }
+      },
+      {
+        "id": "L",
+        "type": "inductor",
+        "position": {
+          "x": 600,
+          "y": 100
+        },
+        "data": {
+          "label": "L",
+          "type": "inductor",
+          "parameters": {
+            "value": 0.12
+          },
+          "rotation": 0
+        }
+      },
+      {
+        "id": "C",
+        "type": "capacitor",
+        "position": {
+          "x": 880,
+          "y": 260
+        },
+        "data": {
+          "label": "C",
+          "type": "capacitor",
+          "parameters": {
+            "value": 1.25e-05
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "VPa",
+        "type": "voltage_probe",
+        "position": {
+          "x": 160,
+          "y": -40
+        },
+        "data": {
+          "label": "a",
+          "type": "voltage_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "VPb",
+        "type": "voltage_probe",
+        "position": {
+          "x": 475,
+          "y": -40
+        },
+        "data": {
+          "label": "b",
+          "type": "voltage_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "VPc",
+        "type": "voltage_probe",
+        "position": {
+          "x": 775,
+          "y": -40
+        },
+        "data": {
+          "label": "c",
+          "type": "voltage_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "position": {
+          "x": 440,
+          "y": 540
+        },
+        "data": {
+          "label": "d",
+          "type": "ground",
+          "parameters": {},
+          "rotation": 0
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "Is",
+        "target": "R",
+        "sourceHandle": "neg",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e2",
+        "source": "VPa",
+        "target": "R",
+        "sourceHandle": "node",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e3",
+        "source": "R",
+        "target": "L",
+        "sourceHandle": "n",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e4",
+        "source": "VPb",
+        "target": "L",
+        "sourceHandle": "node",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e5",
+        "source": "L",
+        "target": "C",
+        "sourceHandle": "n",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e6",
+        "source": "VPc",
+        "target": "C",
+        "sourceHandle": "node",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e7",
+        "source": "C",
+        "target": "Is",
+        "sourceHandle": "n",
+        "targetHandle": "pos"
+      },
+      {
+        "id": "e8",
+        "source": "G1",
+        "target": "Is",
+        "sourceHandle": "gnd",
+        "targetHandle": "pos"
+      }
+    ]
+  }
+}

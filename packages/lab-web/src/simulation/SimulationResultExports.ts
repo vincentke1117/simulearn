@@ -75,7 +75,7 @@ export function serializeSimulationResultCSV(kind: ResultKind): string {
   } else if (kind.kind === 'dc_solve' || kind.kind === 'dc_op') {
     const data = kind.data
     if (data.node_voltages) {
-      rows.push(['节点电压'])
+      rows.push(['结点电压'])
       rows.push(['节点', '电压(V)'])
       Object.entries(data.node_voltages).forEach(([node, voltage]) => {
         rows.push([node, voltage])
@@ -91,10 +91,11 @@ export function serializeSimulationResultCSV(kind: ResultKind): string {
     }
   } else if (kind.kind === 'thevenin') {
     const data = kind.data
-    rows.push(['戴维南等效'])
+    rows.push(['戴维宁等效'])
     rows.push(['参数', '值'])
     rows.push(['Vth(V)', data.vth])
     rows.push(['Rth(Ω)', data.rth])
+    if (data.isc !== undefined) rows.push(['Isc(A)', data.isc])
   } else if (kind.kind === 'transient') {
     const data = kind.data
     rows.push(['时间', ...data.signals.map((signal) => signal.label)])

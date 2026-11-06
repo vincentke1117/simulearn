@@ -16,6 +16,8 @@ export interface CircuitComponentParameter {
   defaultValue?: number
   min?: number
   description?: string
+  // 可选参数（电容初始电压、电感初始电流、交流源初相）：旧工程、旧草稿里没有这个键时不报错、不发给内核，内核按 0 处理
+  optional?: boolean
 }
 
 export interface CircuitComponentDefinition<TType extends string = string> {

@@ -1,0 +1,292 @@
+{
+  "id": "ch02-bridge-resistance",
+  "chapter": 2,
+  "chapterTitle": "电阻电路的等效变换",
+  "section": "§2-4 电阻的 Y 形联结和 Δ 形联结的等效变换",
+  "source": "例 2-2",
+  "title": "桥形电路的总电阻：外加 1 V 读电流",
+  "summary": "五个电阻接成一个不平衡的电桥，再串一个 5 Ω 接到端子 ②，既不是单纯的串联也不是并联，教材用 Y-Δ 等效变换把它化简，算出端子 ①、② 之间的总电阻 R12。这里在端口加一个 1 V 测试电压源、读端口电流 I，R12 = 1 V ÷ I。",
+  "tryIt": [
+    "把 R14 从 21 Ω 改成 42 Ω：此时 R13∶R35 = R14∶R45 = 7，电桥平衡，对角线 R34 的电流变成 0；R12 = 5 + 16∥48 = 17 Ω，I ≈ 58.82 mA。",
+    "把 uS 改成 2 V：I 也翻倍成 0.1333 A（133.3 mA），uS ÷ I 还是 15 Ω。输入电阻只由电路本身决定，与外加电压无关。",
+    "把 R25 从 5 Ω 改成 10 Ω：I 变成 50 mA，即 R12 = 20 Ω。串在端口上的电阻直接加进总电阻。"
+  ],
+  "notes": [
+    "在 ①、② 之间外加 1 V 直流电压源 uS（+ 接 ①），再串一个电流探针 I 读端口电流，R12 = 1 V ÷ I，这是求输入电阻的加压求流法。戴维宁分析对无源一端口也能直接算出等效电阻（内核内部同样是外加电源）。但本案例的 ①、② 之间已经接着测试电源 uS，这时再对 ①、② 做戴维宁分析，uS 会被置零成短路，读到的是 0 Ω。不接测试电源、直接读 R12 的做法见「Y-Δ 变换」演示，它每一步都这样读。",
+    "教材图中的电阻没有编号，这里按两端的结点命名：R13 是 ①、③ 之间的 14 Ω，R34 是 ③、④ 之间的 14 Ω，R25 是 ②、⑤ 之间的 5 Ω，其余同理。",
+    "直接读电压源 uS 的支路电流也可以，但内核按「从 + 端穿过电源到 − 端」记正，读数是 −I。",
+    "接地点在端子 ②（测试电源负极）。"
+  ],
+  "preset": {
+    "method": "node_voltage",
+    "showBranchCurrents": true
+  },
+  "checks": [
+    {
+      "label": "外加 1 V 时的端口电流 I（R12 = 1 V ÷ I = 15 Ω）",
+      "path": "branch_currents.I",
+      "expect": 0.066667,
+      "unit": "A",
+      "tol": 1e-06,
+      "fromBook": false
+    }
+  ],
+  "circuit": {
+    "nodes": [
+      {
+        "id": "Us",
+        "type": "vsource_dc",
+        "position": {
+          "x": 0,
+          "y": 380
+        },
+        "data": {
+          "label": "uS（测试电源）",
+          "type": "vsource_dc",
+          "parameters": {
+            "dc": 1
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "I",
+        "type": "current_probe",
+        "position": {
+          "x": 250,
+          "y": 40
+        },
+        "data": {
+          "label": "I",
+          "type": "current_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "VP1",
+        "type": "voltage_probe",
+        "position": {
+          "x": 600,
+          "y": 40
+        },
+        "data": {
+          "label": "①",
+          "type": "voltage_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "R13",
+        "type": "resistor",
+        "position": {
+          "x": 350,
+          "y": 200
+        },
+        "data": {
+          "label": "R13",
+          "type": "resistor",
+          "parameters": {
+            "value": 14
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "R14",
+        "type": "resistor",
+        "position": {
+          "x": 850,
+          "y": 200
+        },
+        "data": {
+          "label": "R14",
+          "type": "resistor",
+          "parameters": {
+            "value": 21
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "R34",
+        "type": "resistor",
+        "position": {
+          "x": 600,
+          "y": 380
+        },
+        "data": {
+          "label": "R34",
+          "type": "resistor",
+          "parameters": {
+            "value": 14
+          },
+          "rotation": 0
+        }
+      },
+      {
+        "id": "R35",
+        "type": "resistor",
+        "position": {
+          "x": 350,
+          "y": 560
+        },
+        "data": {
+          "label": "R35",
+          "type": "resistor",
+          "parameters": {
+            "value": 2
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "R45",
+        "type": "resistor",
+        "position": {
+          "x": 850,
+          "y": 560
+        },
+        "data": {
+          "label": "R45",
+          "type": "resistor",
+          "parameters": {
+            "value": 6
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "R25",
+        "type": "resistor",
+        "position": {
+          "x": 600,
+          "y": 740
+        },
+        "data": {
+          "label": "R25",
+          "type": "resistor",
+          "parameters": {
+            "value": 5
+          },
+          "rotation": 0
+        }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "position": {
+          "x": 0,
+          "y": 600
+        },
+        "data": {
+          "label": "GND（②）",
+          "type": "ground",
+          "parameters": {},
+          "rotation": 0
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "Us",
+        "target": "I",
+        "sourceHandle": "pos",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e2",
+        "source": "I",
+        "target": "R13",
+        "sourceHandle": "n",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e3",
+        "source": "R13",
+        "target": "R14",
+        "sourceHandle": "p",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e4",
+        "source": "VP1",
+        "target": "R14",
+        "sourceHandle": "node",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e5",
+        "source": "R13",
+        "target": "R34",
+        "sourceHandle": "n",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e6",
+        "source": "R13",
+        "target": "R35",
+        "sourceHandle": "n",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e7",
+        "source": "R34",
+        "target": "R14",
+        "sourceHandle": "n",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e8",
+        "source": "R14",
+        "target": "R45",
+        "sourceHandle": "n",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e9",
+        "source": "R35",
+        "target": "R45",
+        "sourceHandle": "n",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e10",
+        "source": "R25",
+        "target": "R45",
+        "sourceHandle": "n",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e11",
+        "source": "Us",
+        "target": "R25",
+        "sourceHandle": "neg",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e12",
+        "source": "G1",
+        "target": "Us",
+        "sourceHandle": "gnd",
+        "targetHandle": "neg"
+      }
+    ]
+  },
+  "demos": [
+    {
+      "id": "y-delta",
+      "kind": "steps",
+      "title": "Y-Δ 变换：把桥形电路化成串并联",
+      "summary": "原电路 → 圈出 Δ①③④ → 逐个算 Y 电阻 → Δ 换 Y → 串联 → 并联 → 串联，每一步都读 R12"
+    },
+    {
+      "id": "delta-y",
+      "kind": "steps",
+      "title": "另一种方法：Y 换 Δ",
+      "summary": "以 ③ 为中心的 Y 换成 Δ（图 2-10），再并联、串联，R12 同样是 15 Ω"
+    }
+  ]
+}

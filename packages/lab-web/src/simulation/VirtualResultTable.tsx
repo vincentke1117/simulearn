@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { formatReading } from './format'
+
 interface VirtualResultTableProps {
   entries: [string, number][]
   columns: [string, string]
+  /** 带词头显示（1.43435 µA）：固定小数位会把微安级的电流截成 0.000001 */
+  unit: string
 }
 
-export function VirtualResultTable({ entries, columns }: VirtualResultTableProps) {
+export function VirtualResultTable({ entries, columns, unit }: VirtualResultTableProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const rowHeight = 28
   const containerHeight = 300
@@ -40,7 +44,7 @@ export function VirtualResultTable({ entries, columns }: VirtualResultTableProps
               <tr key={`${key}-${start}`} className="hover:bg-slate-800/50 transition-colors" style={{ height: rowHeight }}>
                 <td className="px-4 py-2 text-slate-400">{key}</td>
                 <td className="px-4 py-2 text-right font-mono text-slate-300">
-                  {typeof value === 'number' ? value.toFixed(6) : value}
+                  {typeof value === 'number' ? formatReading(value, unit, 6) : value}
                 </td>
               </tr>
             ))}

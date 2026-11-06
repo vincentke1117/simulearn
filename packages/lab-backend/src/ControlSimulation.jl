@@ -117,8 +117,7 @@ function compile_control_payload(payload::ControlSimulationPayload)
         throw(ValidationError("控制仿真 payload.kind 必须为 control", Dict("kind" => payload.kind)))
     payload.sim.t_stop > 0 ||
         throw(ValidationError("仿真时长必须大于 0", Dict()))
-    payload.sim.n_samples > 1 ||
-        throw(ValidationError("采样点数至少为 2", Dict()))
+    check_samples(payload.sim.n_samples)
     !isempty(payload.blocks) ||
         throw(ValidationError("控制系统图为空", Dict()))
     !isempty(payload.outputs) ||
@@ -554,7 +553,7 @@ function run_simulation(payload::ControlSimulationPayload)
             return Dict("status" => "error", "code" => get(err.data, "code", "LAB_VALIDATION"), "message" => err.message, "data" => err.data)
         else
             @error "control simulation failed" exception = (err, catch_backtrace())
-            return Dict("status" => "error", "code" => "LAB_INTERNAL", "message" => "internal error", "data" => Dict("error" => string(err)))
+            return Dict("status" => "error", "code" => "LAB_INTERNAL", "message" => INTERNAL_ERROR_MESSAGE, "data" => Dict())
         end
     end
 end

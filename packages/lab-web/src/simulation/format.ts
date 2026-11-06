@@ -51,11 +51,31 @@ export function formatEngineering(value: number, unit = '', digits = 4): string 
   return `${toSignificant(scaled, digits)} ${entry.prefix}${unit}`
 }
 
+// 求解器的舍入残差（平衡电桥里检流计电流算出 1e-19 A、戴维宁电压算出 8.9e-16 V 这种数）当 0 显示，
+// 免得学生以为有电流、有电压；也免得落到 p 词头以下显示成「0.000888 pV」
+const ROUNDOFF = 1e-12
+
+/** 读数：工程记数法 + 舍入残差归零。结果表、画布标注、戴维宁卡片都用它 */
+export function formatReading(value: number, unit: string, digits = 4): string {
+  return formatEngineering(Number.isFinite(value) && Math.abs(value) < ROUNDOFF ? 0 : value, unit, digits)
+}
+
+/** 元件参数（画布上元件标题里的值）：带词头、最多 5 位有效数字、不补 0——1e-6 F 写成 1 µF 而不是 0.000001F */
+export function formatParameterValue(value: number, unit = ''): string {
+  if (!Number.isFinite(value)) return '—'
+  if (value === 0 || !unit) return `${Number(value.toPrecision(5))}${unit}`
+  const abs = Math.abs(value)
+  const entry = abs >= BASE_LOW && abs < BASE_HIGH
+    ? { factor: 1, prefix: '' }
+    : SI_PREFIXES.find((candidate) => abs >= candidate.factor) ?? SI_PREFIXES[SI_PREFIXES.length - 1]
+  return `${Number((value / entry.factor).toPrecision(5))} ${entry.prefix}${unit}`
+}
+
 /** 相角：固定两位小数，带度符号 */
 export function formatPhaseDeg(phaseDeg: number): string {
   if (!Number.isFinite(phaseDeg)) return '—'
-  // -0 会打印成 "-0.00"，规范化掉
-  const normalized = Object.is(phaseDeg, -0) ? 0 : phaseDeg
+  // 小于显示精度的残差（谐振时算出 −3e-4°）和 -0 都会打印成 "-0.00"，规范化成 0
+  const normalized = Math.abs(phaseDeg) < 0.005 ? 0 : phaseDeg
   return `${normalized.toFixed(2)}°`
 }
 

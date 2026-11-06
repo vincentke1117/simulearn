@@ -1,0 +1,1245 @@
+{
+  "caseId": "ch02-bridge-resistance",
+  "id": "y-delta",
+  "kind": "steps",
+  "title": "Y-Δ 变换：把桥形电路化成串并联",
+  "steps": [
+    {
+      "title": "原电路（图 2-9a）",
+      "text": "求 ①、② 之间的总电阻 R12。五个电阻里找不出任何一对是单纯的串联或并联：③、④ 之间的 14 Ω 像一座桥，把两边连在了一起。内核直接算出 R12 = {r12}（外加 1 V 时端口电流 {i1v}）。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 0,
+              "y": -80
+            },
+            "data": {
+              "label": "①",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R13",
+            "type": "resistor",
+            "position": {
+              "x": 300,
+              "y": 0
+            },
+            "data": {
+              "label": "R13",
+              "type": "resistor",
+              "parameters": {
+                "value": 14
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R14",
+            "type": "resistor",
+            "position": {
+              "x": 900,
+              "y": 0
+            },
+            "data": {
+              "label": "R14",
+              "type": "resistor",
+              "parameters": {
+                "value": 21
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VP3",
+            "type": "voltage_probe",
+            "position": {
+              "x": 0,
+              "y": 170
+            },
+            "data": {
+              "label": "③",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R34",
+            "type": "resistor",
+            "position": {
+              "x": 600,
+              "y": 170
+            },
+            "data": {
+              "label": "R34",
+              "type": "resistor",
+              "parameters": {
+                "value": 14
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP4",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 170
+            },
+            "data": {
+              "label": "④",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 270
+            }
+          },
+          {
+            "id": "R35",
+            "type": "resistor",
+            "position": {
+              "x": 300,
+              "y": 340
+            },
+            "data": {
+              "label": "R35",
+              "type": "resistor",
+              "parameters": {
+                "value": 2
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R45",
+            "type": "resistor",
+            "position": {
+              "x": 900,
+              "y": 340
+            },
+            "data": {
+              "label": "R45",
+              "type": "resistor",
+              "parameters": {
+                "value": 6
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 300,
+              "y": 510
+            },
+            "data": {
+              "label": "②",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R25",
+            "type": "resistor",
+            "position": {
+              "x": 600,
+              "y": 510
+            },
+            "data": {
+              "label": "R25",
+              "type": "resistor",
+              "parameters": {
+                "value": 5
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP5",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 510
+            },
+            "data": {
+              "label": "⑤",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 270
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "VP1",
+            "target": "R13",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "VP1",
+            "target": "R14",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e3",
+            "source": "R13",
+            "target": "R35",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e4",
+            "source": "VP3",
+            "target": "R35",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e5",
+            "source": "R13",
+            "target": "R34",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e6",
+            "source": "R14",
+            "target": "R45",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e7",
+            "source": "VP4",
+            "target": "R45",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e8",
+            "source": "R34",
+            "target": "R14",
+            "sourceHandle": "n",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e9",
+            "source": "R35",
+            "target": "R45",
+            "sourceHandle": "n",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e10",
+            "source": "R25",
+            "target": "R45",
+            "sourceHandle": "n",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e11",
+            "source": "VP5",
+            "target": "R45",
+            "sourceHandle": "node",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e12",
+            "source": "VP2",
+            "target": "R25",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          }
+        ]
+      },
+      "compute": {
+        "method": "thevenin",
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "r12",
+          "label": "R12（从 ①、② 看进去）",
+          "path": "rth",
+          "unit": "Ω",
+          "expect": 15,
+          "tol": 1e-06,
+          "fromBook": true
+        },
+        {
+          "key": "i1v",
+          "label": "外加 1 V 时的端口电流（1 V ÷ R12）",
+          "path": "rth",
+          "transform": "reciprocal",
+          "unit": "A",
+          "expect": 0.06666666666666667,
+          "tol": 1e-06,
+          "fromBook": false
+        }
+      ],
+      "notes": [
+        {
+          "id": "bridge",
+          "anchor": "R34",
+          "dx": -30,
+          "dy": -132,
+          "text": "能直接拿掉这座桥吗？不能：\n14/2 ≠ 21/6，电桥不平衡，\n桥上有电流",
+          "tone": "warn"
+        }
+      ]
+    },
+    {
+      "title": "找 Δ（先圈出）",
+      "text": "①、③、④ 三个结点两两之间各接一个电阻：R13、R14、R34 组成 Δ 形。把它换成 Y 形以后，③、④ 上都只剩两个电阻，就能按串联合并了。",
+      "compute": {
+        "method": "thevenin",
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "r12",
+          "label": "R12（从 ①、② 看进去）",
+          "path": "rth",
+          "unit": "Ω",
+          "expect": 15,
+          "tol": 1e-06,
+          "fromBook": true
+        }
+      ],
+      "highlight": [
+        "R13",
+        "R14",
+        "R34"
+      ],
+      "notes": [
+        {
+          "id": "delta",
+          "anchor": "R34",
+          "dx": 20,
+          "dy": -80,
+          "text": "Δ：①③④",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "算 Y 电阻：接 ① 的那个",
+      "text": "Y 形电阻 = 与该结点相连的两个 Δ 电阻之积 ÷ 三个 Δ 电阻之和，三个式子的分母都是 14 + 14 + 21 = 49 Ω。接 ① 的是 R13 和 R14：14 × 21 / 49 = 6 Ω。",
+      "compute": {
+        "method": "thevenin",
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "r12",
+          "label": "R12（从 ①、② 看进去）",
+          "path": "rth",
+          "unit": "Ω",
+          "expect": 15,
+          "tol": 1e-06,
+          "fromBook": true
+        }
+      ],
+      "highlight": [
+        "R13",
+        "R14"
+      ],
+      "notes": [
+        {
+          "id": "y1",
+          "anchor": "R34",
+          "dx": -30,
+          "dy": -160,
+          "text": "接①：14 × 21 / 49 = 6 Ω",
+          "tone": "accent"
+        },
+        {
+          "id": "r2",
+          "anchor": "R34",
+          "dx": -30,
+          "dy": -95,
+          "text": "教材把它记作 R2，\n但它接在结点 ① 上，不是 ②",
+          "tone": "warn"
+        }
+      ]
+    },
+    {
+      "title": "算 Y 电阻：接 ③ 的那个",
+      "text": "接 ③ 的是 R13 和 R34：14 × 14 / 49 = 4 Ω（教材记作 R3）。分母还是 49 Ω。",
+      "compute": {
+        "method": "thevenin",
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "r12",
+          "label": "R12（从 ①、② 看进去）",
+          "path": "rth",
+          "unit": "Ω",
+          "expect": 15,
+          "tol": 1e-06,
+          "fromBook": true
+        }
+      ],
+      "highlight": [
+        "R13",
+        "R34"
+      ],
+      "notes": [
+        {
+          "id": "y3",
+          "anchor": "R34",
+          "dx": -120,
+          "dy": -90,
+          "text": "接③：14 × 14 / 49 = 4 Ω",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "算 Y 电阻：接 ④ 的那个",
+      "text": "接 ④ 的是 R14 和 R34：21 × 14 / 49 = 6 Ω（教材记作 R4）。三个 Y 电阻分母相同，分子是各自相邻的两个 Δ 电阻之积。",
+      "compute": {
+        "method": "thevenin",
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "r12",
+          "label": "R12（从 ①、② 看进去）",
+          "path": "rth",
+          "unit": "Ω",
+          "expect": 15,
+          "tol": 1e-06,
+          "fromBook": true
+        }
+      ],
+      "highlight": [
+        "R14",
+        "R34"
+      ],
+      "notes": [
+        {
+          "id": "y4",
+          "anchor": "R34",
+          "dx": 60,
+          "dy": -90,
+          "text": "接④：21 × 14 / 49 = 6 Ω",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "Δ 换成 Y（图 2-9b）",
+      "text": "R13、R14、R34 换成接到同一个新结点 o 上的三个电阻，①、③、④ 都还在原来的位置。多出来的 o 是内部结点，变换只保证对外等效：R12 仍是 {r12}。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 0,
+              "y": -80
+            },
+            "data": {
+              "label": "①",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 90
+            }
+          },
+          {
+            "id": "Y1",
+            "type": "resistor",
+            "position": {
+              "x": 600,
+              "y": 0
+            },
+            "data": {
+              "label": "R2（接①）",
+              "type": "resistor",
+              "parameters": {
+                "value": 6
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VP3",
+            "type": "voltage_probe",
+            "position": {
+              "x": 0,
+              "y": 170
+            },
+            "data": {
+              "label": "③",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 90
+            }
+          },
+          {
+            "id": "Y3",
+            "type": "resistor",
+            "position": {
+              "x": 450,
+              "y": 170
+            },
+            "data": {
+              "label": "R3（接③）",
+              "type": "resistor",
+              "parameters": {
+                "value": 4
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "Y4",
+            "type": "resistor",
+            "position": {
+              "x": 750,
+              "y": 170
+            },
+            "data": {
+              "label": "R4（接④）",
+              "type": "resistor",
+              "parameters": {
+                "value": 6
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP4",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 170
+            },
+            "data": {
+              "label": "④",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 270
+            }
+          },
+          {
+            "id": "R35",
+            "type": "resistor",
+            "position": {
+              "x": 300,
+              "y": 340
+            },
+            "data": {
+              "label": "R35",
+              "type": "resistor",
+              "parameters": {
+                "value": 2
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R45",
+            "type": "resistor",
+            "position": {
+              "x": 900,
+              "y": 340
+            },
+            "data": {
+              "label": "R45",
+              "type": "resistor",
+              "parameters": {
+                "value": 6
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 300,
+              "y": 510
+            },
+            "data": {
+              "label": "②",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R25",
+            "type": "resistor",
+            "position": {
+              "x": 600,
+              "y": 510
+            },
+            "data": {
+              "label": "R25",
+              "type": "resistor",
+              "parameters": {
+                "value": 5
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP5",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 510
+            },
+            "data": {
+              "label": "⑤",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 270
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "VP1",
+            "target": "Y1",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "Y1",
+            "target": "Y3",
+            "sourceHandle": "n",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e3",
+            "source": "Y1",
+            "target": "Y4",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e4",
+            "source": "Y3",
+            "target": "R35",
+            "sourceHandle": "p",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e5",
+            "source": "VP3",
+            "target": "R35",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e6",
+            "source": "Y4",
+            "target": "R45",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e7",
+            "source": "VP4",
+            "target": "R45",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e8",
+            "source": "R35",
+            "target": "R45",
+            "sourceHandle": "n",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e9",
+            "source": "R25",
+            "target": "R45",
+            "sourceHandle": "n",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e10",
+            "source": "VP5",
+            "target": "R45",
+            "sourceHandle": "node",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e11",
+            "source": "VP2",
+            "target": "R25",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          }
+        ]
+      },
+      "compute": {
+        "method": "thevenin",
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "r12",
+          "label": "R12（从 ①、② 看进去）",
+          "path": "rth",
+          "unit": "Ω",
+          "expect": 15,
+          "tol": 1e-06,
+          "fromBook": true
+        }
+      ],
+      "highlight": [
+        "Y1",
+        "Y3",
+        "Y4"
+      ],
+      "notes": [
+        {
+          "id": "o",
+          "anchor": "Y1",
+          "dx": 70,
+          "dy": 285,
+          "text": "↑ 新增的内部结点 o",
+          "tone": "info"
+        }
+      ]
+    },
+    {
+      "title": "结点 ③、④ 上只剩两个电阻：串联（先圈出）",
+      "text": "结点 ③ 上只剩 R3（4 Ω）和 R35（2 Ω），结点 ④ 上只剩 R4（6 Ω）和 R45（6 Ω），中间没有别的支路分流，各自是串联。",
+      "compute": {
+        "method": "thevenin",
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "r12",
+          "label": "R12（从 ①、② 看进去）",
+          "path": "rth",
+          "unit": "Ω",
+          "expect": 15,
+          "tol": 1e-06,
+          "fromBook": true
+        }
+      ],
+      "highlight": [
+        "Y3",
+        "R35",
+        "Y4",
+        "R45"
+      ],
+      "notes": [
+        {
+          "id": "s3",
+          "anchor": "VP3",
+          "dx": 0,
+          "dy": -95,
+          "text": "③：4 Ω 与 2 Ω 串联\n（探针只标结点号，不分电流）",
+          "tone": "accent"
+        },
+        {
+          "id": "s4",
+          "anchor": "VP4",
+          "dx": -60,
+          "dy": -80,
+          "text": "④：6 Ω 与 6 Ω 串联",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "串联合并（图 2-9c）",
+      "text": "4 + 2 = 6 Ω，6 + 6 = 12 Ω，结点 ③、④ 随之消失。合并出的 6 Ω 和 12 Ω 两端都接在 o 和 ⑤ 上：它们是并联。R12 = {r12}。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 0,
+              "y": -80
+            },
+            "data": {
+              "label": "①",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 90
+            }
+          },
+          {
+            "id": "Y1",
+            "type": "resistor",
+            "position": {
+              "x": 600,
+              "y": 0
+            },
+            "data": {
+              "label": "R2（接①）",
+              "type": "resistor",
+              "parameters": {
+                "value": 6
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "S3",
+            "type": "resistor",
+            "position": {
+              "x": 450,
+              "y": 340
+            },
+            "data": {
+              "label": "R3 + R35",
+              "type": "resistor",
+              "parameters": {
+                "value": 6
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "S4",
+            "type": "resistor",
+            "position": {
+              "x": 750,
+              "y": 340
+            },
+            "data": {
+              "label": "R4 + R45",
+              "type": "resistor",
+              "parameters": {
+                "value": 12
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 300,
+              "y": 510
+            },
+            "data": {
+              "label": "②",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R25",
+            "type": "resistor",
+            "position": {
+              "x": 600,
+              "y": 510
+            },
+            "data": {
+              "label": "R25",
+              "type": "resistor",
+              "parameters": {
+                "value": 5
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP5",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 510
+            },
+            "data": {
+              "label": "⑤",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 270
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "VP1",
+            "target": "Y1",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "Y1",
+            "target": "S3",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e3",
+            "source": "Y1",
+            "target": "S4",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e4",
+            "source": "S3",
+            "target": "S4",
+            "sourceHandle": "n",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e5",
+            "source": "R25",
+            "target": "S4",
+            "sourceHandle": "n",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e6",
+            "source": "VP5",
+            "target": "S4",
+            "sourceHandle": "node",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e7",
+            "source": "VP2",
+            "target": "R25",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          }
+        ]
+      },
+      "compute": {
+        "method": "thevenin",
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "r12",
+          "label": "R12（从 ①、② 看进去）",
+          "path": "rth",
+          "unit": "Ω",
+          "expect": 15,
+          "tol": 1e-06,
+          "fromBook": true
+        }
+      ],
+      "highlight": [
+        "S3",
+        "S4"
+      ],
+      "notes": [
+        {
+          "id": "par",
+          "anchor": "S3",
+          "dx": 110,
+          "dy": -60,
+          "text": "两端都是 o 和 ⑤ → 并联",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "并联合并（图 2-9d）",
+      "text": "6 × 12 / (6 + 12) = 4 Ω。现在从 ① 到 ② 只有一条路：6 Ω、4 Ω、5 Ω 串联。R12 = {r12}。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 0,
+              "y": -80
+            },
+            "data": {
+              "label": "①",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 90
+            }
+          },
+          {
+            "id": "Y1",
+            "type": "resistor",
+            "position": {
+              "x": 600,
+              "y": 0
+            },
+            "data": {
+              "label": "R2（接①）",
+              "type": "resistor",
+              "parameters": {
+                "value": 6
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "P34",
+            "type": "resistor",
+            "position": {
+              "x": 750,
+              "y": 340
+            },
+            "data": {
+              "label": "6∥12",
+              "type": "resistor",
+              "parameters": {
+                "value": 4
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 300,
+              "y": 510
+            },
+            "data": {
+              "label": "②",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R25",
+            "type": "resistor",
+            "position": {
+              "x": 600,
+              "y": 510
+            },
+            "data": {
+              "label": "R25",
+              "type": "resistor",
+              "parameters": {
+                "value": 5
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP5",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 510
+            },
+            "data": {
+              "label": "⑤",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 270
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "VP1",
+            "target": "Y1",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "Y1",
+            "target": "P34",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e3",
+            "source": "R25",
+            "target": "P34",
+            "sourceHandle": "n",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e4",
+            "source": "VP5",
+            "target": "P34",
+            "sourceHandle": "node",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e5",
+            "source": "VP2",
+            "target": "R25",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          }
+        ]
+      },
+      "compute": {
+        "method": "thevenin",
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "r12",
+          "label": "R12（从 ①、② 看进去）",
+          "path": "rth",
+          "unit": "Ω",
+          "expect": 15,
+          "tol": 1e-06,
+          "fromBook": true
+        }
+      ],
+      "highlight": [
+        "Y1",
+        "P34",
+        "R25"
+      ],
+      "notes": [
+        {
+          "id": "ser",
+          "anchor": "P34",
+          "dx": -330,
+          "dy": 0,
+          "text": "一条路走到底 → 串联",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "串联合并（图 2-9e）",
+      "text": "6 + 4 + 5 = 15 Ω：R12 = {r12}，和第一步直接算的一样，每换一步，从 ①、② 看进去都没变。换别的 Δ（比如 ③④⑤），或者把 Y 换成 Δ，结果也是 15 Ω。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 0,
+              "y": -80
+            },
+            "data": {
+              "label": "①",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 90
+            }
+          },
+          {
+            "id": "Req",
+            "type": "resistor",
+            "position": {
+              "x": 600,
+              "y": 170
+            },
+            "data": {
+              "label": "R12",
+              "type": "resistor",
+              "parameters": {
+                "value": 15
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 300,
+              "y": 510
+            },
+            "data": {
+              "label": "②",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 90
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "VP1",
+            "target": "Req",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "VP2",
+            "target": "Req",
+            "sourceHandle": "node",
+            "targetHandle": "n"
+          }
+        ]
+      },
+      "compute": {
+        "method": "thevenin",
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "r12",
+          "label": "R12（从 ①、② 看进去）",
+          "path": "rth",
+          "unit": "Ω",
+          "expect": 15,
+          "tol": 1e-06,
+          "fromBook": true
+        }
+      ],
+      "highlight": [
+        "Req"
+      ]
+    }
+  ]
+}

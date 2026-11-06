@@ -8,6 +8,8 @@ const PROBE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#a855f7', '#0
 export interface BodePlotProps {
   result: FrequencySweepResult
   height?: number
+  /** 探针 id → 画布标签：图例写学生在画布上看到的名字 */
+  labels?: Record<string, string>
 }
 
 /**
@@ -19,7 +21,7 @@ export interface BodePlotProps {
  * 源幅值 ≠ 1 时二者相差 20·log₁₀(源幅值) dB（RC 低通、5 V 源在 fc 处读到 +10.97 dB 而不是 −3.01 dB）。
  * 因此这里一律按「探针幅值」标注，不写 |H|、不写 ∠H。
  */
-export function BodePlot({ result, height = 460 }: BodePlotProps) {
+export function BodePlot({ result, height = 460, labels }: BodePlotProps) {
   const probeIds = Object.keys(result.probes)
   const freq = result.freq_hz
 
@@ -32,25 +34,25 @@ export function BodePlot({ result, height = 460 }: BodePlotProps) {
       y: curve.mag_db,
       type: 'scatter',
       mode: 'lines',
-      name: probeId,
+      name: labels?.[probeId] ?? probeId,
       legendgroup: probeId,
       line: { color, width: 2 },
       xaxis: 'x',
       yaxis: 'y',
-      hovertemplate: `${probeId}<br>f = %{x:.4g} Hz<br>幅值 = %{y:.3f} dB（绝对值，峰值）<extra></extra>`,
+      hovertemplate: `${labels?.[probeId] ?? probeId}<br>f = %{x:.4g} Hz<br>幅值 = %{y:.3f} dB（绝对值，峰值）<extra></extra>`,
     })
     traces.push({
       x: freq,
       y: curve.phase_deg,
       type: 'scatter',
       mode: 'lines',
-      name: probeId,
+      name: labels?.[probeId] ?? probeId,
       legendgroup: probeId,
       showlegend: false,
       line: { color, width: 2 },
       xaxis: 'x2',
       yaxis: 'y2',
-      hovertemplate: `${probeId}<br>f = %{x:.4g} Hz<br>相角 = %{y:.2f}°<extra></extra>`,
+      hovertemplate: `${labels?.[probeId] ?? probeId}<br>f = %{x:.4g} Hz<br>相角 = %{y:.2f}°<extra></extra>`,
     })
   })
 

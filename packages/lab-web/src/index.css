@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* 不从外网拉字体：知帆拓展页面不许主动联网（约定 §3），宿主也会拦掉外网请求；本机装了 Inter 就用，没装回落到系统字体 */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

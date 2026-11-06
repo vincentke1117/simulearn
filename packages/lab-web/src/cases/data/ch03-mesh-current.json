@@ -1,0 +1,266 @@
+{
+  "id": "ch03-mesh-current",
+  "chapter": 3,
+  "chapterTitle": "电阻电路的一般分析",
+  "section": "§3-4 网孔电流法",
+  "source": "例 3-1",
+  "title": "三网孔电路：用网孔电流求四条支路电流",
+  "summary": "四条支路并在上下两条母线之间，三个电压源各带一个串联电阻，整个电路正好划成三个网孔。网孔法先解出三个网孔电流，再由它们叠出每条支路的电流。运行后读 Ra～Rd 的电流，就是教材要求的 Ia、Ib、Ic、Id。",
+  "tryIt": [
+    "把 70 V 电压源 Us2 改成 52.5 V，重新运行：Rb 支路电流 Ib 变成 0，说明网孔 1、2 的网孔电流相等，都等于 Ia = 2.125 A（默认参数下是 I1 = 2 A、I2 = 2.5 A，教材值）。",
+    "把 Ra 从 60 Ω 改成 30 Ω：Ia 增大到 3.5 A，Ib 变成 −0.25 A，方向反了过来——70 V 电压源这时在吸收功率。"
+  ],
+  "notes": [
+    "教材图里的元件没有编号：这里把四条支路的电阻按支路电流 Ia～Id 记作 Ra～Rd，三个电压源从左到右记作 Us1（180 V）、Us2（70 V）、Us3（20 V）。",
+    "内核不单独输出网孔电流，只给各元件的支路电流。网孔电流这样换算：I1 = Ia，I3 = −Id，I2 = I1 + Ib = I3 + Ic；默认参数下 I1 = 2 A、I2 = 2.5 A、I3 = 1 A（教材值）。",
+    "电阻电流的正方向是从 p 端到 n 端。Ra、Rb、Rd 竖放时把 p 端放在下面（旋转 270°），读数正方向就和教材的 Ia、Ib、Id 一样朝上；Rc 的 p 端在上，Ic 朝下。"
+  ],
+  "preset": {
+    "method": "mesh_current",
+    "showBranchCurrents": true
+  },
+  "checks": [
+    {
+      "label": "Ra 支路电流 Ia（向上）",
+      "path": "branch_currents.Ra",
+      "expect": 2,
+      "unit": "A",
+      "tol": 0.001,
+      "fromBook": true
+    },
+    {
+      "label": "Rb 支路电流 Ib（向上）",
+      "path": "branch_currents.Rb",
+      "expect": 0.5,
+      "unit": "A",
+      "tol": 0.001,
+      "fromBook": true
+    },
+    {
+      "label": "Rc 支路电流 Ic（向下）",
+      "path": "branch_currents.Rc",
+      "expect": 1.5,
+      "unit": "A",
+      "tol": 0.001,
+      "fromBook": true
+    },
+    {
+      "label": "Rd 支路电流 Id（向上）",
+      "path": "branch_currents.Rd",
+      "expect": -1,
+      "unit": "A",
+      "tol": 0.001,
+      "fromBook": true
+    }
+  ],
+  "circuit": {
+    "nodes": [
+      {
+        "id": "Ra",
+        "type": "resistor",
+        "position": {
+          "x": 0,
+          "y": 40
+        },
+        "data": {
+          "label": "Ra",
+          "type": "resistor",
+          "parameters": {
+            "value": 60
+          },
+          "rotation": 270
+        }
+      },
+      {
+        "id": "Rb",
+        "type": "resistor",
+        "position": {
+          "x": 300,
+          "y": 40
+        },
+        "data": {
+          "label": "Rb",
+          "type": "resistor",
+          "parameters": {
+            "value": 20
+          },
+          "rotation": 270
+        }
+      },
+      {
+        "id": "Rc",
+        "type": "resistor",
+        "position": {
+          "x": 600,
+          "y": 190
+        },
+        "data": {
+          "label": "Rc",
+          "type": "resistor",
+          "parameters": {
+            "value": 40
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "Rd",
+        "type": "resistor",
+        "position": {
+          "x": 900,
+          "y": 40
+        },
+        "data": {
+          "label": "Rd",
+          "type": "resistor",
+          "parameters": {
+            "value": 40
+          },
+          "rotation": 270
+        }
+      },
+      {
+        "id": "Us1",
+        "type": "vsource_dc",
+        "position": {
+          "x": 0,
+          "y": 340
+        },
+        "data": {
+          "label": "Us1",
+          "type": "vsource_dc",
+          "parameters": {
+            "dc": 180
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "Us2",
+        "type": "vsource_dc",
+        "position": {
+          "x": 300,
+          "y": 340
+        },
+        "data": {
+          "label": "Us2",
+          "type": "vsource_dc",
+          "parameters": {
+            "dc": 70
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "Us3",
+        "type": "vsource_dc",
+        "position": {
+          "x": 900,
+          "y": 340
+        },
+        "data": {
+          "label": "Us3",
+          "type": "vsource_dc",
+          "parameters": {
+            "dc": 20
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "position": {
+          "x": 450,
+          "y": 600
+        },
+        "data": {
+          "label": "GND",
+          "type": "ground",
+          "parameters": {},
+          "rotation": 0
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "Ra",
+        "target": "Us1",
+        "sourceHandle": "p",
+        "targetHandle": "pos"
+      },
+      {
+        "id": "e2",
+        "source": "Rb",
+        "target": "Us2",
+        "sourceHandle": "p",
+        "targetHandle": "pos"
+      },
+      {
+        "id": "e3",
+        "source": "Rd",
+        "target": "Us3",
+        "sourceHandle": "p",
+        "targetHandle": "pos"
+      },
+      {
+        "id": "e4",
+        "source": "Ra",
+        "target": "Rb",
+        "sourceHandle": "n",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e5",
+        "source": "Rb",
+        "target": "Rc",
+        "sourceHandle": "n",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e6",
+        "source": "Rc",
+        "target": "Rd",
+        "sourceHandle": "p",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e7",
+        "source": "Us1",
+        "target": "Us2",
+        "sourceHandle": "neg",
+        "targetHandle": "neg"
+      },
+      {
+        "id": "e8",
+        "source": "Us2",
+        "target": "Rc",
+        "sourceHandle": "neg",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e9",
+        "source": "Rc",
+        "target": "Us3",
+        "sourceHandle": "n",
+        "targetHandle": "neg"
+      },
+      {
+        "id": "e10",
+        "source": "G1",
+        "target": "Us2",
+        "sourceHandle": "gnd",
+        "targetHandle": "neg"
+      }
+    ]
+  },
+  "demos": [
+    {
+      "id": "kvl",
+      "kind": "kvl",
+      "title": "KVL 与参考方向",
+      "summary": "选回路和绕行方向（顺 / 逆时针），逐个元件记 ±u，走完一圈 Σu = 0"
+    }
+  ]
+}

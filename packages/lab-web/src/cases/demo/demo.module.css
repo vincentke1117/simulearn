@@ -1,0 +1,204 @@
+/*
+ * 演示画布的样式：全部挂在 .demoFlow 下，不能写成全局 .react-flow__node——
+ * 否则过渡效果会带进学生的工作区（拖元件时拖泥带水）。
+ * 节点外层 div 的 transform 是 xyflow 定位用的，动画一律不碰 transform / scale（入场只做 opacity，
+ * 高亮用 box-shadow），否则节点会飞到 (0,0)，或者第一次测量端子时被缩放带偏。
+ */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: #0b1220;
+  color: #e2e8f0;
+}
+
+.overlay:focus {
+  outline: none;
+}
+
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.demoFlow {
+  width: 100%;
+  height: 100%;
+  background: #0f172a;
+}
+
+.demoFlow :global(.react-flow__handle) {
+  pointer-events: none;
+}
+
+.demoFlow :global(.react-flow__edge-path) {
+  stroke: #94a3b8;
+  stroke-width: 2;
+  transition: opacity 500ms ease;
+}
+
+.demoFlow :global(.react-flow__node.demo-enter) {
+  animation: demoFadeIn 600ms ease both;
+}
+
+.demoFlow :global(.react-flow__node.demo-note) {
+  animation: demoFadeIn 500ms ease 450ms both;
+}
+
+.demoFlow :global(.react-flow__node.demo-leave) {
+  opacity: 0;
+  transition: opacity 500ms ease;
+  pointer-events: none;
+}
+
+/* 出场缩小只能放在内层：出场的节点不会再被测量，外层 transform 是定位用的 */
+.demoFlow :global(.react-flow__node.demo-leave > div) {
+  scale: 0.85;
+  transition: scale 500ms ease;
+}
+
+.demoFlow :global(.react-flow__node.demo-highlight > div) {
+  border-radius: 12px;
+  animation: demoPulse 1.6s ease-in-out infinite;
+}
+
+.demoFlow :global(.react-flow__node.demo-dim) {
+  opacity: 0.35;
+  transition: opacity 400ms ease;
+}
+
+/* 动画的 fill-mode 是 both，结束后一直停在 opacity:1，会压过上面的淡显：刚进场又要淡显的，入场动画直接淡入到 0.35 */
+.demoFlow :global(.react-flow__node.demo-enter.demo-dim) {
+  animation-name: demoFadeInDim;
+}
+
+/*
+ * 投影可读：整张电路适配进画面后通常只剩 0.6 倍左右，卡片里 12 px 的元件名 / 结点号只有约 7 px。
+ * 只在演示画布里放大标题、读数和端子标签（学生工作区的卡片不变）；_title_ 带下划线是为了不误中 titleIcon。
+ */
+.demoFlow :global(.react-flow__node [class*='_title_']) {
+  font-size: 18px;
+}
+
+.demoFlow :global(.react-flow__node [class*='_voltage_']),
+.demoFlow :global(.react-flow__node [class*='_current_']) {
+  font-size: 16px;
+}
+
+.demoFlow :global(.react-flow__node [class*='handleLabel']) {
+  font-size: 13px;
+}
+
+/* 电源卡片的「ΔV」行和上面的电压读数重复，演示里只会把卡片撑高、挤占走线的位置 */
+.demoFlow :global(.react-flow__node [class*='_voltageSecondary_']) {
+  display: none;
+}
+
+.demoFlow :global(.react-flow__node.demo-hide-handle-labels [class*='handleLabel']) {
+  display: none;
+}
+
+.demoFlow :global(.react-flow__edge.demo-edge-enter path) {
+  animation: demoFadeIn 600ms ease both;
+}
+
+.demoFlow :global(.react-flow__edge.demo-edge-leave path) {
+  opacity: 0;
+}
+
+.demoFlow :global(.react-flow__edge.demo-edge-hot path) {
+  stroke: #fbbf24;
+  stroke-width: 3;
+}
+
+@keyframes demoFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes demoFadeInDim {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+
+@keyframes demoPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.85), 0 0 12px 2px rgba(251, 191, 36, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 1), 0 0 22px 6px rgba(251, 191, 36, 0.55);
+  }
+}
+
+.note {
+  max-width: 240px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 17px;
+  line-height: 1.4;
+  border: 1px solid;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  white-space: pre-line;
+}
+
+.noteInfo {
+  background: rgba(30, 41, 59, 0.96);
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+.noteAccent {
+  background: rgba(30, 58, 138, 0.92);
+  border-color: #60a5fa;
+  color: #eff6ff;
+}
+
+.noteWarn {
+  background: rgba(120, 53, 15, 0.94);
+  border-color: #f59e0b;
+  color: #fffbeb;
+}
+
+.bar {
+  flex-shrink: 0;
+  /* 固定高度（按钮不跟着讲解长短上下跳），随窗口在 200～320 px 之间伸缩 */
+  height: clamp(200px, 36vh, 320px);
+  overflow-y: auto;
+  border-top: 1px solid #334155;
+  background: #111827;
+  padding: 14px 20px 16px;
+}
+
+.stepTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.stepText {
+  margin-top: 6px;
+  font-size: 18px;
+  line-height: 1.55;
+  color: #cbd5e1;
+  white-space: pre-line;
+}
+
+.equation {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 18px;
+  line-height: 1.6;
+  color: #f1f5f9;
+}

@@ -1,0 +1,126 @@
+{
+  "name": "lab-transient-isource-rc（1mA 电流源从 neg 端注入 1kΩ 并 1μF：u = 1V·(1 − e^(−t/τ))，τ=1ms；原先带电流源的瞬态一律 500）",
+  "endpoint": "simulate",
+  "request": {
+    "components": [
+      {
+        "id": "I1",
+        "type": "isource_dc",
+        "parameters": {
+          "dc": 0.001
+        },
+        "connections": {
+          "pos": "gnd",
+          "neg": "a"
+        }
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "parameters": {
+          "value": 1000.0
+        },
+        "connections": {
+          "p": "a",
+          "n": "gnd"
+        }
+      },
+      {
+        "id": "C1",
+        "type": "capacitor",
+        "parameters": {
+          "value": 1e-06
+        },
+        "connections": {
+          "p": "a",
+          "n": "gnd"
+        }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "parameters": {},
+        "connections": {
+          "gnd": "gnd"
+        }
+      },
+      {
+        "id": "VP1",
+        "type": "voltage_probe",
+        "parameters": {},
+        "connections": {
+          "node": "a"
+        }
+      }
+    ],
+    "nets": [
+      {
+        "name": "a",
+        "nodes": [
+          [
+            "I1",
+            "neg"
+          ],
+          [
+            "R1",
+            "p"
+          ],
+          [
+            "C1",
+            "p"
+          ],
+          [
+            "VP1",
+            "node"
+          ]
+        ]
+      },
+      {
+        "name": "gnd",
+        "nodes": [
+          [
+            "I1",
+            "pos"
+          ],
+          [
+            "R1",
+            "n"
+          ],
+          [
+            "C1",
+            "n"
+          ],
+          [
+            "G1",
+            "gnd"
+          ]
+        ]
+      }
+    ],
+    "sim": {
+      "t_stop": 0.005,
+      "n_samples": 101
+    }
+  },
+  "expect": [
+    {
+      "path": "status",
+      "equals": "ok"
+    },
+    {
+      "path": "data.signals.1.values.1",
+      "approx": 0.0,
+      "atol": 1e-06
+    },
+    {
+      "path": "data.signals.1.values.21",
+      "approx": 0.6321205588285577,
+      "atol": 0.005
+    },
+    {
+      "path": "data.signals.1.values.-1",
+      "approx": 0.9932620530009145,
+      "atol": 0.005
+    }
+  ]
+}

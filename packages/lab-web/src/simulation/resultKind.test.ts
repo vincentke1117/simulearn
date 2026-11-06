@@ -107,7 +107,7 @@ describe('classifyResult — 既有分支不回归', () => {
     }
   })
 
-  it('thevenin 结果命中戴维南分支', () => {
+  it('thevenin 结果命中戴维宁分支', () => {
     const kind = classifyResult('thevenin', { vth: 2.5, rth: 500, port: { positive: 'n2', negative: 'gnd' } })
     expect(kind.kind).toBe('thevenin')
   })
@@ -161,7 +161,7 @@ describe('supportsVoltageOverlay — 回归：相量结果不许灌进画布叠�
 })
 
 describe('classifyResult — 保底行为', () => {
-  it('method 缺失但结构是节点电压表 → 仍渲染表格，绝不掉进空态', () => {
+  it('method 缺失但结构是结点电压表 → 仍渲染表格，绝不掉进空态', () => {
     const kind = classifyResult(undefined, { node_voltages: { n1: 1 }, branch_currents: {} })
     expect(kind.kind).toBe('dc_solve')
   })

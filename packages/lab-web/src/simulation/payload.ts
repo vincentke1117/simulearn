@@ -168,8 +168,28 @@ function ensureFiniteNumber(value: unknown) {
 
 /**
  * 检测是否为纯电阻电路（只包含电阻、直流电压源、地、探针）
- * 纯电阻电路可以使用节点电压法等直流分析方法
+ * 纯电阻电路可以使用结点电压法等直流分析方法
  */
+/**
+ * 元件值为 0 时内核算不了的组合（电路方程奇异，只能报内部错误），提交前拦下：
+ * - 0 Ω 电阻：任何分析都不行；
+ * - 0 F 电容：瞬态里 du/dt = i/C 除以 0；相量 / 扫频里导纳为 0 就是开路，可以算（「拆掉电容」）；
+ * - 0 H 电感：瞬态同理，相量 / 扫频里导纳无穷大；直流工作点里电感本来就按短路处理，可以算。
+ */
+function zeroValueForbidden(type: string, method: AnalysisMethod): boolean {
+  if (type === 'resistor') return true
+  if (type === 'capacitor') return method === 'transient'
+  if (type === 'inductor') return method === 'transient' || method === 'ac_phasor' || method === 'frequency_sweep'
+  return false
+}
+
+function zeroValueMessage(label: string, parameterLabel: string, type: string): string {
+  if (type === 'resistor') return `${label} 的${parameterLabel}不能为 0（要短路就把两端直接连起来，或者用闭合的开关）`
+  if (type === 'capacitor') return `${label} 的${parameterLabel}为 0 时不能做瞬态分析（相量分析里 0 F 相当于开路，可以算）`
+  return `${label} 的${parameterLabel}为 0 时只能做直流分析（要短路就把两端直接连起来）`
+}
+
+
 export function isResistiveCircuit(nodes: Node<CircuitNodeData>[]): boolean {
   const resistiveComponents = new Set([
     'resistor',
@@ -197,56 +217,10 @@ export function getDefaultAnalysisMethod(nodes: Node<CircuitNodeData>[]): Analys
 }
 
 /**
- * 根据旋转角度映射实际handle到逻辑handle
- * 对于有极性的双端元件，180度旋转时p/n互换
- * @param handleId 原始handle ID（用户连接时使用的ID）
- * @param componentType 元件类型
- * @param rotation 旋转角度（0/90/180/270）
- * @returns 映射后的逻辑handle ID（用于后端电路分析）
+ * 只按连线算网络（不校验参数）：戴维宁端口下拉、案例预设端口都只需要网络名，
+ * 不能因为某个参数暂时无效（比如正在输入 0 Ω）就拿不到
  */
-function mapHandleWithRotation(handleId: string, componentType: string, rotation: number): string {
-  const normalizedRotation = ((rotation ?? 0) % 360 + 360) % 360
-  
-  // 对于有极性的双端元件（电阻、电容、电感、电压源、电流源、电流探针），180度旋转时端口互换
-  const needsSwap = [
-    'resistor',
-    'capacitor', 
-    'inductor',
-    'vsource_dc',
-    'vsource_ac',
-    'isource_dc',
-    'isource_ac',
-    'current_probe',
-    'switch',
-    // 受控源为四端口器件，180° 时输出与控制端对调
-    'vcvs',
-    'ccvs',
-    'vccs',
-    'cccs',
-  ].includes(componentType)
-  
-  if (!needsSwap) {
-    // 单端元件（地、电压探针）或其他元件不需要映射
-    return handleId
-  }
-  
-  // 180度旋转时交换端口
-  if (normalizedRotation === 180) {
-    // p <-> n 互换
-    if (handleId === 'p') return 'n'
-    if (handleId === 'n') return 'p'
-    // pos <-> neg 互换（电压源）
-    if (handleId === 'pos') return 'neg'
-    if (handleId === 'neg') return 'pos'
-    // 受控源的控制端：ctrl_p <-> ctrl_n 互换
-    if (handleId === 'ctrl_p') return 'ctrl_n'
-    if (handleId === 'ctrl_n') return 'ctrl_p'
-  }
-  
-  return handleId
-}
-
-function buildNets(
+export function buildNets(
   nodes: Node<CircuitNodeData>[],
   edges: Edge[],
 ): {
@@ -403,8 +377,11 @@ export function buildSimulationPayload(
     const parameters: Record<string, number> = {}
     for (const parameter of definition.parameters) {
       const value = node.data.parameters[parameter.key]
+      if (parameter.optional && value === undefined) continue
       if (!ensureFiniteNumber(value) || (parameter.min !== undefined && value < parameter.min)) {
         errors.push(`${node.data.label} 的参数 ${parameter.label} 无效`)
+      } else if (parameter.key === 'value' && value === 0 && zeroValueForbidden(node.type ?? '', method ?? getDefaultAnalysisMethod(nodes))) {
+        errors.push(zeroValueMessage(node.data.label, parameter.label, node.type ?? ''))
       } else {
         parameters[parameter.key] = value
       }
@@ -417,10 +394,10 @@ export function buildSimulationPayload(
       if (!netName) {
         errors.push(`${node.data.label} 的端子 ${handle.id} 未连接`)
       } else {
-        // 根据旋转角度映射handle ID：180度旋转时p/n互换
-        const componentType = node.type ?? ''
-        const logicalHandleId = mapHandleWithRotation(handle.id, componentType, node.data.rotation ?? 0)
-        connections[logicalHandleId] = netName
+        // 旋转只是外观：画布上端子和它的 +/− 标签跟着元件一起转，电气含义不变。
+        // 原先 180° 时在这里再把 p/n、pos/neg 对调一次，等于转了两次：直流 / 相量（读 connections）
+        // 和瞬态（按 nets 接线）给出相反的极性
+        connections[handle.id] = netName
       }
     }
 
@@ -444,9 +421,18 @@ export function buildSimulationPayload(
     }
   }
 
+  // 没有电源但电容 / 电感带着初始值：零输入响应，只有瞬态能算（稳态类分析里初值不起作用，结果全是 0）
+  const hasStoredEnergy = nodes.some((n) =>
+    (n.type === 'capacitor' && Number(n.data.parameters.v0 ?? 0) !== 0) ||
+    (n.type === 'inductor' && Number(n.data.parameters.i0 ?? 0) !== 0))
+
   // 不接地不算错：内核会自动选参考点并在结果里说明（lab-backend/src/Reference.jl）
-  if (!hasSource) {
-    errors.push('电路必须包含至少一个电源：请添加独立源（直流/交流电压源或电流源）或受控源（VCVS/CCVS/VCCS/CCCS）')
+  if (!hasSource && method === 'thevenin') {
+    // 无源一端口求等效电阻（输入电阻）：开路电压为 0，内核用外加电源法照样求得出 Req
+  } else if (!hasSource && !hasStoredEnergy) {
+    errors.push('电路必须包含至少一个电源：请添加独立源（直流/交流电压源或电流源）或受控源（VCVS/CCVS/VCCS/CCCS），或者给电容 / 电感设初始值做零输入响应')
+  } else if (!hasSource && method && method !== 'transient') {
+    errors.push('电路里没有电源，只有电容 / 电感的初始值：这是零输入响应，请选瞬态分析')
   }
 
   // 智能建议：分析方法
@@ -460,14 +446,14 @@ export function buildSimulationPayload(
     if (hasDynamic || hasAC) {
       diagnostics.push('建议：检测到动态/交流元件，将使用瞬态分析')
     } else if (isResistive) {
-      diagnostics.push('建议：检测到纯电阻电路，可选择节点电压法、支路电流法或网孔电流法进行分析')
+      diagnostics.push('建议：检测到纯电阻电路，可选择结点电压法、支路电流法或网孔电流法进行分析')
     }
   }
 
   // 检查分析方法与电路类型的匹配性
   if (method && (method === 'node_voltage' || method === 'branch_current' || method === 'mesh_current')) {
     if (!isResistiveCircuit(nodes)) {
-      errors.push(`错误：${method === 'node_voltage' ? '节点电压法' : method === 'branch_current' ? '支路电流法' : '网孔电流法'}仅适用于纯直流线性电路，检测到动态/交流元件，请选择瞬态分析`)
+      errors.push(`错误：${method === 'node_voltage' ? '结点电压法' : method === 'branch_current' ? '支路电流法' : '网孔电流法'}仅适用于纯直流线性电路，检测到动态/交流元件，请选择瞬态分析`)
     }
   }
 

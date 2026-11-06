@@ -2,7 +2,7 @@
 
 julia_version = "1.12.1"
 manifest_format = "2.0"
-project_hash = "4249fae2ebda461b9733931ed0475997cdfd6266"
+project_hash = "66d3b73fd24db1a483926cd53206119304387bfa"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "27cecae79e5cc9935255f90c53bb831cc3c870d7"
@@ -846,7 +846,7 @@ uuid = "82899510-4779-5014-852e-03e436cf321d"
 version = "1.0.0"
 
 [[deps.JCircuitServer]]
-deps = ["DifferentialEquations", "HTTP", "JSON3", "LinearAlgebra", "ModelingToolkit", "ModelingToolkitStandardLibrary", "SHA", "StructTypes"]
+deps = ["DifferentialEquations", "HTTP", "JSON3", "LinearAlgebra", "ModelingToolkit", "ModelingToolkitStandardLibrary", "SHA", "Sockets", "StructTypes"]
 path = "."
 uuid = "7ef02f30-0c8d-4cd6-8a41-e27378f8332e"
 version = "0.1.0"

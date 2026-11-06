@@ -30,7 +30,8 @@ export function applyOverlay(
     return typeof v === 'number' && Number.isFinite(v) ? v : undefined
   }
 
-  const elementVoltagePN = (n: Node<CircuitNodeData>, pId: string, nId: string): number | undefined => {
+  // 两端电压差（带符号的实数）。相量结果（幅值 + 相角）不进叠加层，见 resultKind.ts 的 supportsVoltageOverlay
+  const voltageDifference = (n: Node<CircuitNodeData>, pId: string, nId: string): number | undefined => {
     const vp = getNetVoltage(n.id, pId)
     const vn = getNetVoltage(n.id, nId)
     if (vp === undefined || vn === undefined) return undefined
@@ -38,14 +39,16 @@ export function applyOverlay(
     return Number.isFinite(delta) ? delta : undefined
   }
 
+  const elementVoltagePN = (n: Node<CircuitNodeData>, pId: string, nId: string): number | undefined =>
+    voltageDifference(n, pId, nId)
+
   const sourceVoltagesPN = (
     n: Node<CircuitNodeData>,
     posId: string,
     negId: string,
   ): { voltage?: number; voltageDelta?: number } => {
     const vpos = getNetVoltage(n.id, posId)
-    const vneg = getNetVoltage(n.id, negId)
-    const delta = vpos !== undefined && vneg !== undefined ? vpos - vneg : undefined
+    const delta = voltageDifference(n, posId, negId)
     const voltage = displayMode === 'node' ? vpos : delta !== undefined ? delta : undefined
     const voltageDelta = delta !== undefined && Number.isFinite(delta) ? delta : undefined
     return { voltage, voltageDelta }

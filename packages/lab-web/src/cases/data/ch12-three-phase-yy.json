@@ -1,0 +1,74 @@
+{
+  "id": "ch12-three-phase-yy",
+  "chapter": 12,
+  "chapterTitle": "三相电路",
+  "section": "§12-3 对称三相电路的计算",
+  "source": "例 12-1",
+  "title": "对称 Y-Y 三相电路：只算一相就够了",
+  "summary": "三个大小相等、相位依次差 120° 的电压源接星形电源，经线路阻抗 Z1 送到星形负载 Z。电源、负载都对称时，负载中性点 N′ 与电源中性点 N 等电位，三相各算各的，只要算出 A 相，B、C 相按 120° 依次转过去即可。看三个线电流和探针 N′ 的读数。",
+  "tryIt": [
+    "运行后对比三个线电流（看 R1A、R1B、R1C 的电流）：读数都是 31.11 A（有效值 22 A），相角依次为 −53.1°、−173.1°、66.9°，正好互差 120°；探针 N′ 的读数几乎为 0，这就是可以只算一相的理由。探针 A′ 读 243.0 V（有效值 171.8 V），就是 İA 乘负载阻抗 Z。",
+    "把 A 相负载的电阻 RA 从 5 Ω 改成 50 Ω，负载不再对称：探针 N′ 读到 126.5 V（有效值 89.5 V），三个线电流有效值变成约 5.97 A、21.1 A、17.3 A——只改了 A 相，B、C 相的电流也跟着变了。",
+    "保持 RA = 50 Ω，把中性线开关 S 的状态改成 1（接上中性线）：N′ 回到 0，B、C 相电流回到 22 A，A 相电流为 220/|51 + j8| ≈ 4.26 A——有了零阻抗的中性线，各相又各算各的。",
+    "S 改回 0、RA 改回 5 Ω，把 uB 和 uC 的初相对调（uB 填 120°、uC 填 −120°，相序变成 A-C-B）：三个电流大小不变，但 B、C 相电流的相角也跟着对调。"
+  ],
+  "notes": [
+    "教材只给了阻抗、没给频率，这里取 50 Hz：Z1 = (1 + j2) Ω 拆成 1 Ω 电阻串 6.366 mH 电感，Z = (5 + j6) Ω 拆成 5 Ω 电阻串 19.10 mH 电感（50 Hz 下感抗分别是 2 Ω、6 Ω）。",
+    "教材给的是线电压 uAB = 380√2 cos(ωt + 30°) V，并按 380/√3 ≈ 220 V 取 U̇A = 220∠0° V。这里三个电源接成星形，A、B、C 相初相分别填 0°、−120°、120°，幅值填峰值 220√2 ≈ 311.1 V；读数也都是峰值，有效值要除以 √2。",
+    "三个电源竖放，+ 端接端线 A、B、C，− 端连在一起就是中性点 N，接地作参考点；探针 A′ 读 A 相负载端对 N 的电压。",
+    "教材图 12-2(a) 中虚线画的中性线用开关 S 表示：状态 0 为断开（本例的三相三线制），1 为接通（相当于阻抗为 0 的中性线）。"
+  ],
+  "preset": { "method": "ac_phasor", "showBranchCurrents": true },
+  "checks": [
+    { "label": "A 相线电流 İA 的有效值", "path": "branch_currents.R1A", "expect": 22, "unit": "A", "tol": 0.05, "rms": true, "fromBook": true },
+    { "label": "İA 的相角", "path": "branch_phases_deg.R1A", "expect": -53.1, "unit": "°", "tol": 0.1, "fromBook": true },
+    { "label": "İB 的相角", "path": "branch_phases_deg.R1B", "expect": -173.1, "unit": "°", "tol": 0.1, "fromBook": true },
+    { "label": "İC 的相角", "path": "branch_phases_deg.R1C", "expect": 66.9, "unit": "°", "tol": 0.1, "fromBook": true }
+  ],
+  "circuit": {
+    "nodes": [
+      { "id": "UA", "type": "vsource_ac", "position": { "x": 0, "y": 0 }, "data": { "label": "uA", "type": "vsource_ac", "parameters": { "amplitude": 311.127, "frequency": 50, "phase": 0 }, "rotation": 90 } },
+      { "id": "UB", "type": "vsource_ac", "position": { "x": 250, "y": 250 }, "data": { "label": "uB", "type": "vsource_ac", "parameters": { "amplitude": 311.127, "frequency": 50, "phase": -120 }, "rotation": 90 } },
+      { "id": "UC", "type": "vsource_ac", "position": { "x": 500, "y": 500 }, "data": { "label": "uC", "type": "vsource_ac", "parameters": { "amplitude": 311.127, "frequency": 50, "phase": 120 }, "rotation": 90 } },
+      { "id": "R1A", "type": "resistor", "position": { "x": 800, "y": 0 }, "data": { "label": "R1A（Z1）", "type": "resistor", "parameters": { "value": 1 }, "rotation": 0 } },
+      { "id": "L1A", "type": "inductor", "position": { "x": 1050, "y": 0 }, "data": { "label": "L1A（Z1）", "type": "inductor", "parameters": { "value": 0.006366198 }, "rotation": 0 } },
+      { "id": "RA", "type": "resistor", "position": { "x": 1400, "y": 0 }, "data": { "label": "RA（Z）", "type": "resistor", "parameters": { "value": 5 }, "rotation": 0 } },
+      { "id": "LA", "type": "inductor", "position": { "x": 1650, "y": 0 }, "data": { "label": "LA（Z）", "type": "inductor", "parameters": { "value": 0.01909859 }, "rotation": 0 } },
+      { "id": "R1B", "type": "resistor", "position": { "x": 800, "y": 250 }, "data": { "label": "R1B（Z1）", "type": "resistor", "parameters": { "value": 1 }, "rotation": 0 } },
+      { "id": "L1B", "type": "inductor", "position": { "x": 1050, "y": 250 }, "data": { "label": "L1B（Z1）", "type": "inductor", "parameters": { "value": 0.006366198 }, "rotation": 0 } },
+      { "id": "RB", "type": "resistor", "position": { "x": 1400, "y": 250 }, "data": { "label": "RB（Z）", "type": "resistor", "parameters": { "value": 5 }, "rotation": 0 } },
+      { "id": "LB", "type": "inductor", "position": { "x": 1650, "y": 250 }, "data": { "label": "LB（Z）", "type": "inductor", "parameters": { "value": 0.01909859 }, "rotation": 0 } },
+      { "id": "R1C", "type": "resistor", "position": { "x": 800, "y": 500 }, "data": { "label": "R1C（Z1）", "type": "resistor", "parameters": { "value": 1 }, "rotation": 0 } },
+      { "id": "L1C", "type": "inductor", "position": { "x": 1050, "y": 500 }, "data": { "label": "L1C（Z1）", "type": "inductor", "parameters": { "value": 0.006366198 }, "rotation": 0 } },
+      { "id": "RC", "type": "resistor", "position": { "x": 1400, "y": 500 }, "data": { "label": "RC（Z）", "type": "resistor", "parameters": { "value": 5 }, "rotation": 0 } },
+      { "id": "LC", "type": "inductor", "position": { "x": 1650, "y": 500 }, "data": { "label": "LC（Z）", "type": "inductor", "parameters": { "value": 0.01909859 }, "rotation": 0 } },
+      { "id": "VPA", "type": "voltage_probe", "position": { "x": 1260, "y": -160 }, "data": { "label": "A′", "type": "voltage_probe", "parameters": {}, "rotation": 0 } },
+      { "id": "VPN", "type": "voltage_probe", "position": { "x": 1950, "y": 250 }, "data": { "label": "N′", "type": "voltage_probe", "parameters": {}, "rotation": 0 } },
+      { "id": "S", "type": "switch", "position": { "x": 1050, "y": 800 }, "data": { "label": "S（中性线）", "type": "switch", "parameters": { "state": 0 }, "rotation": 0 } },
+      { "id": "G1", "type": "ground", "position": { "x": 250, "y": 800 }, "data": { "label": "N", "type": "ground", "parameters": {}, "rotation": 0 } }
+    ],
+    "edges": [
+      { "id": "e1", "source": "UA", "target": "R1A", "sourceHandle": "pos", "targetHandle": "p" },
+      { "id": "e2", "source": "R1A", "target": "L1A", "sourceHandle": "n", "targetHandle": "p" },
+      { "id": "e3", "source": "L1A", "target": "RA", "sourceHandle": "n", "targetHandle": "p" },
+      { "id": "e4", "source": "VPA", "target": "RA", "sourceHandle": "node", "targetHandle": "p" },
+      { "id": "e5", "source": "RA", "target": "LA", "sourceHandle": "n", "targetHandle": "p" },
+      { "id": "e6", "source": "UB", "target": "R1B", "sourceHandle": "pos", "targetHandle": "p" },
+      { "id": "e7", "source": "R1B", "target": "L1B", "sourceHandle": "n", "targetHandle": "p" },
+      { "id": "e8", "source": "L1B", "target": "RB", "sourceHandle": "n", "targetHandle": "p" },
+      { "id": "e9", "source": "RB", "target": "LB", "sourceHandle": "n", "targetHandle": "p" },
+      { "id": "e10", "source": "UC", "target": "R1C", "sourceHandle": "pos", "targetHandle": "p" },
+      { "id": "e11", "source": "R1C", "target": "L1C", "sourceHandle": "n", "targetHandle": "p" },
+      { "id": "e12", "source": "L1C", "target": "RC", "sourceHandle": "n", "targetHandle": "p" },
+      { "id": "e13", "source": "RC", "target": "LC", "sourceHandle": "n", "targetHandle": "p" },
+      { "id": "e14", "source": "LA", "target": "LB", "sourceHandle": "n", "targetHandle": "n" },
+      { "id": "e15", "source": "LB", "target": "LC", "sourceHandle": "n", "targetHandle": "n" },
+      { "id": "e16", "source": "VPN", "target": "LB", "sourceHandle": "node", "targetHandle": "n" },
+      { "id": "e17", "source": "UA", "target": "G1", "sourceHandle": "neg", "targetHandle": "gnd" },
+      { "id": "e18", "source": "UB", "target": "G1", "sourceHandle": "neg", "targetHandle": "gnd" },
+      { "id": "e19", "source": "UC", "target": "G1", "sourceHandle": "neg", "targetHandle": "gnd" },
+      { "id": "e20", "source": "G1", "target": "S", "sourceHandle": "gnd", "targetHandle": "p" },
+      { "id": "e21", "source": "S", "target": "LC", "sourceHandle": "n", "targetHandle": "n" }
+    ]
+  }
+}

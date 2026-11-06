@@ -1,0 +1,300 @@
+{
+  "id": "ch02-source-transform",
+  "chapter": 2,
+  "chapterTitle": "电阻电路的等效变换",
+  "section": "§2-6 实际电源的两种模型及其等效变换",
+  "source": "例 2-3",
+  "title": "电源等效变换：反复换、反复合并，化成一个单回路",
+  "summary": "电路里有一个电压源、两个电流源和四个电阻，要求 7 Ω 上的电流 i。电压源串电阻与电流源并电阻可以互相替换，反复换、反复合并，最后只剩一个电压源、一个电阻和 7 Ω 组成的单回路。运行后看 R4（7 Ω）的支路电流 i 和 A、B 两点的电位，再打开「课堂演示」看逐步化简的过程。",
+  "tryIt": [
+    "把 Is1（6 A）改成 0：i 变成 −0.1 A，B 点 −0.7 V，负号表示 7 Ω 里的实际电流向上。照演示的步骤算：左边只剩 3 A 并 1 Ω，换成 3 V 串 1 Ω，比右边的 4 V 还小，i = (3 − 4)/(1 + 2 + 7) = −0.1 A。",
+    "把 Is2（2 A）改成 0：4 V 那一项没有了，i = 9/(1 + 2 + 7) = 0.9 A，B 点 6.3 V。",
+    "把 R4 从 7 Ω 改成 2 Ω：B 点左边整体就是 5 V 串 3 Ω，i = 5/(3 + 2) = 1 A，B 点 2 V。7 Ω 换成别的值，也都能这样一步算出 i。"
+  ],
+  "notes": [
+    "教材图里的元件没有编号，这里从左到右叫 Us（6 V）、R1（与 6 V 串联的 2 Ω）、Is1（6 A）、R2（与 6 A 并联的 2 Ω）、Is2（2 A）、R3（与 2 A 并联的 2 Ω）、R4（7 Ω）。",
+    "内核约定电流源的电流在元件内部从 + 端流到 − 端、从 − 端流出到外电路。Is1 朝上，所以旋转 270°，让 − 端朝上；Is2 指向左边的 A，所以旋转 180°，让 − 端朝左接 A。",
+    "R4 竖放、p 端在上，它的支路电流（p→n）就是向下的 i。A、B 两点挂了电压探针，接地点在下母线。"
+  ],
+  "preset": {
+    "method": "node_voltage",
+    "showBranchCurrents": true
+  },
+  "checks": [
+    {
+      "label": "7 Ω 支路电流 i（向下）",
+      "path": "branch_currents.R4",
+      "expect": 0.5,
+      "unit": "A",
+      "tol": 1e-06,
+      "fromBook": true
+    },
+    {
+      "label": "B 点电位（7 Ω 上端）",
+      "path": "node_voltages.{VPB}",
+      "expect": 3.5,
+      "unit": "V",
+      "tol": 1e-06,
+      "fromBook": false
+    }
+  ],
+  "circuit": {
+    "nodes": [
+      {
+        "id": "Us",
+        "type": "vsource_dc",
+        "position": {
+          "x": 0,
+          "y": 360
+        },
+        "data": {
+          "label": "Us",
+          "type": "vsource_dc",
+          "parameters": {
+            "dc": 6
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "position": {
+          "x": 0,
+          "y": 120
+        },
+        "data": {
+          "label": "R1",
+          "type": "resistor",
+          "parameters": {
+            "value": 2
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "Is1",
+        "type": "isource_dc",
+        "position": {
+          "x": 520,
+          "y": 240
+        },
+        "data": {
+          "label": "Is1",
+          "type": "isource_dc",
+          "parameters": {
+            "dc": 6
+          },
+          "rotation": 270
+        }
+      },
+      {
+        "id": "R2",
+        "type": "resistor",
+        "position": {
+          "x": 780,
+          "y": 240
+        },
+        "data": {
+          "label": "R2",
+          "type": "resistor",
+          "parameters": {
+            "value": 2
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "Is2",
+        "type": "isource_dc",
+        "position": {
+          "x": 1040,
+          "y": 0
+        },
+        "data": {
+          "label": "Is2",
+          "type": "isource_dc",
+          "parameters": {
+            "dc": 2
+          },
+          "rotation": 180
+        }
+      },
+      {
+        "id": "R3",
+        "type": "resistor",
+        "position": {
+          "x": 1040,
+          "y": 200
+        },
+        "data": {
+          "label": "R3",
+          "type": "resistor",
+          "parameters": {
+            "value": 2
+          },
+          "rotation": 0
+        }
+      },
+      {
+        "id": "R4",
+        "type": "resistor",
+        "position": {
+          "x": 1300,
+          "y": 240
+        },
+        "data": {
+          "label": "R4（电流 i）",
+          "type": "resistor",
+          "parameters": {
+            "value": 7
+          },
+          "rotation": 90
+        }
+      },
+      {
+        "id": "VPA",
+        "type": "voltage_probe",
+        "position": {
+          "x": 640,
+          "y": 0
+        },
+        "data": {
+          "label": "A",
+          "type": "voltage_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "VPB",
+        "type": "voltage_probe",
+        "position": {
+          "x": 1560,
+          "y": 240
+        },
+        "data": {
+          "label": "B",
+          "type": "voltage_probe",
+          "parameters": {},
+          "rotation": 0
+        }
+      },
+      {
+        "id": "GND",
+        "type": "ground",
+        "position": {
+          "x": 1300,
+          "y": 470
+        },
+        "data": {
+          "label": "GND",
+          "type": "ground",
+          "parameters": {},
+          "rotation": 0
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "R1",
+        "target": "Us",
+        "sourceHandle": "n",
+        "targetHandle": "pos"
+      },
+      {
+        "id": "e2",
+        "source": "R1",
+        "target": "Is1",
+        "sourceHandle": "p",
+        "targetHandle": "neg"
+      },
+      {
+        "id": "e3",
+        "source": "VPA",
+        "target": "Is1",
+        "sourceHandle": "node",
+        "targetHandle": "neg"
+      },
+      {
+        "id": "e4",
+        "source": "Is1",
+        "target": "R2",
+        "sourceHandle": "neg",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e5",
+        "source": "R2",
+        "target": "R3",
+        "sourceHandle": "p",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e6",
+        "source": "Is2",
+        "target": "R3",
+        "sourceHandle": "neg",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e7",
+        "source": "Is2",
+        "target": "R3",
+        "sourceHandle": "pos",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e8",
+        "source": "R3",
+        "target": "R4",
+        "sourceHandle": "n",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e9",
+        "source": "VPB",
+        "target": "R4",
+        "sourceHandle": "node",
+        "targetHandle": "p"
+      },
+      {
+        "id": "e10",
+        "source": "GND",
+        "target": "R4",
+        "sourceHandle": "gnd",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e11",
+        "source": "Us",
+        "target": "Is1",
+        "sourceHandle": "neg",
+        "targetHandle": "pos"
+      },
+      {
+        "id": "e12",
+        "source": "Is1",
+        "target": "R2",
+        "sourceHandle": "pos",
+        "targetHandle": "n"
+      },
+      {
+        "id": "e13",
+        "source": "R2",
+        "target": "R4",
+        "sourceHandle": "n",
+        "targetHandle": "n"
+      }
+    ]
+  },
+  "demos": [
+    {
+      "id": "source-transform",
+      "kind": "steps",
+      "title": "电源等效变换：一步步化简到单回路",
+      "summary": "按图 2-15 a→e：电压源串电阻 ↔ 电流源并电阻，合并后得单回路，每一步 i 都是 0.5 A"
+    }
+  ]
+}

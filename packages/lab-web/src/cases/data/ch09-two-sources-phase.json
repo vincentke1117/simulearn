@@ -1,0 +1,57 @@
+{
+  "id": "ch09-two-sources-phase",
+  "chapter": 9,
+  "chapterTitle": "正弦稳态电路的分析",
+  "section": "§9-3 正弦稳态电路的分析",
+  "source": "例 9-8",
+  "title": "两个同频电源一起作用：电感电流是多少",
+  "summary": "电压源和电流源频率相同、写法不同（一个用 sin，一个用 cos），换到同一个基准后就能用相量法像电阻电路那样列方程。看电感 L 的电流 iL：它是两个电源各自贡献的相量和，大小和初相都要对。",
+  "tryIt": [
+    "把电流源 is 的幅值改成 0（只留 us 作用）：L 的电流读数变成 14.69 A（有效值 10.39 A）、初相 60°，就是叠加定理里 us 单独作用的 jU̇s。",
+    "is 幅值改回 4.242641，再把 us 的幅值改成 0（只留 is 作用）：电流变成 8.485 A（有效值 6 A）、−30°，即 2İs。这两次结果要按相量相加（不是读数相加），才得到原来的 16.97 A（有效值 12 A）、30°。",
+    "把 is 的初相从 −30° 改成 60°，让它的贡献和 us 的贡献同相：电流变成 23.18 A（有效值 16.39 A）、60°。电源大小一点没变，只改了相位，结果就不一样了。",
+    "把 R 改成 1 Ω 或 100 Ω：iL 和结点 ①、② 的电压都不变——和理想电流源串联的电阻不影响电路其余部分（这是教材最后留的思考题）。"
+  ],
+  "notes": [
+    "两个电源换到同一个基准（cos）：us = 10.39√2 sin(2t + 60°) = 10.39√2 cos(2t + 60° − 90°) = 10.39√2 cos(2t − 30°)，is 本来就是 cos(2t − 30°)。所以两个源的初相都填 −30°，与教材的 U̇s = 10.39∠−30° V、İs = 3∠−30° A 一致，读出来的相位也都以 cos 为基准。",
+    "电源幅值填峰值：us 为 10.39√2 ≈ 14.69 V，is 为 3√2 ≈ 4.243 A；读数也是峰值，有效值要除以 √2。",
+    "ω = 2 rad/s 换成频率 f = 1/π ≈ 0.3183 Hz，两个源的频率必须一模一样。此时三个 0.5 F 电容的容抗、0.5 H 电感的感抗都是 1 Ω。",
+    "教材图上三个 0.5 F 电容没有符号，这里记作 C1（与 us 串联）、C2（结点 ① 对地）、C3（结点 ② 对地）。",
+    "is 的箭头向下：内核里电流源的电流在源内部从 + 端流向 − 端，所以 + 端接 R、− 端接结点 ⓪。",
+    "教材最后印的是 İL = 10∠30° A，但把题给数据代入教材自己的结果 jU̇s + 2İs，得 10.39∠60° + 6∠−30° ≈ 12∠30° A（两项正好相差 90°，√(10.39² + 6²) ≈ 12）。内核算出来也是 12 A，核对点按 12 A 写。"
+  ],
+  "preset": { "method": "ac_phasor", "showBranchCurrents": true },
+  "checks": [
+    { "label": "电感电流 iL 的有效值（按教材的 jU̇s + 2İs 算出）", "path": "branch_currents.L", "expect": 12, "unit": "A", "tol": 0.01, "rms": true, "fromBook": false },
+    { "label": "iL 的初相（cos 基准）", "path": "branch_phases_deg.L", "expect": 30, "unit": "°", "tol": 0.1, "fromBook": true },
+    { "label": "结点 ① 电压 U10 的有效值（U̇10 = jİs）", "path": "node_voltages.{VP1}", "expect": 3, "unit": "V", "tol": 0.005, "rms": true, "fromBook": false }
+  ],
+  "circuit": {
+    "nodes": [
+      { "id": "Us", "type": "vsource_ac", "position": { "x": 0, "y": 220 }, "data": { "label": "us", "type": "vsource_ac", "parameters": { "amplitude": 14.69368, "frequency": 0.3183099, "phase": -30 }, "rotation": 90 } },
+      { "id": "C1", "type": "capacitor", "position": { "x": 250, "y": 60 }, "data": { "label": "C1（0.5 F）", "type": "capacitor", "parameters": { "value": 0.5 }, "rotation": 0 } },
+      { "id": "C2", "type": "capacitor", "position": { "x": 500, "y": 220 }, "data": { "label": "C2（0.5 F）", "type": "capacitor", "parameters": { "value": 0.5 }, "rotation": 90 } },
+      { "id": "L", "type": "inductor", "position": { "x": 750, "y": 60 }, "data": { "label": "L（0.5 H）", "type": "inductor", "parameters": { "value": 0.5 }, "rotation": 0 } },
+      { "id": "C3", "type": "capacitor", "position": { "x": 1000, "y": 220 }, "data": { "label": "C3（0.5 F）", "type": "capacitor", "parameters": { "value": 0.5 }, "rotation": 90 } },
+      { "id": "R", "type": "resistor", "position": { "x": 1250, "y": 60 }, "data": { "label": "R", "type": "resistor", "parameters": { "value": 10 }, "rotation": 0 } },
+      { "id": "Is", "type": "isource_ac", "position": { "x": 1500, "y": 220 }, "data": { "label": "is", "type": "isource_ac", "parameters": { "amplitude": 4.242641, "frequency": 0.3183099, "phase": -30 }, "rotation": 90 } },
+      { "id": "VP1", "type": "voltage_probe", "position": { "x": 520, "y": -120 }, "data": { "label": "①", "type": "voltage_probe", "parameters": {}, "rotation": 0 } },
+      { "id": "VP2", "type": "voltage_probe", "position": { "x": 1020, "y": -120 }, "data": { "label": "②", "type": "voltage_probe", "parameters": {}, "rotation": 0 } },
+      { "id": "G1", "type": "ground", "position": { "x": 750, "y": 440 }, "data": { "label": "⓪", "type": "ground", "parameters": {}, "rotation": 0 } }
+    ],
+    "edges": [
+      { "id": "e1", "source": "Us", "target": "C1", "sourceHandle": "pos", "targetHandle": "p" },
+      { "id": "e2", "source": "C1", "target": "C2", "sourceHandle": "n", "targetHandle": "p" },
+      { "id": "e3", "source": "C2", "target": "L", "sourceHandle": "p", "targetHandle": "p" },
+      { "id": "e4", "source": "VP1", "target": "L", "sourceHandle": "node", "targetHandle": "p" },
+      { "id": "e5", "source": "L", "target": "C3", "sourceHandle": "n", "targetHandle": "p" },
+      { "id": "e6", "source": "C3", "target": "R", "sourceHandle": "p", "targetHandle": "p" },
+      { "id": "e7", "source": "VP2", "target": "R", "sourceHandle": "node", "targetHandle": "p" },
+      { "id": "e8", "source": "R", "target": "Is", "sourceHandle": "n", "targetHandle": "pos" },
+      { "id": "e9", "source": "Is", "target": "C3", "sourceHandle": "neg", "targetHandle": "n" },
+      { "id": "e10", "source": "C3", "target": "C2", "sourceHandle": "n", "targetHandle": "n" },
+      { "id": "e11", "source": "C2", "target": "Us", "sourceHandle": "n", "targetHandle": "neg" },
+      { "id": "e12", "source": "G1", "target": "C2", "sourceHandle": "gnd", "targetHandle": "n" }
+    ]
+  }
+}

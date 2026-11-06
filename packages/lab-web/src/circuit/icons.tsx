@@ -56,9 +56,10 @@ export function IconVDC({ size = 16 }: IconProps) {
   return baseSvg(
     <>
       <circle cx="12" cy="12" r="7" />
-      <path d="M10 9h4" />
-      <path d="M12 7v4" />
-      <path d="M10 15h4" />
+      {/* 端子是 + 在左、− 在右，符号也横着画：图标随元件整体旋转时才和端子标签对得上 */}
+      <path d="M7 12h4" />
+      <path d="M9 10v4" />
+      <path d="M13.5 12h3.5" />
     </>,
     size,
   )
@@ -101,9 +102,9 @@ export function IconIProbe({ size = 16 }: IconProps) {
   return baseSvg(
     <>
       <circle cx="12" cy="12" r="7" />
-      <path d="M12 8v8" />
-      <path d="M12 8l-2 2" />
-      <path d="M12 8l2 2" />
+      <path d="M8 12h8" />
+      <path d="M16 12l-2.5-2.5" />
+      <path d="M16 12l-2.5 2.5" />
     </>,
     size,
   )
@@ -114,9 +115,9 @@ export function IconIDC({ size = 16 }: IconProps) {
   return baseSvg(
     <>
       <circle cx="12" cy="12" r="7" />
-      <path d="M12 8v8" />
-      <path d="M12 16l-2-2" />
-      <path d="M12 16l2-2" />
+      <path d="M8 12h8" />
+      <path d="M16 12l-2.5-2.5" />
+      <path d="M16 12l-2.5 2.5" />
     </>,
     size,
   )
@@ -127,9 +128,10 @@ export function IconIAC({ size = 16 }: IconProps) {
   return baseSvg(
     <>
       <circle cx="12" cy="12" r="7" />
-      <path d="M6 12c2-3 4 3 6 0s4-3 6 0" />
-      <path d="M12 8l-2 2" />
-      <path d="M12 8l2 2" />
+      <path d="M7 14c1.7-2.5 3.3 2.5 5 0s3.3-2.5 5 0" />
+      <path d="M8.5 9h7" />
+      <path d="M15.5 9l-2-2" />
+      <path d="M15.5 9l-2 2" />
     </>,
     size,
   )
@@ -142,9 +144,9 @@ export function IconVCVS({ size = 16 }: IconProps) {
       <path d="M3 12h5" />
       <path d="M16 12h5" />
       <rect x="8" y="8" width="8" height="8" rx="1" />
-      <path d="M10 10h4" />
-      <path d="M12 8v2" />
-      <path d="M10 14h4" />
+      <path d="M9 10.5h2.4" />
+      <path d="M10.2 9.3v2.4" />
+      <path d="M12.8 10.5h2.2" />
     </>,
     size,
   )
@@ -157,11 +159,11 @@ export function IconCCVS({ size = 16 }: IconProps) {
       <path d="M3 12h5" />
       <path d="M16 12h5" />
       <rect x="8" y="8" width="8" height="8" rx="1" />
-      <path d="M10 10h4" />
-      <path d="M12 8v2" />
-      <path d="M10 14h4" />
-      <circle cx="10" cy="12" r="1" fill="currentColor" />
-      <circle cx="14" cy="12" r="1" fill="currentColor" />
+      <path d="M9 10.5h2.4" />
+      <path d="M10.2 9.3v2.4" />
+      <path d="M12.8 10.5h2.2" />
+      <circle cx="10" cy="13.8" r="0.9" fill="currentColor" />
+      <circle cx="14" cy="13.8" r="0.9" fill="currentColor" />
     </>,
     size,
   )
@@ -174,9 +176,9 @@ export function IconVCCS({ size = 16 }: IconProps) {
       <path d="M3 12h5" />
       <path d="M16 12h5" />
       <rect x="8" y="8" width="8" height="8" rx="1" />
-      <path d="M12 10v4" />
-      <path d="M12 14l-2-2" />
-      <path d="M12 14l2-2" />
+      <path d="M10 12h4" />
+      <path d="M14 12l-1.5-1.5" />
+      <path d="M14 12l-1.5 1.5" />
     </>,
     size,
   )
@@ -189,11 +191,11 @@ export function IconCCCS({ size = 16 }: IconProps) {
       <path d="M3 12h5" />
       <path d="M16 12h5" />
       <rect x="8" y="8" width="8" height="8" rx="1" />
-      <path d="M12 10v4" />
-      <path d="M12 14l-2-2" />
-      <path d="M12 14l2-2" />
-      <circle cx="10" cy="10" r="1" fill="currentColor" />
-      <circle cx="14" cy="10" r="1" fill="currentColor" />
+      <path d="M10 12h4" />
+      <path d="M14 12l-1.5-1.5" />
+      <path d="M14 12l-1.5 1.5" />
+      <circle cx="10" cy="9.6" r="1" fill="currentColor" />
+      <circle cx="14" cy="9.6" r="1" fill="currentColor" />
     </>,
     size,
   )

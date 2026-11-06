@@ -1,0 +1,185 @@
+{
+  "name": "lab-transient-cccs-rc（CCCS 增益 1，控制电流 1V/1kΩ = 1mA，从 neg 端注入 1kΩ 并 1μF：u = 1V·(1 − e^(−t/τ))；原先带受控电流源的瞬态一律 500）",
+  "endpoint": "simulate",
+  "request": {
+    "components": [
+      {
+        "id": "V1",
+        "type": "vsource_dc",
+        "parameters": {
+          "dc": 1.0
+        },
+        "connections": {
+          "pos": "c",
+          "neg": "gnd"
+        }
+      },
+      {
+        "id": "Rc",
+        "type": "resistor",
+        "parameters": {
+          "value": 1000.0
+        },
+        "connections": {
+          "p": "d",
+          "n": "gnd"
+        }
+      },
+      {
+        "id": "F1",
+        "type": "cccs",
+        "parameters": {
+          "gain": 1.0
+        },
+        "connections": {
+          "pos": "gnd",
+          "neg": "a",
+          "ctrl_p": "c",
+          "ctrl_n": "d"
+        }
+      },
+      {
+        "id": "R1",
+        "type": "resistor",
+        "parameters": {
+          "value": 1000.0
+        },
+        "connections": {
+          "p": "a",
+          "n": "gnd"
+        }
+      },
+      {
+        "id": "C1",
+        "type": "capacitor",
+        "parameters": {
+          "value": 1e-06
+        },
+        "connections": {
+          "p": "a",
+          "n": "gnd"
+        }
+      },
+      {
+        "id": "G1",
+        "type": "ground",
+        "parameters": {},
+        "connections": {
+          "gnd": "gnd"
+        }
+      },
+      {
+        "id": "VP1",
+        "type": "voltage_probe",
+        "parameters": {},
+        "connections": {
+          "node": "a"
+        }
+      }
+    ],
+    "nets": [
+      {
+        "name": "c",
+        "nodes": [
+          [
+            "V1",
+            "pos"
+          ],
+          [
+            "F1",
+            "ctrl_p"
+          ]
+        ]
+      },
+      {
+        "name": "d",
+        "nodes": [
+          [
+            "F1",
+            "ctrl_n"
+          ],
+          [
+            "Rc",
+            "p"
+          ]
+        ]
+      },
+      {
+        "name": "a",
+        "nodes": [
+          [
+            "F1",
+            "neg"
+          ],
+          [
+            "R1",
+            "p"
+          ],
+          [
+            "C1",
+            "p"
+          ],
+          [
+            "VP1",
+            "node"
+          ]
+        ]
+      },
+      {
+        "name": "gnd",
+        "nodes": [
+          [
+            "V1",
+            "neg"
+          ],
+          [
+            "Rc",
+            "n"
+          ],
+          [
+            "F1",
+            "pos"
+          ],
+          [
+            "R1",
+            "n"
+          ],
+          [
+            "C1",
+            "n"
+          ],
+          [
+            "G1",
+            "gnd"
+          ]
+        ]
+      }
+    ],
+    "sim": {
+      "t_stop": 0.005,
+      "n_samples": 101
+    },
+    "method": "transient"
+  },
+  "expect": [
+    {
+      "path": "status",
+      "equals": "ok"
+    },
+    {
+      "path": "data.signals.1.values.1",
+      "approx": 0.0,
+      "atol": 1e-06
+    },
+    {
+      "path": "data.signals.1.values.21",
+      "approx": 0.6321205588285577,
+      "atol": 0.005
+    },
+    {
+      "path": "data.signals.1.values.-1",
+      "approx": 0.9932620530009145,
+      "atol": 0.005
+    }
+  ]
+}

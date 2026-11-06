@@ -1,0 +1,1939 @@
+{
+  "caseId": "ch04-thevenin-cccs",
+  "id": "thevenin-norton",
+  "kind": "steps",
+  "title": "含受控源的戴维宁与诺顿等效",
+  "steps": [
+    {
+      "title": "题目：含受控源的一端口（图 4-14a）",
+      "text": "求端子 1-1′ 左边这个一端口的戴维宁和诺顿等效电路。F1 是电流控制电流源，ic = 0.75 i1，i1 是 5 kΩ 支路的电流。受控源不是激励，它的电流跟着 i1 变：后面每一步都要把它和 i1 所在的支路留着。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "Us",
+            "type": "vsource_dc",
+            "position": {
+              "x": 0,
+              "y": 240
+            },
+            "data": {
+              "label": "Us",
+              "type": "vsource_dc",
+              "parameters": {
+                "dc": 40
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R1",
+            "type": "resistor",
+            "position": {
+              "x": 250,
+              "y": 0
+            },
+            "data": {
+              "label": "R1",
+              "type": "resistor",
+              "parameters": {
+                "value": 5000
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "R2",
+            "type": "resistor",
+            "position": {
+              "x": 400,
+              "y": 240
+            },
+            "data": {
+              "label": "R2",
+              "type": "resistor",
+              "parameters": {
+                "value": 20000
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "F1",
+            "type": "cccs",
+            "position": {
+              "x": 850,
+              "y": 240
+            },
+            "data": {
+              "label": "F1（ic = k·i1）",
+              "type": "cccs",
+              "parameters": {
+                "gain": 0.75
+              },
+              "rotation": 270
+            }
+          },
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 40
+            },
+            "data": {
+              "label": "1",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 480
+            },
+            "data": {
+              "label": "1′",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "G1",
+            "type": "ground",
+            "position": {
+              "x": 300,
+              "y": 560
+            },
+            "data": {
+              "label": "GND",
+              "type": "ground",
+              "parameters": {},
+              "rotation": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "Us",
+            "target": "R1",
+            "sourceHandle": "pos",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "R1",
+            "target": "F1",
+            "sourceHandle": "n",
+            "targetHandle": "ctrl_p"
+          },
+          {
+            "id": "e3",
+            "source": "VP1",
+            "target": "F1",
+            "sourceHandle": "node",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e4",
+            "source": "R2",
+            "target": "F1",
+            "sourceHandle": "p",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e5",
+            "source": "VP1",
+            "target": "F1",
+            "sourceHandle": "node",
+            "targetHandle": "ctrl_n"
+          },
+          {
+            "id": "e6",
+            "source": "Us",
+            "target": "R2",
+            "sourceHandle": "neg",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e7",
+            "source": "R2",
+            "target": "F1",
+            "sourceHandle": "n",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e8",
+            "source": "VP2",
+            "target": "F1",
+            "sourceHandle": "node",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e9",
+            "source": "G1",
+            "target": "Us",
+            "sourceHandle": "gnd",
+            "targetHandle": "neg"
+          }
+        ]
+      },
+      "highlight": [
+        "F1",
+        "R1"
+      ],
+      "notes": [
+        {
+          "id": "ctrl",
+          "anchor": "R1",
+          "dx": -10,
+          "dy": -70,
+          "text": "控制量 i1（向右）在这条支路里",
+          "tone": "accent"
+        },
+        {
+          "id": "dep",
+          "anchor": "F1",
+          "dx": -200,
+          "dy": -140,
+          "text": "受控源 ic = 0.75 i1\n跟着 i1 变\n求等效时始终保留",
+          "tone": "warn"
+        }
+      ]
+    },
+    {
+      "title": "① 端口开路，求 uoc",
+      "text": "端口开路，结点 1 的 KCL：i2 = i1 + ic = 1.75 i1。网孔 1 的 KVL：5k·i1 + 20k·i2 = 40 V，解得 i1 = {i1}、i2 = {i2}、ic = {ic}，uoc = 20k·i2 = {uoc}。",
+      "compute": {
+        "method": "node_voltage"
+      },
+      "values": [
+        {
+          "key": "i1",
+          "label": "i1（5 kΩ，向右）",
+          "path": "branch_currents.R1",
+          "unit": "A",
+          "expect": 0.001,
+          "tol": 1e-09,
+          "fromBook": true
+        },
+        {
+          "key": "i2",
+          "label": "i2（20 kΩ，向下）",
+          "path": "branch_currents.R2",
+          "unit": "A",
+          "expect": 0.00175,
+          "tol": 1e-09,
+          "fromBook": false
+        },
+        {
+          "key": "ic",
+          "label": "ic（向上）",
+          "path": "branch_currents.F1",
+          "unit": "A",
+          "expect": 0.00075,
+          "tol": 1e-09,
+          "fromBook": false
+        },
+        {
+          "key": "uoc",
+          "label": "开路电压 uoc",
+          "path": "node_voltages.{VP1}",
+          "unit": "V",
+          "expect": 35,
+          "tol": 1e-06,
+          "fromBook": true
+        }
+      ],
+      "notes": [
+        {
+          "id": "plus",
+          "anchor": "VP1",
+          "dx": 175,
+          "dy": 20,
+          "text": "uoc 的 + 端：1",
+          "tone": "accent"
+        },
+        {
+          "id": "minus",
+          "anchor": "VP2",
+          "dx": 175,
+          "dy": 20,
+          "text": "− 端：1′",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "② 把端口短路（先圈出）",
+      "text": "再求短路电流 isc：用一根导线把 1、1′ 接起来。导线上串一个电流探针读 isc，参考方向从 1 经短路线流到 1′（同图 4-14b）。",
+      "highlight": [
+        "VP1",
+        "VP2"
+      ],
+      "notes": [
+        {
+          "id": "short",
+          "anchor": "VP1",
+          "dx": 175,
+          "dy": 20,
+          "text": "下一步：1、1′ 短接",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "③ 短路求 isc（图 4-14b）",
+      "text": "短路后 20 kΩ 两端电压为 0，i2 = {i2}；i1 只由 40 V 和 5 kΩ 决定，i1 = {i1}。i1 变了，ic 跟着变成 {ic}，isc = i1 + ic = {isc}。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "Us",
+            "type": "vsource_dc",
+            "position": {
+              "x": 0,
+              "y": 240
+            },
+            "data": {
+              "label": "Us",
+              "type": "vsource_dc",
+              "parameters": {
+                "dc": 40
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R1",
+            "type": "resistor",
+            "position": {
+              "x": 250,
+              "y": 0
+            },
+            "data": {
+              "label": "R1",
+              "type": "resistor",
+              "parameters": {
+                "value": 5000
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "R2",
+            "type": "resistor",
+            "position": {
+              "x": 400,
+              "y": 240
+            },
+            "data": {
+              "label": "R2",
+              "type": "resistor",
+              "parameters": {
+                "value": 20000
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "F1",
+            "type": "cccs",
+            "position": {
+              "x": 850,
+              "y": 240
+            },
+            "data": {
+              "label": "F1（ic = k·i1）",
+              "type": "cccs",
+              "parameters": {
+                "gain": 0.75
+              },
+              "rotation": 270
+            }
+          },
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 40
+            },
+            "data": {
+              "label": "1",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 480
+            },
+            "data": {
+              "label": "1′",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "G1",
+            "type": "ground",
+            "position": {
+              "x": 300,
+              "y": 560
+            },
+            "data": {
+              "label": "GND",
+              "type": "ground",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "IP1",
+            "type": "current_probe",
+            "position": {
+              "x": 1400,
+              "y": 240
+            },
+            "data": {
+              "label": "isc（电流探针）",
+              "type": "current_probe",
+              "parameters": {},
+              "rotation": 90
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "Us",
+            "target": "R1",
+            "sourceHandle": "pos",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "R1",
+            "target": "F1",
+            "sourceHandle": "n",
+            "targetHandle": "ctrl_p"
+          },
+          {
+            "id": "e3",
+            "source": "VP1",
+            "target": "F1",
+            "sourceHandle": "node",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e4",
+            "source": "R2",
+            "target": "F1",
+            "sourceHandle": "p",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e5",
+            "source": "VP1",
+            "target": "F1",
+            "sourceHandle": "node",
+            "targetHandle": "ctrl_n"
+          },
+          {
+            "id": "e6",
+            "source": "Us",
+            "target": "R2",
+            "sourceHandle": "neg",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e7",
+            "source": "R2",
+            "target": "F1",
+            "sourceHandle": "n",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e8",
+            "source": "VP2",
+            "target": "F1",
+            "sourceHandle": "node",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e9",
+            "source": "G1",
+            "target": "Us",
+            "sourceHandle": "gnd",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e20",
+            "source": "VP1",
+            "target": "IP1",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e21",
+            "source": "IP1",
+            "target": "VP2",
+            "sourceHandle": "n",
+            "targetHandle": "node"
+          }
+        ]
+      },
+      "compute": {
+        "method": "node_voltage"
+      },
+      "values": [
+        {
+          "key": "i1",
+          "label": "i1",
+          "path": "branch_currents.R1",
+          "unit": "A",
+          "expect": 0.008,
+          "tol": 1e-09,
+          "fromBook": true
+        },
+        {
+          "key": "i2",
+          "label": "i2",
+          "path": "branch_currents.R2",
+          "unit": "A",
+          "expect": 0,
+          "tol": 1e-09,
+          "fromBook": false
+        },
+        {
+          "key": "ic",
+          "label": "ic",
+          "path": "branch_currents.F1",
+          "unit": "A",
+          "expect": 0.006,
+          "tol": 1e-09,
+          "fromBook": false
+        },
+        {
+          "key": "isc",
+          "label": "短路电流 isc（1 → 1′）",
+          "path": "branch_currents.IP1",
+          "unit": "A",
+          "expect": 0.014,
+          "tol": 1e-09,
+          "fromBook": true
+        }
+      ],
+      "highlight": [
+        "IP1"
+      ],
+      "dim": [
+        "R2"
+      ],
+      "notes": [
+        {
+          "id": "r2",
+          "anchor": "R2",
+          "dx": 30,
+          "dy": -100,
+          "text": "被短接：两端电压 0\ni2 = 0",
+          "tone": "warn"
+        },
+        {
+          "id": "probe",
+          "anchor": "IP1",
+          "dx": 170,
+          "dy": 30,
+          "text": "电流探针 = 短路线\n读 isc（1 → 1′）",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "④ 等效电阻 Req = uoc / isc",
+      "text": "Req = uoc / isc = {uoc} ÷ {isc} = {req}。开路、短路两次都没有动任何电源，受控源一直在起作用，这个比值已经把它算进去了。",
+      "compute": {
+        "method": "thevenin",
+        "from": 0,
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "uoc",
+          "label": "uoc",
+          "path": "vth",
+          "unit": "V",
+          "expect": 35,
+          "tol": 1e-06,
+          "fromBook": true
+        },
+        {
+          "key": "isc",
+          "label": "isc",
+          "path": "isc",
+          "unit": "A",
+          "expect": 0.014,
+          "tol": 1e-09,
+          "fromBook": true
+        },
+        {
+          "key": "req",
+          "label": "等效电阻 Req",
+          "path": "rth",
+          "unit": "Ω",
+          "expect": 2500,
+          "tol": 0.0001,
+          "fromBook": true
+        }
+      ],
+      "highlight": [
+        "IP1"
+      ],
+      "dim": [
+        "R2"
+      ]
+    },
+    {
+      "title": "⑤ 戴维宁等效电路（图 4-14c）",
+      "text": "整个一端口换成 uoc 串 Req：35 V 电压源的 + 对着端子 1。验算：这个等效电路开路得 {uoc}、短路得 {isc}，和原电路一样。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "Req",
+            "type": "resistor",
+            "position": {
+              "x": 850,
+              "y": 60
+            },
+            "data": {
+              "label": "Req",
+              "type": "resistor",
+              "parameters": {
+                "value": 2500
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "Ueq",
+            "type": "vsource_dc",
+            "position": {
+              "x": 850,
+              "y": 320
+            },
+            "data": {
+              "label": "uoc",
+              "type": "vsource_dc",
+              "parameters": {
+                "dc": 35
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 40
+            },
+            "data": {
+              "label": "1",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 480
+            },
+            "data": {
+              "label": "1′",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "G1",
+            "type": "ground",
+            "position": {
+              "x": 700,
+              "y": 560
+            },
+            "data": {
+              "label": "GND",
+              "type": "ground",
+              "parameters": {},
+              "rotation": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "VP1",
+            "target": "Req",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "Req",
+            "target": "Ueq",
+            "sourceHandle": "n",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e3",
+            "source": "Ueq",
+            "target": "VP2",
+            "sourceHandle": "neg",
+            "targetHandle": "node"
+          },
+          {
+            "id": "e4",
+            "source": "G1",
+            "target": "Ueq",
+            "sourceHandle": "gnd",
+            "targetHandle": "neg"
+          }
+        ]
+      },
+      "compute": {
+        "method": "thevenin",
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "uoc",
+          "label": "开路电压",
+          "path": "vth",
+          "unit": "V",
+          "expect": 35,
+          "tol": 1e-06,
+          "fromBook": true
+        },
+        {
+          "key": "isc",
+          "label": "短路电流",
+          "path": "isc",
+          "unit": "A",
+          "expect": 0.014,
+          "tol": 1e-09,
+          "fromBook": true
+        }
+      ],
+      "highlight": [
+        "Ueq",
+        "Req"
+      ],
+      "notes": [
+        {
+          "id": "eq",
+          "anchor": "Req",
+          "dx": -210,
+          "dy": 30,
+          "text": "uoc 串 Req（图 4-14c）",
+          "tone": "accent"
+        },
+        {
+          "id": "pol",
+          "anchor": "Ueq",
+          "dx": -170,
+          "dy": -20,
+          "text": "+ 对着端子 1",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "⑥ 诺顿等效电路（图 4-14d）",
+      "text": "同一个一端口也能换成 isc 并 Req：14 mA 电流源并 2.5 kΩ。isc 从 1 经外部短路线流到 1′，所以电流源的箭头指向 1；从戴维宁换到诺顿，就是第 2 章的电源等效变换。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "Ieq",
+            "type": "isource_dc",
+            "position": {
+              "x": 550,
+              "y": 240
+            },
+            "data": {
+              "label": "isc",
+              "type": "isource_dc",
+              "parameters": {
+                "dc": 0.014
+              },
+              "rotation": 270
+            }
+          },
+          {
+            "id": "Req",
+            "type": "resistor",
+            "position": {
+              "x": 850,
+              "y": 240
+            },
+            "data": {
+              "label": "Req",
+              "type": "resistor",
+              "parameters": {
+                "value": 2500
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 40
+            },
+            "data": {
+              "label": "1",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 480
+            },
+            "data": {
+              "label": "1′",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "G1",
+            "type": "ground",
+            "position": {
+              "x": 700,
+              "y": 560
+            },
+            "data": {
+              "label": "GND",
+              "type": "ground",
+              "parameters": {},
+              "rotation": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "Ieq",
+            "target": "VP1",
+            "sourceHandle": "neg",
+            "targetHandle": "node"
+          },
+          {
+            "id": "e2",
+            "source": "Req",
+            "target": "VP1",
+            "sourceHandle": "p",
+            "targetHandle": "node"
+          },
+          {
+            "id": "e3",
+            "source": "Ieq",
+            "target": "VP2",
+            "sourceHandle": "pos",
+            "targetHandle": "node"
+          },
+          {
+            "id": "e4",
+            "source": "Req",
+            "target": "VP2",
+            "sourceHandle": "n",
+            "targetHandle": "node"
+          },
+          {
+            "id": "e5",
+            "source": "G1",
+            "target": "Ieq",
+            "sourceHandle": "gnd",
+            "targetHandle": "pos"
+          }
+        ]
+      },
+      "compute": {
+        "method": "thevenin",
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "uoc",
+          "label": "开路电压",
+          "path": "vth",
+          "unit": "V",
+          "expect": 35,
+          "tol": 1e-06,
+          "fromBook": true
+        },
+        {
+          "key": "isc",
+          "label": "短路电流",
+          "path": "isc",
+          "unit": "A",
+          "expect": 0.014,
+          "tol": 1e-09,
+          "fromBook": true
+        }
+      ],
+      "highlight": [
+        "Ieq",
+        "Req"
+      ],
+      "hideHandleLabels": [
+        "Ieq"
+      ],
+      "notes": [
+        {
+          "id": "arrow",
+          "anchor": "Ieq",
+          "dx": -60,
+          "dy": -80,
+          "text": "箭头指向 1",
+          "tone": "accent"
+        },
+        {
+          "id": "move",
+          "anchor": "Req",
+          "dx": -150,
+          "dy": -120,
+          "text": "Req 从串联挪到并联",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "另一种方法：外加电源法（先圈出）",
+      "text": "不做短路实验也能求 Req：一端口内部的独立源置零、受控源保留，在端口外加电压 u、测流入的电流 i，Req = u / i。先回到原电路，圈出要置零的 40 V。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "Us",
+            "type": "vsource_dc",
+            "position": {
+              "x": 0,
+              "y": 240
+            },
+            "data": {
+              "label": "Us",
+              "type": "vsource_dc",
+              "parameters": {
+                "dc": 40
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R1",
+            "type": "resistor",
+            "position": {
+              "x": 250,
+              "y": 0
+            },
+            "data": {
+              "label": "R1",
+              "type": "resistor",
+              "parameters": {
+                "value": 5000
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "R2",
+            "type": "resistor",
+            "position": {
+              "x": 400,
+              "y": 240
+            },
+            "data": {
+              "label": "R2",
+              "type": "resistor",
+              "parameters": {
+                "value": 20000
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "F1",
+            "type": "cccs",
+            "position": {
+              "x": 850,
+              "y": 240
+            },
+            "data": {
+              "label": "F1（ic = k·i1）",
+              "type": "cccs",
+              "parameters": {
+                "gain": 0.75
+              },
+              "rotation": 270
+            }
+          },
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 40
+            },
+            "data": {
+              "label": "1",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 480
+            },
+            "data": {
+              "label": "1′",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "G1",
+            "type": "ground",
+            "position": {
+              "x": 300,
+              "y": 560
+            },
+            "data": {
+              "label": "GND",
+              "type": "ground",
+              "parameters": {},
+              "rotation": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "Us",
+            "target": "R1",
+            "sourceHandle": "pos",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "R1",
+            "target": "F1",
+            "sourceHandle": "n",
+            "targetHandle": "ctrl_p"
+          },
+          {
+            "id": "e3",
+            "source": "VP1",
+            "target": "F1",
+            "sourceHandle": "node",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e4",
+            "source": "R2",
+            "target": "F1",
+            "sourceHandle": "p",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e5",
+            "source": "VP1",
+            "target": "F1",
+            "sourceHandle": "node",
+            "targetHandle": "ctrl_n"
+          },
+          {
+            "id": "e6",
+            "source": "Us",
+            "target": "R2",
+            "sourceHandle": "neg",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e7",
+            "source": "R2",
+            "target": "F1",
+            "sourceHandle": "n",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e8",
+            "source": "VP2",
+            "target": "F1",
+            "sourceHandle": "node",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e9",
+            "source": "G1",
+            "target": "Us",
+            "sourceHandle": "gnd",
+            "targetHandle": "neg"
+          }
+        ]
+      },
+      "highlight": [
+        "Us",
+        "F1"
+      ],
+      "notes": [
+        {
+          "id": "zero",
+          "anchor": "Us",
+          "dx": 100,
+          "dy": -120,
+          "text": "独立源置零：40 V → 0 V\n（电压源置零 = 短路）",
+          "tone": "warn"
+        },
+        {
+          "id": "keep",
+          "anchor": "F1",
+          "dx": -200,
+          "dy": -140,
+          "text": "受控源不是激励：保留",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "外加电源法：置零后在端口加 10 V",
+      "text": "40 V 改成 0 V（相当于短路），F1 原样保留；在 1-1′ 加 u = 10 V（+ 接 1），电流探针读出流入端子 1 的电流 i = {i}。i1 = {i1}、ic = {ic} 都变成了负值（i2 = {i2}）：受控源跟着 i1 反向，仍在起作用。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "Us",
+            "type": "vsource_dc",
+            "position": {
+              "x": 0,
+              "y": 240
+            },
+            "data": {
+              "label": "Us（置零）",
+              "type": "vsource_dc",
+              "parameters": {
+                "dc": 0
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R1",
+            "type": "resistor",
+            "position": {
+              "x": 250,
+              "y": 0
+            },
+            "data": {
+              "label": "R1",
+              "type": "resistor",
+              "parameters": {
+                "value": 5000
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "R2",
+            "type": "resistor",
+            "position": {
+              "x": 400,
+              "y": 240
+            },
+            "data": {
+              "label": "R2",
+              "type": "resistor",
+              "parameters": {
+                "value": 20000
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "F1",
+            "type": "cccs",
+            "position": {
+              "x": 850,
+              "y": 240
+            },
+            "data": {
+              "label": "F1（ic = k·i1）",
+              "type": "cccs",
+              "parameters": {
+                "gain": 0.75
+              },
+              "rotation": 270
+            }
+          },
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 40
+            },
+            "data": {
+              "label": "1",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 480
+            },
+            "data": {
+              "label": "1′",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "G1",
+            "type": "ground",
+            "position": {
+              "x": 300,
+              "y": 560
+            },
+            "data": {
+              "label": "GND",
+              "type": "ground",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "IPt",
+            "type": "current_probe",
+            "position": {
+              "x": 1400,
+              "y": 40
+            },
+            "data": {
+              "label": "i（电流探针）",
+              "type": "current_probe",
+              "parameters": {},
+              "rotation": 270
+            }
+          },
+          {
+            "id": "Ut",
+            "type": "vsource_dc",
+            "position": {
+              "x": 1400,
+              "y": 240
+            },
+            "data": {
+              "label": "u（测试电源）",
+              "type": "vsource_dc",
+              "parameters": {
+                "dc": 10
+              },
+              "rotation": 90
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "Us",
+            "target": "R1",
+            "sourceHandle": "pos",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "R1",
+            "target": "F1",
+            "sourceHandle": "n",
+            "targetHandle": "ctrl_p"
+          },
+          {
+            "id": "e3",
+            "source": "VP1",
+            "target": "F1",
+            "sourceHandle": "node",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e4",
+            "source": "R2",
+            "target": "F1",
+            "sourceHandle": "p",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e5",
+            "source": "VP1",
+            "target": "F1",
+            "sourceHandle": "node",
+            "targetHandle": "ctrl_n"
+          },
+          {
+            "id": "e6",
+            "source": "Us",
+            "target": "R2",
+            "sourceHandle": "neg",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e7",
+            "source": "R2",
+            "target": "F1",
+            "sourceHandle": "n",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e8",
+            "source": "VP2",
+            "target": "F1",
+            "sourceHandle": "node",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e9",
+            "source": "G1",
+            "target": "Us",
+            "sourceHandle": "gnd",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e20",
+            "source": "Ut",
+            "target": "IPt",
+            "sourceHandle": "pos",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e21",
+            "source": "IPt",
+            "target": "VP1",
+            "sourceHandle": "n",
+            "targetHandle": "node"
+          },
+          {
+            "id": "e22",
+            "source": "Ut",
+            "target": "VP2",
+            "sourceHandle": "neg",
+            "targetHandle": "node"
+          }
+        ]
+      },
+      "compute": {
+        "method": "node_voltage"
+      },
+      "values": [
+        {
+          "key": "i",
+          "label": "i（流入端子 1）",
+          "path": "branch_currents.IPt",
+          "unit": "A",
+          "expect": 0.004,
+          "tol": 1e-09,
+          "fromBook": false
+        },
+        {
+          "key": "i1",
+          "label": "i1（5 kΩ，向右）",
+          "path": "branch_currents.R1",
+          "unit": "A",
+          "expect": -0.002,
+          "tol": 1e-09,
+          "fromBook": false
+        },
+        {
+          "key": "ic",
+          "label": "ic（向上）",
+          "path": "branch_currents.F1",
+          "unit": "A",
+          "expect": -0.0015,
+          "tol": 1e-09,
+          "fromBook": false
+        },
+        {
+          "key": "i2",
+          "label": "i2（20 kΩ，向下）",
+          "path": "branch_currents.R2",
+          "unit": "A",
+          "expect": 0.0005,
+          "tol": 1e-09,
+          "fromBook": false
+        }
+      ],
+      "dim": [
+        "Us"
+      ],
+      "highlight": [
+        "F1",
+        "Ut",
+        "IPt"
+      ],
+      "notes": [
+        {
+          "id": "short",
+          "anchor": "Us",
+          "dx": 95,
+          "dy": -115,
+          "text": "Us = 0 V\n相当于短路",
+          "tone": "warn"
+        },
+        {
+          "id": "keep",
+          "anchor": "F1",
+          "dx": -200,
+          "dy": -140,
+          "text": "受控源保留\nic 仍是 0.75 i1",
+          "tone": "accent"
+        },
+        {
+          "id": "test",
+          "anchor": "Ut",
+          "dx": 200,
+          "dy": 0,
+          "text": "测试电源 u = 10 V\n+ 接端子 1",
+          "tone": "info"
+        },
+        {
+          "id": "meter",
+          "anchor": "IPt",
+          "dx": 200,
+          "dy": 20,
+          "text": "电流探针读 i\n（流入端子 1）",
+          "tone": "info"
+        }
+      ]
+    },
+    {
+      "title": "外加电源法：Req = u / i",
+      "text": "Req = u / i = 10 V ÷ 4 mA = {req}，和开路短路法的结果一样。仿真内核求 Req 用的也是这个办法：独立源置零、受控源保留，在端口注入 1 A、读端口电压。",
+      "compute": {
+        "method": "thevenin",
+        "from": 7,
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "req",
+          "label": "等效电阻 Req（外加电源法）",
+          "path": "rth",
+          "unit": "Ω",
+          "expect": 2500,
+          "tol": 0.0001,
+          "fromBook": true
+        }
+      ],
+      "dim": [
+        "Us"
+      ],
+      "highlight": [
+        "Ut",
+        "IPt"
+      ],
+      "notes": [
+        {
+          "id": "ratio",
+          "anchor": "Ut",
+          "dx": 200,
+          "dy": 0,
+          "text": "Req = u / i\n= 10 V ÷ 4 mA",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "错误：受控源也置零",
+      "text": "常见错误是把受控源也当成电源置零（ic = 0，相当于开路）。这时从 1-1′ 看进去只剩 5 kΩ 与 20 kΩ 并联，得 {rwrong}，和正确的 2.5 kΩ 对不上：受控源不是激励，置零只针对独立源。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "Us",
+            "type": "vsource_dc",
+            "position": {
+              "x": 0,
+              "y": 240
+            },
+            "data": {
+              "label": "Us（置零）",
+              "type": "vsource_dc",
+              "parameters": {
+                "dc": 0
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R1",
+            "type": "resistor",
+            "position": {
+              "x": 250,
+              "y": 0
+            },
+            "data": {
+              "label": "R1",
+              "type": "resistor",
+              "parameters": {
+                "value": 5000
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "R2",
+            "type": "resistor",
+            "position": {
+              "x": 400,
+              "y": 240
+            },
+            "data": {
+              "label": "R2",
+              "type": "resistor",
+              "parameters": {
+                "value": 20000
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "F1",
+            "type": "cccs",
+            "position": {
+              "x": 850,
+              "y": 240
+            },
+            "data": {
+              "label": "F1（ic = 0？）",
+              "type": "cccs",
+              "parameters": {
+                "gain": 0
+              },
+              "rotation": 270
+            }
+          },
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 40
+            },
+            "data": {
+              "label": "1",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 480
+            },
+            "data": {
+              "label": "1′",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "G1",
+            "type": "ground",
+            "position": {
+              "x": 300,
+              "y": 560
+            },
+            "data": {
+              "label": "GND",
+              "type": "ground",
+              "parameters": {},
+              "rotation": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "Us",
+            "target": "R1",
+            "sourceHandle": "pos",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "R1",
+            "target": "F1",
+            "sourceHandle": "n",
+            "targetHandle": "ctrl_p"
+          },
+          {
+            "id": "e3",
+            "source": "VP1",
+            "target": "F1",
+            "sourceHandle": "node",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e4",
+            "source": "R2",
+            "target": "F1",
+            "sourceHandle": "p",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e5",
+            "source": "VP1",
+            "target": "F1",
+            "sourceHandle": "node",
+            "targetHandle": "ctrl_n"
+          },
+          {
+            "id": "e6",
+            "source": "Us",
+            "target": "R2",
+            "sourceHandle": "neg",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e7",
+            "source": "R2",
+            "target": "F1",
+            "sourceHandle": "n",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e8",
+            "source": "VP2",
+            "target": "F1",
+            "sourceHandle": "node",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e9",
+            "source": "G1",
+            "target": "Us",
+            "sourceHandle": "gnd",
+            "targetHandle": "neg"
+          }
+        ]
+      },
+      "compute": {
+        "method": "thevenin",
+        "theveninPort": {
+          "positive": "VP1",
+          "negative": "VP2"
+        }
+      },
+      "values": [
+        {
+          "key": "rwrong",
+          "label": "错误的 Req（5 kΩ ∥ 20 kΩ）",
+          "path": "rth",
+          "unit": "Ω",
+          "expect": 4000,
+          "tol": 0.0001,
+          "fromBook": false
+        }
+      ],
+      "dim": [
+        "Us",
+        "F1"
+      ],
+      "highlight": [
+        "R1",
+        "R2"
+      ],
+      "notes": [
+        {
+          "id": "wrong",
+          "anchor": "F1",
+          "dx": -200,
+          "dy": -140,
+          "text": "错误：受控源不能置零\n4 kΩ ≠ 2.5 kΩ",
+          "tone": "warn"
+        }
+      ]
+    },
+    {
+      "title": "小结：两种等效电路",
+      "text": "一般情况下两种等效电路都有，彼此只差一次电源变换：uoc = Req·isc（35 V = 2.5 kΩ × 14 mA）。左边是戴维宁等效，右边是诺顿等效。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "Rth",
+            "type": "resistor",
+            "position": {
+              "x": 100,
+              "y": 60
+            },
+            "data": {
+              "label": "Req",
+              "type": "resistor",
+              "parameters": {
+                "value": 2500
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "Uth",
+            "type": "vsource_dc",
+            "position": {
+              "x": 100,
+              "y": 320
+            },
+            "data": {
+              "label": "uoc",
+              "type": "vsource_dc",
+              "parameters": {
+                "dc": 35
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VPa",
+            "type": "voltage_probe",
+            "position": {
+              "x": 350,
+              "y": 40
+            },
+            "data": {
+              "label": "1",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VPb",
+            "type": "voltage_probe",
+            "position": {
+              "x": 350,
+              "y": 480
+            },
+            "data": {
+              "label": "1′",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "Ieq",
+            "type": "isource_dc",
+            "position": {
+              "x": 600,
+              "y": 240
+            },
+            "data": {
+              "label": "isc",
+              "type": "isource_dc",
+              "parameters": {
+                "dc": 0.014
+              },
+              "rotation": 270
+            }
+          },
+          {
+            "id": "Req",
+            "type": "resistor",
+            "position": {
+              "x": 850,
+              "y": 240
+            },
+            "data": {
+              "label": "Req",
+              "type": "resistor",
+              "parameters": {
+                "value": 2500
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VP1",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 40
+            },
+            "data": {
+              "label": "1",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VP2",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1150,
+              "y": 480
+            },
+            "data": {
+              "label": "1′",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "VPa",
+            "target": "Rth",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "Rth",
+            "target": "Uth",
+            "sourceHandle": "n",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e3",
+            "source": "Uth",
+            "target": "VPb",
+            "sourceHandle": "neg",
+            "targetHandle": "node"
+          },
+          {
+            "id": "e4",
+            "source": "Ieq",
+            "target": "VP1",
+            "sourceHandle": "neg",
+            "targetHandle": "node"
+          },
+          {
+            "id": "e5",
+            "source": "Req",
+            "target": "VP1",
+            "sourceHandle": "p",
+            "targetHandle": "node"
+          },
+          {
+            "id": "e6",
+            "source": "Ieq",
+            "target": "VP2",
+            "sourceHandle": "pos",
+            "targetHandle": "node"
+          },
+          {
+            "id": "e7",
+            "source": "Req",
+            "target": "VP2",
+            "sourceHandle": "n",
+            "targetHandle": "node"
+          }
+        ]
+      },
+      "hideHandleLabels": [
+        "Ieq"
+      ],
+      "notes": [
+        {
+          "id": "th",
+          "anchor": "Rth",
+          "dx": 180,
+          "dy": 110,
+          "text": "戴维宁：uoc 串 Req",
+          "tone": "accent"
+        },
+        {
+          "id": "no",
+          "anchor": "Req",
+          "dx": -150,
+          "dy": -140,
+          "text": "诺顿：isc 并 Req",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "特殊情况：Req = 0 或 Req = ∞",
+      "text": "含受控源时，独立源置零后的 Req 可能为 0，也可能为无限大。Req = 0 时只有戴维宁等效（一个无伴电压源 uoc），Req = ∞ 时只有诺顿等效（一个无伴电流源 isc）。",
+      "hideHandleLabels": [
+        "Ieq"
+      ],
+      "dim": [
+        "Rth",
+        "Req"
+      ],
+      "notes": [
+        {
+          "id": "zeroR",
+          "anchor": "Rth",
+          "dx": 180,
+          "dy": 110,
+          "text": "若 Req = 0：电阻换成导线\n只剩 uoc，没有诺顿等效",
+          "tone": "info"
+        },
+        {
+          "id": "infR",
+          "anchor": "Req",
+          "dx": -150,
+          "dy": -140,
+          "text": "若 Req = ∞：电阻断开\n只剩 isc，没有戴维宁等效",
+          "tone": "info"
+        }
+      ]
+    }
+  ]
+}

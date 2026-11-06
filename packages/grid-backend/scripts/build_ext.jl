@@ -18,6 +18,9 @@ function build()
         executables=["simulearn-grid" => "julia_main"],
         precompile_execution_file=joinpath(@__DIR__, "precompile_workload.jl"),
         incremental=true,
+        # 启动程序用仓库里修过的版本：原版在系统代码页不是 UTF-8 的 Windows 上，安装路径一带中文就找不到自带的库
+        # （0.5.1 及之前的发布包都有这个问题，见设计记录 2026-11-04 的修订记录）
+        c_driver_program=normpath(joinpath(@__DIR__, "..", "..", "..", "scripts", "ext-launcher", "embedding_wrapper.c")),
         cpu_target=cpu_target,
         force=true,
     )

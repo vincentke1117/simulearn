@@ -45,8 +45,8 @@ function _root!(parent::Dict{String, String}, net::String)
     return net
 end
 
-# 选参考点的优先级：独立电压源的负极 → 独立电流源的负极 → 受控源输出的负极（教材上通常就这么取），
-# 都没有就取名字最小的网络。按元件在 payload 里的顺序找，结果是确定的，契约才钉得住。
+# 选参考点的优先级：独立电压源的负极 → 独立电流源的负极 → 受控源输出的负极（教材上通常就这么取）
+# → 带初始值的电容 / 电感的 n 端（零输入电路），都没有就取名字最小的网络。按元件在 payload 里的顺序找，结果是确定的，契约才钉得住。
 const _REFERENCE_PREFERENCE = (
     ("vsource_dc", "vsource_ac"),
     ("isource_dc", "isource_ac"),
@@ -61,6 +61,15 @@ function _pick_reference(payload::SimulationPayload, parent::Dict{String, String
             (net !== nothing && _root!(parent, net) == root) || continue
             return Dict{String, Any}("net" => net, "component" => component.id, "terminal" => "neg")
         end
+    end
+    # 零输入电路里一个电源都没有：取带初始值的电容 / 电感的 n 端，放电曲线就像教材那样从 +v0 开始，
+    # 不再取决于学生先画的是哪根线（网络名按连线顺序编号）
+    for component in payload.components
+        key = component.type == "capacitor" ? "v0" : component.type == "inductor" ? "i0" : nothing
+        (key === nothing || optional_parameter(component, key, 0.0) == 0) && continue
+        net = get(component.connections, "n", nothing)
+        (net !== nothing && _root!(parent, net) == root) || continue
+        return Dict{String, Any}("net" => net, "component" => component.id, "terminal" => "n")
     end
     return Dict{String, Any}("net" => minimum(island), "component" => nothing, "terminal" => nothing)
 end
@@ -123,7 +132,7 @@ function assign_reference(payload::SimulationPayload)
         append!(get!(merged, name, Vector{String}[]), net.nodes)
     end
     haskey(merged, REFERENCE_NET) || (push!(order, REFERENCE_NET); merged[REFERENCE_NET] = Vector{String}[])
-    # MTK 瞬态要一个真正接上的 Ground 元件来钉住电位；节点电压法也认 ground 元件
+    # MTK 瞬态要一个真正接上的 Ground 元件来钉住电位；结点电压法也认 ground 元件
     if !any(c.type == "ground" && haskey(c.connections, "gnd") for c in payload.components)
         id = "_ref"
         while any(c.id == id for c in payload.components)
@@ -144,7 +153,7 @@ end
     restore_reference!(data, plan, thevenin_port)
 
 把求解结果里按 `REFERENCE_NET` 记的电位改回学生的原网络名（都是 0），去掉学生没画过的 gnd，
-戴维南端口还原成原名，并附上 `reference`（自动选的参考点），前端据此提示学生。
+戴维宁端口还原成原名，并附上 `reference`（自动选的参考点），前端据此提示学生。
 """
 function restore_reference!(data, plan::ReferencePlan, thevenin_port)
     data isa AbstractDict || return data
@@ -162,4 +171,38 @@ function restore_reference!(data, plan::ReferencePlan, thevenin_port)
     end
     data["reference"] = plan.points
     return data
+end
+
+"""
+    check_thevenin_port(payload, port)
+
+戴维宁端口的两端必须是电路里的网络、不能是同一个网络，而且之间要有导通的通路。
+必须在 `assign_reference` 之前检查：它会把互不导通的几块电路的参考点并成同一个节点，
+端口要是跨在两块上，外加电源法注入的测试电流正好从并起来的公共点流过，得到一个看似合理的有限 Req。
+"""
+function check_thevenin_port(payload::SimulationPayload, port::Dict{String, String})
+    positive = get(port, "positive", "")
+    negative = get(port, "negative", "")
+    parent = Dict{String, String}()
+    for net in payload.nets
+        parent[net.name] = net.name
+    end
+    for component in payload.components, net in values(component.connections)
+        parent[net] = net
+    end
+    for name in (positive, negative)
+        haskey(parent, name) ||
+            throw(ValidationError("戴维宁端口的结点 $(name) 不在电路里，请重新选择端口", Dict("port" => port)))
+    end
+    positive == negative &&
+        throw(ValidationError("戴维宁端口的正端和负端是同一个结点，请重新选择端口", Dict("port" => port)))
+    for component in payload.components, (a, b) in conductive_pairs(component)
+        p = get(component.connections, a, nothing)
+        q = get(component.connections, b, nothing)
+        (p === nothing || q === nothing) && continue
+        parent[_root!(parent, p)] = _root!(parent, q)
+    end
+    _root!(parent, positive) == _root!(parent, negative) ||
+        throw(ValidationError("戴维宁端口两端之间没有导通的通路（分在互不相连的两块电路上），等效电阻为无穷大", Dict("port" => port)))
+    return nothing
 end

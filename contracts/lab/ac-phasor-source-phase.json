@@ -1,0 +1,27 @@
+{
+  "name": "lab-ac-phasor-source-phase（10∠0° 与 10∠90° 各经 1Ω 汇到同一结点：Un = 7.071∠45°）",
+  "endpoint": "simulate",
+  "request": {
+    "components": [
+      { "id": "VAC1", "type": "vsource_ac", "parameters": { "amplitude": 10.0, "frequency": 50.0, "phase": 0.0 }, "connections": { "pos": "a", "neg": "gnd" } },
+      { "id": "VAC2", "type": "vsource_ac", "parameters": { "amplitude": 10.0, "frequency": 50.0, "phase": 90.0 }, "connections": { "pos": "b", "neg": "gnd" } },
+      { "id": "R1", "type": "resistor", "parameters": { "value": 1.0 }, "connections": { "p": "a", "n": "n1" } },
+      { "id": "R2", "type": "resistor", "parameters": { "value": 1.0 }, "connections": { "p": "b", "n": "n1" } },
+      { "id": "G1", "type": "ground", "parameters": {}, "connections": { "gnd": "gnd" } }
+    ],
+    "nets": [
+      { "name": "a", "nodes": [["VAC1", "pos"], ["R1", "p"]] },
+      { "name": "b", "nodes": [["VAC2", "pos"], ["R2", "p"]] },
+      { "name": "n1", "nodes": [["R1", "n"], ["R2", "n"]] },
+      { "name": "gnd", "nodes": [["VAC1", "neg"], ["VAC2", "neg"], ["G1", "gnd"]] }
+    ],
+    "sim": { "t_stop": 0.001, "n_samples": 10 },
+    "method": "ac_phasor"
+  },
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "data.node_voltages.n1", "approx": 7.0710678118654755, "atol": 1e-09 },
+    { "path": "data.node_phases_deg.n1", "approx": 45.0, "atol": 1e-06 },
+    { "path": "data.node_phases_deg.b", "approx": 90.0, "atol": 1e-06 }
+  ]
+}

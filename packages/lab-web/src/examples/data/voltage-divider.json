@@ -1,34 +1,16 @@
 {
   "nodes": [
-    {
-      "id": "source",
-      "type": "vsource_dc",
-      "position": { "x": 0, "y": 100 },
-      "data": { "label": "Vs", "type": "vsource_dc", "parameters": { "voltage": 10 }, "rotation": 0 }
-    },
-    {
-      "id": "r1",
-      "type": "resistor",
-      "position": { "x": 100, "y": 50 },
-      "data": { "label": "R1", "type": "resistor", "parameters": { "resistance": 1000 }, "rotation": 90 }
-    },
-    {
-      "id": "r2",
-      "type": "resistor",
-      "position": { "x": 100, "y": 150 },
-      "data": { "label": "R2", "type": "resistor", "parameters": { "resistance": 2000 }, "rotation": 90 }
-    },
-    {
-      "id": "gnd",
-      "type": "ground",
-      "position": { "x": 0, "y": 200 },
-      "data": { "label": "GND", "type": "ground", "parameters": {}, "rotation": 0 }
-    }
+    { "id": "source", "type": "vsource_dc", "position": { "x": 0, "y": 140 }, "data": { "label": "Vs", "type": "vsource_dc", "parameters": { "dc": 10 }, "rotation": 0 } },
+    { "id": "r1", "type": "resistor", "position": { "x": 280, "y": 0 }, "data": { "label": "R1", "type": "resistor", "parameters": { "value": 1000 }, "rotation": 0 } },
+    { "id": "r2", "type": "resistor", "position": { "x": 560, "y": 140 }, "data": { "label": "R2", "type": "resistor", "parameters": { "value": 2000 }, "rotation": 0 } },
+    { "id": "gnd", "type": "ground", "position": { "x": 280, "y": 320 }, "data": { "label": "GND", "type": "ground", "parameters": {}, "rotation": 0 } },
+    { "id": "vp", "type": "voltage_probe", "position": { "x": 560, "y": -40 }, "data": { "label": "VP", "type": "voltage_probe", "parameters": {}, "rotation": 0 } }
   ],
   "edges": [
-    { "id": "e1", "source": "source", "target": "r1", "sourceHandle": "pos", "targetHandle": "left" },
-    { "id": "e2", "source": "r1", "target": "r2", "sourceHandle": "right", "targetHandle": "left" },
-    { "id": "e3", "source": "r2", "target": "gnd", "sourceHandle": "right", "targetHandle": "top" },
-    { "id": "e4", "source": "source", "target": "gnd", "sourceHandle": "neg", "targetHandle": "top" }
+    { "id": "e1", "source": "source", "target": "r1", "sourceHandle": "pos", "targetHandle": "p" },
+    { "id": "e2", "source": "r1", "target": "r2", "sourceHandle": "n", "targetHandle": "p" },
+    { "id": "e3", "source": "r2", "target": "gnd", "sourceHandle": "n", "targetHandle": "gnd" },
+    { "id": "e4", "source": "source", "target": "gnd", "sourceHandle": "neg", "targetHandle": "gnd" },
+    { "id": "e5", "source": "vp", "target": "r2", "sourceHandle": "node", "targetHandle": "p" }
   ]
 }

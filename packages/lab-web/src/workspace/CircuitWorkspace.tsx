@@ -11,9 +11,12 @@ import {
   useReactFlow,
   type Connection,
   type Edge,
+  type EdgeChange,
+  type FitViewOptions,
   type Node,
+  type NodeChange,
 } from '@xyflow/react'
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type DragEvent } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 
 import {
@@ -22,14 +25,15 @@ import {
   circuitComponentList,
   type CircuitComponentType,
 } from '@/circuit/components'
-import type { CircuitNodeData } from '@/types/circuit'
+import type { CircuitNodeData, SimulationSettings, TheveninPortConfig } from '@/types/circuit'
 import type { DiagramMode } from '@/types/control'
 import { nextComponentIdFromNodes } from '@/utils/id'
 import { ComponentPalette } from '@/palette/ComponentPalette'
 import { InspectorPanel } from '@/panels/InspectorPanel'
 import { circuitNodeTypes } from '@/canvas/nodeTypes'
 import { StepBridgeEdge } from '@/canvas/StepBridgeEdge'
-import { isResistiveCircuit } from '@/simulation/payload'
+import { buildNets, isResistiveCircuit } from '@/simulation/payload'
+import { describeNets } from '@/simulation/netLabels'
 import { detectDiagramMode } from '@/simulation/diagramMode'
 import { loadProjectFromObject } from './project'
 import { EditorTopBar } from './EditorTopBar'
@@ -41,6 +45,9 @@ import {
   parseProjectContent,
 } from './circuitWorkspaceHelpers'
 import { useWorkspaceSimulation, type WorkspaceMessage } from './useWorkspaceSimulation'
+import { clearDraft, readDraft, writeDraft, type EmbedCircuit } from '@/embed/circuit'
+import { circuitSignature } from '@/embed/protocol'
+import { dropRemovals } from './topologyLock'
 
 import styles from './CircuitWorkspace.module.css'
 
@@ -52,16 +59,120 @@ interface DragPayload {
   type: CircuitComponentType
 }
 
-function CircuitWorkspaceInner() {
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<CircuitNodeData>>([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
+/** 嵌入知帆课堂时（#/embed）由 EmbedPage 传入：课程给的初始电路，以及按实验隔离的存储前缀 */
+export interface WorkspaceEmbed {
+  storagePrefix: string
+  fingerprint: string
+  initial: EmbedCircuit
+  /**
+   * 案例库里打开的案例：预设的分析设置（「恢复初始电路」时一并恢复）、说明卡片、回到列表。
+   * 戴维宁端口写成引用（探针 id 或「元件 id.端子」），按实际加载的电路（草稿或初始电路）换成网络名：
+   * 网络编号随连线顺序变，按初始电路算好的 n1、n2 不一定对得上草稿
+   */
+  preset?: { settings: SimulationSettings; theveninRefs?: { positive: string; negative: string } }
+  guide?: ReactNode
+  onBack?: () => void
+}
+
+function presetTheveninPort(embed: WorkspaceEmbed | undefined, circuit: EmbedCircuit): TheveninPortConfig | undefined {
+  const refs = embed?.preset?.theveninRefs
+  if (!refs) return undefined
+  // 只按连线算网络：草稿里某个参数暂时无效（比如 0 Ω）时，完整构造请求会失败，端口就丢了
+  const { handleNetMap } = buildNets(circuit.nodes, circuit.edges)
+  const resolve = (ref: string) => {
+    if (ref === 'gnd') return 'gnd'
+    const [id, handle] = ref.includes('.') ? ref.split('.') : [ref, 'node']
+    return handleNetMap.get(`${id}:${handle}`)
+  }
+  const positiveNode = resolve(refs.positive)
+  const negativeNode = resolve(refs.negative)
+  return positiveNode && negativeNode ? { positiveNode, negativeNode } : undefined
+}
+
+function CircuitWorkspaceInner({ embed }: { embed?: WorkspaceEmbed }) {
+  // 嵌入模式：有和这份课程电路配套的草稿就接着上次改，没有就从初始电路开始
+  const [start] = useState(() => {
+    if (!embed) return { nodes: [], edges: [], restored: false }
+    const draft = readDraft(embed.storagePrefix, embed.fingerprint)
+    return draft ? { ...draft, restored: true } : { ...embed.initial, restored: false }
+  })
+  const [startPort] = useState(() => presetTheveninPort(embed, start))
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<CircuitNodeData>>(start.nodes)
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(start.edges)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
-  const [workspaceMessage, setWorkspaceMessage] = useState<WorkspaceMessage>(null)
+  const [workspaceMessage, setWorkspaceMessage] = useState<WorkspaceMessage>(
+    start.restored ? { tone: 'info', text: '已恢复你上次的修改；点「恢复初始电路」可以重新开始' } : null,
+  )
 
   const reactFlow = useReactFlow<Node<CircuitNodeData>, Edge>()
+  // 设计记录 D19：嵌入且没有任务时拓扑锁定——不能增删元件和连线，参数照常可改，位置可以拖
+  const locked = Boolean(embed)
+  // 案例说明卡浮在画布左上角：适配视图时左边多留出它的宽度，电路不被挡住
+  const fitPadding = useMemo<FitViewOptions['padding']>(
+    () => (embed?.guide ? { top: '40px', right: '40px', bottom: '40px', left: '380px' } : 0.2),
+    [embed],
+  )
+  const baseline = useMemo(
+    () => (embed ? circuitSignature(embed.initial.nodes, embed.initial.edges) : ''),
+    [embed],
+  )
+
+  const handleNodesChange = useCallback(
+    (changes: NodeChange<Node<CircuitNodeData>>[]) => onNodesChange(dropRemovals(changes, locked)),
+    [locked, onNodesChange],
+  )
+  const handleEdgesChange = useCallback(
+    (changes: EdgeChange<Edge>[]) => onEdgesChange(dropRemovals(changes, locked)),
+    [locked, onEdgesChange],
+  )
+
+  // 草稿防抖写入（拖动时每帧都在变）。还没写出去的那一次，在页面被宿主卸掉（「重新启动」、切场景会直接移除 iframe）
+  // 或组件卸载时立即落盘，否则最后半秒的修改会丢
+  const pendingDraft = useRef<(() => void) | null>(null)
+  useEffect(() => {
+    if (!embed) return
+    const write = () => {
+      pendingDraft.current = null
+      writeDraft(embed.storagePrefix, embed.fingerprint, baseline, nodes, edges)
+    }
+    pendingDraft.current = write
+    const timer = setTimeout(write, 500)
+    return () => clearTimeout(timer)
+  }, [embed, baseline, nodes, edges])
+  useEffect(() => {
+    const flush = () => pendingDraft.current?.()
+    const onHidden = () => {
+      if (document.visibilityState === 'hidden') flush()
+    }
+    window.addEventListener('pagehide', flush)
+    document.addEventListener('visibilitychange', onHidden)
+    return () => {
+      window.removeEventListener('pagehide', flush)
+      document.removeEventListener('visibilitychange', onHidden)
+      flush()
+    }
+  }, [])
+
+  // 宿主的课堂舞台大小不固定（约定 §4），窗口一变就重新适配一次。
+  // 宿主刚把 iframe 塞进课堂时尺寸还在变，画布初始化时的 fitView 会按旧尺寸缩放，所以开头再补一次
+  useEffect(() => {
+    if (!embed) return
+    const fit = () => reactFlow.fitView({ padding: fitPadding })
+    let timer: ReturnType<typeof setTimeout> | undefined = setTimeout(fit, 300)
+    const onResize = () => {
+      clearTimeout(timer)
+      timer = setTimeout(fit, 200)
+    }
+    window.addEventListener('resize', onResize)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', onResize)
+    }
+  }, [embed, reactFlow, fitPadding])
 
   // Load pending project from localStorage if available
   useEffect(() => {
+    if (embed) return
     try {
       const pending = localStorage.getItem('slp:lab:pending-project')
       if (pending) {
@@ -78,7 +189,7 @@ function CircuitWorkspaceInner() {
       console.error('Failed to load pending project:', e)
       setWorkspaceMessage({ tone: 'error', text: '加载示例电路失败' })
     }
-  }, [setNodes, setEdges])
+  }, [embed, setNodes, setEdges])
 
   const handleDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault()
@@ -88,6 +199,7 @@ function CircuitWorkspaceInner() {
   const handleDrop = useCallback(
     (event: DragEvent<HTMLDivElement>) => {
       event.preventDefault()
+      if (locked) return
       const payloadRaw = event.dataTransfer.getData(DND_COMPONENT_MIME)
       if (!payloadRaw) return
 
@@ -116,18 +228,19 @@ function CircuitWorkspaceInner() {
         return currentNodes.concat(node)
       })
     },
-    [reactFlow, setNodes],
+    [locked, reactFlow, setNodes],
   )
 
   const handleConnect = useCallback(
     (connection: Connection) => {
+      if (locked) return
       if (!connection.source || !connection.target) return
       if (connection.source === connection.target) return
 
       // 统一使用 stepBridge 连线样式（带跳弧）
       setEdges((eds) => addEdge({ ...connection, type: 'stepBridge' }, eds))
     },
-    [setEdges],
+    [locked, setEdges],
   )
 
   const isValidConnection = useCallback((connection: Connection | Edge) => {
@@ -229,13 +342,15 @@ function CircuitWorkspaceInner() {
     teachingMode,
     theveninPort,
     availableNodes,
-    setSimulationResult,
-    setSimulationError,
+    availableNodeLabels,
     setShowResultPanel,
     setTeachingMode,
     setTheveninPort,
     handleSimulationSettingsChange,
     handleRunSimulation,
+    resetSimulation,
+    resultStale,
+    resultNets,
   } = useWorkspaceSimulation({
     nodes,
     edges,
@@ -243,10 +358,20 @@ function CircuitWorkspaceInner() {
     reactFlow,
     setNodes,
     setWorkspaceMessage,
+    initialSettings: embed?.preset?.settings,
+    initialTheveninPort: startPort,
   })
 
   const canExport = nodes.length > 0
+  // 结果表的行名（n1、n2…）旁边括上探针名 / 元件端子，学生才对得上画布。按算出这个结果的那次请求的网络，
+  // 不按当前画布现算：连线删了再连回去，网络会换号，旧数值就配上了别的网络的说明
+  const netLabels = useMemo(
+    () => (resultNets ? describeNets(nodes, resultNets) : undefined),
+    [nodes, resultNets],
+  )
   const isResistive = useMemo(() => isResistiveCircuit(nodes), [nodes])
+  const hasAcSource = useMemo(() => nodes.some((node) => node.type === 'vsource_ac' || node.type === 'isource_ac'), [nodes])
+  const hasProbe = useMemo(() => nodes.some((node) => node.type === 'voltage_probe' || node.type === 'current_probe'), [nodes])
   const hasResult = Boolean(simulationResult && !simulationError)
   const runDisabled = isRunDisabled(diagramMode, hasGround)
 
@@ -267,8 +392,7 @@ function CircuitWorkspaceInner() {
       setNodes(result.nodes)
       setEdges(result.edges)
       setSelectedNodeId(null)
-      setSimulationResult(null)
-      setSimulationError(null)
+      resetSimulation()
       setWorkspaceMessage({ tone: 'info', text: '项目导入成功' })
 
       setTimeout(() => {
@@ -279,7 +403,7 @@ function CircuitWorkspaceInner() {
         }
       }, 50)
     },
-    [reactFlow, setEdges, setNodes, setSimulationError, setSimulationResult],
+    [reactFlow, resetSimulation, setEdges, setNodes],
   )
 
   const handleImportError = useCallback((message: string) => {
@@ -290,28 +414,54 @@ function CircuitWorkspaceInner() {
     if (confirm('确定要清空当前电路吗？')) {
       setNodes([])
       setEdges([])
-      setSimulationResult(null)
-      setSimulationError(null)
+      resetSimulation()
       setWorkspaceMessage({ tone: 'info', text: '电路已重置' })
     }
-  }, [setEdges, setNodes, setSimulationError, setSimulationResult])
+  }, [resetSimulation, setEdges, setNodes])
+
+  const handleRestoreInitial = useCallback(() => {
+    if (!embed) return
+    // 初始节点不带结点黑圈计数；edges 多半还是同一个引用，setEdges 不会触发按 edges 重算黑圈的 effect
+    setNodes(applyHandleCounts(embed.initial.nodes, embed.initial.edges))
+    setEdges(embed.initial.edges)
+    clearDraft(embed.storagePrefix)
+    setSelectedNodeId(null)
+    resetSimulation()
+    if (embed.preset) {
+      handleSimulationSettingsChange(embed.preset.settings)
+      setTheveninPort(presetTheveninPort(embed, embed.initial))
+    }
+    setWorkspaceMessage({ tone: 'info', text: '已恢复初始电路' })
+    setTimeout(() => {
+      try {
+        reactFlow.fitView({ padding: fitPadding })
+      } catch {
+        // ignore viewport fit errors
+      }
+    }, 50)
+  }, [embed, reactFlow, resetSimulation, setEdges, setNodes, handleSimulationSettingsChange, setTheveninPort, fitPadding])
 
   return (
     <div className={styles.workspace}>
-      <ComponentPalette components={circuitComponentList} />
+      {!locked && <ComponentPalette components={circuitComponentList} />}
       <div className={styles.canvasArea}>
         <EditorTopBar
           onExport={handleExportProject}
           onImport={handleImportProject}
           onImportError={handleImportError}
           canExport={canExport}
-          onReset={handleReset}
+          onReset={embed ? undefined : handleReset}
+          onRestoreInitial={embed ? handleRestoreInitial : undefined}
+          // 回列表前先把防抖里还没写出去的草稿落盘：列表上的「改过参数」要在这次渲染里就看得到
+          onBack={embed?.onBack ? () => { pendingDraft.current?.(); embed.onBack?.() } : undefined}
           settings={simulationSettings}
           onSettingsChange={handleSimulationSettingsChange}
           onRun={handleRunSimulation}
           disabled={runDisabled}
           isRunning={isSimulating}
           isResistive={isResistive}
+          hasAcSource={hasAcSource}
+          hasProbe={hasProbe}
           diagramMode={diagramMode}
           hasResult={hasResult}
           onShowResult={() => setShowResultPanel(true)}
@@ -319,6 +469,7 @@ function CircuitWorkspaceInner() {
           theveninPort={theveninPort}
           onTheveninPortChange={setTheveninPort}
           availableNodes={availableNodes}
+          availableNodeLabels={availableNodeLabels}
           teachingMode={teachingMode}
           onTeachingModeChange={setTeachingMode}
           message={workspaceMessage}
@@ -331,15 +482,18 @@ function CircuitWorkspaceInner() {
           <ReactFlow
             nodes={nodes}
             edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
+            onNodesChange={handleNodesChange}
+            onEdgesChange={handleEdgesChange}
             onConnect={handleConnect}
+            nodesConnectable={!locked}
+            deleteKeyCode={locked ? null : 'Backspace'}
             nodeTypes={circuitNodeTypes}
             edgeTypes={{ stepBridge: StepBridgeEdge }}
             connectionMode={ConnectionMode.Strict}
             isValidConnection={isValidConnection}
             onSelectionChange={handleSelectionChange}
             fitView
+            fitViewOptions={{ padding: fitPadding }}
             minZoom={0.25}
             maxZoom={1.5}
             // 画布连线统一采用 stepBridge 样式
@@ -349,6 +503,7 @@ function CircuitWorkspaceInner() {
             <Background gap={20} color="#334155" />
             <Controls position="bottom-right" className="!bg-slate-800 !border-slate-700 [&>button]:!border-slate-700 [&>button]:!bg-slate-800 [&>button]:!text-slate-200 [&>button:hover]:!bg-slate-700 [&>button_svg]:!fill-slate-200 [&>button_path]:!fill-slate-200" />
           </ReactFlow>
+          {embed?.guide}
         </div>
         <AnimatePresence>
           {showResultPanel && (
@@ -360,7 +515,10 @@ function CircuitWorkspaceInner() {
                 method={lastMethodUsed}
                 diagramMode={diagramMode}
                 componentLabels={componentLabels}
+                netLabels={netLabels}
                 hasGround={hasGround}
+                allowExport={!embed}
+                stale={resultStale}
                 onClose={() => setShowResultPanel(false)}
               />
             </Suspense>
@@ -390,10 +548,10 @@ function CircuitWorkspaceInner() {
   )
 }
 
-export function CircuitWorkspace() {
+export function CircuitWorkspace({ embed }: { embed?: WorkspaceEmbed } = {}) {
   return (
     <ReactFlowProvider>
-      <CircuitWorkspaceInner />
+      <CircuitWorkspaceInner embed={embed} />
     </ReactFlowProvider>
   )
 }

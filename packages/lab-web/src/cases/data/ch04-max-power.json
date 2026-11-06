@@ -1,0 +1,45 @@
+{
+  "id": "ch04-max-power",
+  "chapter": 4,
+  "chapterTitle": "电路定理",
+  "section": "§4-4 最大功率传输定理",
+  "source": "例 4-10",
+  "title": "最大功率传输：负载电阻取多大功率最大",
+  "summary": "RL 左边的含源一端口可以等效成 10 V 电压源串 2.5 Ω 电阻，RL 等于这个等效电阻时拿到的功率最大。案例里 RL 已经取在最佳值 2.5 Ω，读 RL 的电流按 P = I²RL 算功率，再改 RL 比一比；同时看电源发出了多少功率，体会「最大功率」和「高效率」不是一回事。",
+  "tryIt": [
+    "先在 RL = 2.5 Ω 下运行：RL 电流 2 A，功率 2² × 2.5 = 10 W。再把 RL 改成 1.25 Ω 和 5 Ω 各运行一次，电流分别约 2.667 A 和 1.333 A，算出的功率都约 8.89 W，比 10 W 小。",
+    "RL 改成 1 Ω 或 10 Ω 再算功率（电流约 2.857 A、0.8 A，功率约 8.16 W、6.4 W），离 2.5 Ω 越远功率越小。",
+    "RL = 2.5 Ω 时读 R1 的电流，就是 20 V 电源的电流 3 A，电源发出 60 W，RL 只拿到 10 W，约 16.67%（教材值）：最大功率传输时效率并不高。",
+    "RL 改成 1e9 Ω（相当于断开），RL 上端电压约 10 V，这是戴维宁开路电压 Uoc；RL 改成 1e-6 Ω（相当于短路），RL 电流约 4 A，Uoc / Isc = 2.5 Ω 就是等效电阻 Req。"
+  ],
+  "notes": [
+    "教材图里两个 5 Ω 电阻没有编号，这里把与电源串联的记作 R1、与 RL 并联的记作 R2。",
+    "RL 的功率不直接显示，用 RL 的电流（或 RL 上端电压）按 P = I²RL 自己算。",
+    "电源电流看 R1：Us 自己显示 −3 A，因为软件按「在源内部从 + 流到 −」计电压源电流，负号表示电流实际从 + 端流出。"
+  ],
+  "preset": { "method": "node_voltage", "showBranchCurrents": true },
+  "checks": [
+    { "label": "RL = 2.5 Ω 时 RL 的电流", "path": "branch_currents.RL", "expect": 2, "unit": "A", "tol": 0.001, "fromBook": true },
+    { "label": "RL = 2.5 Ω 时电源支路电流（流过 R1）", "path": "branch_currents.R1", "expect": 3, "unit": "A", "tol": 0.001, "fromBook": true },
+    { "label": "RL = 2.5 Ω 时 RL 两端电压", "path": "node_voltages.{VP1}", "expect": 5, "unit": "V", "tol": 0.001, "fromBook": false }
+  ],
+  "circuit": {
+    "nodes": [
+      { "id": "Us", "type": "vsource_dc", "position": { "x": 0, "y": 220 }, "data": { "label": "Us", "type": "vsource_dc", "parameters": { "dc": 20 }, "rotation": 90 } },
+      { "id": "R1", "type": "resistor", "position": { "x": 300, "y": 60 }, "data": { "label": "R1", "type": "resistor", "parameters": { "value": 5 }, "rotation": 0 } },
+      { "id": "R2", "type": "resistor", "position": { "x": 560, "y": 220 }, "data": { "label": "R2", "type": "resistor", "parameters": { "value": 5 }, "rotation": 90 } },
+      { "id": "RL", "type": "resistor", "position": { "x": 820, "y": 220 }, "data": { "label": "RL（负载）", "type": "resistor", "parameters": { "value": 2.5 }, "rotation": 90 } },
+      { "id": "VP1", "type": "voltage_probe", "position": { "x": 1000, "y": 100 }, "data": { "label": "RL 上端", "type": "voltage_probe", "parameters": {}, "rotation": 0 } },
+      { "id": "G1", "type": "ground", "position": { "x": 420, "y": 520 }, "data": { "label": "GND", "type": "ground", "parameters": {}, "rotation": 0 } }
+    ],
+    "edges": [
+      { "id": "e1", "source": "Us", "target": "R1", "sourceHandle": "pos", "targetHandle": "p" },
+      { "id": "e2", "source": "R1", "target": "R2", "sourceHandle": "n", "targetHandle": "p" },
+      { "id": "e3", "source": "R2", "target": "RL", "sourceHandle": "p", "targetHandle": "p" },
+      { "id": "e4", "source": "VP1", "target": "RL", "sourceHandle": "node", "targetHandle": "p" },
+      { "id": "e5", "source": "R2", "target": "Us", "sourceHandle": "n", "targetHandle": "neg" },
+      { "id": "e6", "source": "RL", "target": "Us", "sourceHandle": "n", "targetHandle": "neg" },
+      { "id": "e7", "source": "G1", "target": "Us", "sourceHandle": "gnd", "targetHandle": "neg" }
+    ]
+  }
+}

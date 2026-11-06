@@ -125,7 +125,12 @@
     {
       "path": "data.rth",
       "approx": 500.0,
-      "atol": 0.01
+      "atol": 1e-06
+    },
+    {
+      "path": "data.isc",
+      "approx": 0.005,
+      "atol": 1e-09
     }
   ]
 }

@@ -151,8 +151,10 @@ end
 # 没接地的电路不再报错，改为自动选参考点（原先这里断言单个电阻会因缺地线报错）
 include("reference.jl")
 include("dc_op_ac_phasor.jl")
+include("initial_values.jl")
 include("control_simulation.jl")
 include("mixed_simulation.jl")
+include("server.jl")
 
 # ---- Golden 契约（contracts/ 双端共享，冻结跨进程契约行为）----
 using JSON3

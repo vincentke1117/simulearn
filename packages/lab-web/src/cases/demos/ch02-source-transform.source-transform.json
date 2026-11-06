@@ -1,0 +1,1415 @@
+{
+  "caseId": "ch02-source-transform",
+  "id": "source-transform",
+  "kind": "steps",
+  "title": "电源等效变换：一步步化简到单回路",
+  "steps": [
+    {
+      "title": "原电路（图 2-15a）",
+      "text": "要求的是 7 Ω 支路的电流 i，这条支路从头到尾不动，其余部分一步步化简。现在 i = {i}，A 点 {vA}，B 点 {vB}；和 6 V 串联的 R1 里电流 {iR1}。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "Us",
+            "type": "vsource_dc",
+            "position": {
+              "x": 0,
+              "y": 360
+            },
+            "data": {
+              "label": "Us",
+              "type": "vsource_dc",
+              "parameters": {
+                "dc": 6
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R1",
+            "type": "resistor",
+            "position": {
+              "x": 0,
+              "y": 120
+            },
+            "data": {
+              "label": "R1",
+              "type": "resistor",
+              "parameters": {
+                "value": 2
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "Is1",
+            "type": "isource_dc",
+            "position": {
+              "x": 520,
+              "y": 240
+            },
+            "data": {
+              "label": "Is1",
+              "type": "isource_dc",
+              "parameters": {
+                "dc": 6
+              },
+              "rotation": 270
+            }
+          },
+          {
+            "id": "R2",
+            "type": "resistor",
+            "position": {
+              "x": 780,
+              "y": 240
+            },
+            "data": {
+              "label": "R2",
+              "type": "resistor",
+              "parameters": {
+                "value": 2
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "Is2",
+            "type": "isource_dc",
+            "position": {
+              "x": 1040,
+              "y": 0
+            },
+            "data": {
+              "label": "Is2",
+              "type": "isource_dc",
+              "parameters": {
+                "dc": 2
+              },
+              "rotation": 180
+            }
+          },
+          {
+            "id": "R3",
+            "type": "resistor",
+            "position": {
+              "x": 1040,
+              "y": 200
+            },
+            "data": {
+              "label": "R3",
+              "type": "resistor",
+              "parameters": {
+                "value": 2
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "R4",
+            "type": "resistor",
+            "position": {
+              "x": 1300,
+              "y": 240
+            },
+            "data": {
+              "label": "R4（电流 i）",
+              "type": "resistor",
+              "parameters": {
+                "value": 7
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VPA",
+            "type": "voltage_probe",
+            "position": {
+              "x": 640,
+              "y": 0
+            },
+            "data": {
+              "label": "A",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VPB",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1560,
+              "y": 240
+            },
+            "data": {
+              "label": "B",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "GND",
+            "type": "ground",
+            "position": {
+              "x": 1300,
+              "y": 520
+            },
+            "data": {
+              "label": "GND",
+              "type": "ground",
+              "parameters": {},
+              "rotation": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "R1",
+            "target": "Us",
+            "sourceHandle": "n",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e2",
+            "source": "R1",
+            "target": "Is1",
+            "sourceHandle": "p",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e3",
+            "source": "VPA",
+            "target": "Is1",
+            "sourceHandle": "node",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e4",
+            "source": "Is1",
+            "target": "R2",
+            "sourceHandle": "neg",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e5",
+            "source": "R2",
+            "target": "R3",
+            "sourceHandle": "p",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e6",
+            "source": "Is2",
+            "target": "R3",
+            "sourceHandle": "neg",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e7",
+            "source": "Is2",
+            "target": "R3",
+            "sourceHandle": "pos",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e8",
+            "source": "R3",
+            "target": "R4",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e9",
+            "source": "VPB",
+            "target": "R4",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e10",
+            "source": "GND",
+            "target": "R4",
+            "sourceHandle": "gnd",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e11",
+            "source": "Us",
+            "target": "Is1",
+            "sourceHandle": "neg",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e12",
+            "source": "Is1",
+            "target": "R2",
+            "sourceHandle": "pos",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e13",
+            "source": "R2",
+            "target": "R4",
+            "sourceHandle": "n",
+            "targetHandle": "n"
+          }
+        ]
+      },
+      "compute": {
+        "method": "node_voltage"
+      },
+      "values": [
+        {
+          "key": "i",
+          "label": "i（7 Ω，向下）",
+          "path": "branch_currents.R4",
+          "unit": "A",
+          "expect": 0.5,
+          "tol": 1e-06,
+          "fromBook": true
+        },
+        {
+          "key": "vA",
+          "label": "A 点电位",
+          "path": "node_voltages.{VPA}",
+          "unit": "V",
+          "expect": 8.5,
+          "tol": 1e-06,
+          "fromBook": false
+        },
+        {
+          "key": "vB",
+          "label": "B 点电位",
+          "path": "node_voltages.{VPB}",
+          "unit": "V",
+          "expect": 3.5,
+          "tol": 1e-06,
+          "fromBook": false
+        },
+        {
+          "key": "iR1",
+          "label": "R1 的电流（向下）",
+          "path": "branch_currents.R1",
+          "unit": "A",
+          "expect": 1.25,
+          "tol": 1e-06,
+          "fromBook": false
+        }
+      ],
+      "hideHandleLabels": [
+        "Is1",
+        "Is2"
+      ],
+      "highlight": [
+        "R4"
+      ],
+      "notes": [
+        {
+          "id": "g1",
+          "anchor": "R1",
+          "dx": -20,
+          "dy": -90,
+          "text": "可换：6 V 串 2 Ω",
+          "tone": "info"
+        },
+        {
+          "id": "g2",
+          "anchor": "R2",
+          "dx": -110,
+          "dy": -90,
+          "text": "可换：6 A 并 2 Ω",
+          "tone": "info"
+        },
+        {
+          "id": "g3",
+          "anchor": "Is2",
+          "dx": -20,
+          "dy": -90,
+          "text": "可换：2 A 并 2 Ω（跨在 A、B 之间，不接地也能换）",
+          "tone": "info"
+        },
+        {
+          "id": "i",
+          "anchor": "R4",
+          "dx": 60,
+          "dy": -90,
+          "text": "i 所在支路：全程不动",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "① 先圈出 6 V 串 2 Ω",
+      "text": "电压源和电阻串联的组合，可以换成电流源和电阻并联。先换左边这一组。",
+      "compute": {
+        "method": "node_voltage"
+      },
+      "hideHandleLabels": [
+        "Is1",
+        "Is2"
+      ],
+      "highlight": [
+        "Us",
+        "R1"
+      ],
+      "notes": [
+        {
+          "id": "pre1",
+          "anchor": "R1",
+          "dx": -20,
+          "dy": -90,
+          "text": "电压源串电阻\n→ 电流源并电阻",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "② 换成 3 A 并 2 Ω（图 2-15b）",
+      "text": "Is = Us/R = 6 V ÷ 2 Ω = 3 A，参考方向由 Us 的负极指向正极，所以箭头朝上；电阻还是 2 Ω，由串联改为并联。i = {i}，A 点 {vA}，B 点 {vB}，都没变。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "Is3",
+            "type": "isource_dc",
+            "position": {
+              "x": 0,
+              "y": 240
+            },
+            "data": {
+              "label": "6 V ÷ 2 Ω",
+              "type": "isource_dc",
+              "parameters": {
+                "dc": 3
+              },
+              "rotation": 270
+            }
+          },
+          {
+            "id": "R1",
+            "type": "resistor",
+            "position": {
+              "x": 260,
+              "y": 240
+            },
+            "data": {
+              "label": "R1",
+              "type": "resistor",
+              "parameters": {
+                "value": 2
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "Is1",
+            "type": "isource_dc",
+            "position": {
+              "x": 520,
+              "y": 240
+            },
+            "data": {
+              "label": "Is1",
+              "type": "isource_dc",
+              "parameters": {
+                "dc": 6
+              },
+              "rotation": 270
+            }
+          },
+          {
+            "id": "R2",
+            "type": "resistor",
+            "position": {
+              "x": 780,
+              "y": 240
+            },
+            "data": {
+              "label": "R2",
+              "type": "resistor",
+              "parameters": {
+                "value": 2
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "Is2",
+            "type": "isource_dc",
+            "position": {
+              "x": 1040,
+              "y": 0
+            },
+            "data": {
+              "label": "Is2",
+              "type": "isource_dc",
+              "parameters": {
+                "dc": 2
+              },
+              "rotation": 180
+            }
+          },
+          {
+            "id": "R3",
+            "type": "resistor",
+            "position": {
+              "x": 1040,
+              "y": 200
+            },
+            "data": {
+              "label": "R3",
+              "type": "resistor",
+              "parameters": {
+                "value": 2
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "R4",
+            "type": "resistor",
+            "position": {
+              "x": 1300,
+              "y": 240
+            },
+            "data": {
+              "label": "R4（电流 i）",
+              "type": "resistor",
+              "parameters": {
+                "value": 7
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VPA",
+            "type": "voltage_probe",
+            "position": {
+              "x": 640,
+              "y": 0
+            },
+            "data": {
+              "label": "A",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VPB",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1560,
+              "y": 240
+            },
+            "data": {
+              "label": "B",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "GND",
+            "type": "ground",
+            "position": {
+              "x": 1300,
+              "y": 520
+            },
+            "data": {
+              "label": "GND",
+              "type": "ground",
+              "parameters": {},
+              "rotation": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "Is3",
+            "target": "R1",
+            "sourceHandle": "neg",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "R1",
+            "target": "Is1",
+            "sourceHandle": "p",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e3",
+            "source": "VPA",
+            "target": "Is1",
+            "sourceHandle": "node",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e4",
+            "source": "Is1",
+            "target": "R2",
+            "sourceHandle": "neg",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e5",
+            "source": "R2",
+            "target": "R3",
+            "sourceHandle": "p",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e6",
+            "source": "Is2",
+            "target": "R3",
+            "sourceHandle": "neg",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e7",
+            "source": "Is2",
+            "target": "R3",
+            "sourceHandle": "pos",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e8",
+            "source": "R3",
+            "target": "R4",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e9",
+            "source": "VPB",
+            "target": "R4",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e10",
+            "source": "GND",
+            "target": "R4",
+            "sourceHandle": "gnd",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e11",
+            "source": "Is3",
+            "target": "R1",
+            "sourceHandle": "pos",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e12",
+            "source": "R1",
+            "target": "Is1",
+            "sourceHandle": "n",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e13",
+            "source": "Is1",
+            "target": "R2",
+            "sourceHandle": "pos",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e14",
+            "source": "R2",
+            "target": "R4",
+            "sourceHandle": "n",
+            "targetHandle": "n"
+          }
+        ]
+      },
+      "compute": {
+        "method": "node_voltage"
+      },
+      "values": [
+        {
+          "key": "i",
+          "label": "i（7 Ω，向下）",
+          "path": "branch_currents.R4",
+          "unit": "A",
+          "expect": 0.5,
+          "tol": 1e-06,
+          "fromBook": true
+        },
+        {
+          "key": "vA",
+          "label": "A 点电位",
+          "path": "node_voltages.{VPA}",
+          "unit": "V",
+          "expect": 8.5,
+          "tol": 1e-06,
+          "fromBook": false
+        },
+        {
+          "key": "vB",
+          "label": "B 点电位",
+          "path": "node_voltages.{VPB}",
+          "unit": "V",
+          "expect": 3.5,
+          "tol": 1e-06,
+          "fromBook": false
+        },
+        {
+          "key": "iR1",
+          "label": "R1 的电流（向下）",
+          "path": "branch_currents.R1",
+          "unit": "A",
+          "expect": 4.25,
+          "tol": 1e-06,
+          "fromBook": false
+        }
+      ],
+      "hideHandleLabels": [
+        "Is3",
+        "Is1",
+        "Is2"
+      ],
+      "highlight": [
+        "Is3",
+        "R1"
+      ],
+      "notes": [
+        {
+          "id": "is3",
+          "anchor": "Is3",
+          "dx": -60,
+          "dy": -110,
+          "text": "Is = Us/R = 3 A\n箭头：Us 的 − 极 → + 极",
+          "tone": "accent"
+        },
+        {
+          "id": "inner",
+          "anchor": "R1",
+          "dx": 40,
+          "dy": -110,
+          "text": "同一个 2 Ω：电流 1.25 A → 4.25 A\n对外等效，对内不等效",
+          "tone": "warn"
+        }
+      ]
+    },
+    {
+      "title": "③ 合并并联（图 2-15c）",
+      "text": "3 A 和 6 A 都朝上，同向相加得 9 A（反向就相减）；两个 2 Ω 并联得 1 Ω。i = {i}，A 点 {vA}，B 点 {vB}。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "Is9",
+            "type": "isource_dc",
+            "position": {
+              "x": 520,
+              "y": 240
+            },
+            "data": {
+              "label": "3 A + 6 A",
+              "type": "isource_dc",
+              "parameters": {
+                "dc": 9
+              },
+              "rotation": 270
+            }
+          },
+          {
+            "id": "R12",
+            "type": "resistor",
+            "position": {
+              "x": 780,
+              "y": 240
+            },
+            "data": {
+              "label": "R1∥R2",
+              "type": "resistor",
+              "parameters": {
+                "value": 1
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "Is2",
+            "type": "isource_dc",
+            "position": {
+              "x": 1040,
+              "y": 0
+            },
+            "data": {
+              "label": "Is2",
+              "type": "isource_dc",
+              "parameters": {
+                "dc": 2
+              },
+              "rotation": 180
+            }
+          },
+          {
+            "id": "R3",
+            "type": "resistor",
+            "position": {
+              "x": 1040,
+              "y": 200
+            },
+            "data": {
+              "label": "R3",
+              "type": "resistor",
+              "parameters": {
+                "value": 2
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "R4",
+            "type": "resistor",
+            "position": {
+              "x": 1300,
+              "y": 240
+            },
+            "data": {
+              "label": "R4（电流 i）",
+              "type": "resistor",
+              "parameters": {
+                "value": 7
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VPA",
+            "type": "voltage_probe",
+            "position": {
+              "x": 640,
+              "y": 0
+            },
+            "data": {
+              "label": "A",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VPB",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1560,
+              "y": 240
+            },
+            "data": {
+              "label": "B",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "GND",
+            "type": "ground",
+            "position": {
+              "x": 1300,
+              "y": 520
+            },
+            "data": {
+              "label": "GND",
+              "type": "ground",
+              "parameters": {},
+              "rotation": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "VPA",
+            "target": "Is9",
+            "sourceHandle": "node",
+            "targetHandle": "neg"
+          },
+          {
+            "id": "e2",
+            "source": "Is9",
+            "target": "R12",
+            "sourceHandle": "neg",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e3",
+            "source": "R12",
+            "target": "R3",
+            "sourceHandle": "p",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e4",
+            "source": "Is2",
+            "target": "R3",
+            "sourceHandle": "neg",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e5",
+            "source": "Is2",
+            "target": "R3",
+            "sourceHandle": "pos",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e6",
+            "source": "R3",
+            "target": "R4",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e7",
+            "source": "VPB",
+            "target": "R4",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e8",
+            "source": "GND",
+            "target": "R4",
+            "sourceHandle": "gnd",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e9",
+            "source": "Is9",
+            "target": "R12",
+            "sourceHandle": "pos",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e10",
+            "source": "R12",
+            "target": "R4",
+            "sourceHandle": "n",
+            "targetHandle": "n"
+          }
+        ]
+      },
+      "compute": {
+        "method": "node_voltage"
+      },
+      "values": [
+        {
+          "key": "i",
+          "label": "i（7 Ω，向下）",
+          "path": "branch_currents.R4",
+          "unit": "A",
+          "expect": 0.5,
+          "tol": 1e-06,
+          "fromBook": true
+        },
+        {
+          "key": "vA",
+          "label": "A 点电位",
+          "path": "node_voltages.{VPA}",
+          "unit": "V",
+          "expect": 8.5,
+          "tol": 1e-06,
+          "fromBook": false
+        },
+        {
+          "key": "vB",
+          "label": "B 点电位",
+          "path": "node_voltages.{VPB}",
+          "unit": "V",
+          "expect": 3.5,
+          "tol": 1e-06,
+          "fromBook": false
+        }
+      ],
+      "hideHandleLabels": [
+        "Is9",
+        "Is2"
+      ],
+      "highlight": [
+        "Is9",
+        "R12"
+      ],
+      "notes": [
+        {
+          "id": "sum",
+          "anchor": "Is9",
+          "dx": -120,
+          "dy": -100,
+          "text": "3 A + 6 A = 9 A\n2 Ω ∥ 2 Ω = 1 Ω",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "④ 再圈出两组：9 A 并 1 Ω、2 A 并 2 Ω",
+      "text": "这回反过来，把电流源并电阻换成电压源串电阻。跨在 A、B 之间的 2 A∥2 Ω 不接地，照样能换。",
+      "compute": {
+        "method": "node_voltage"
+      },
+      "hideHandleLabels": [
+        "Is9",
+        "Is2"
+      ],
+      "highlight": [
+        "Is9",
+        "R12",
+        "Is2",
+        "R3"
+      ],
+      "notes": [
+        {
+          "id": "pre2",
+          "anchor": "Is9",
+          "dx": -120,
+          "dy": -100,
+          "text": "电流源并电阻\n→ 电压源串电阻",
+          "tone": "accent"
+        },
+        {
+          "id": "pre3",
+          "anchor": "Is2",
+          "dx": -20,
+          "dy": -90,
+          "text": "这一组也换",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "⑤ 换成 9 V 串 1 Ω、4 V 串 2 Ω（图 2-15d）",
+      "text": "Us = R·Is：9 A × 1 Ω = 9 V，2 A × 2 Ω = 4 V。电压源的 + 端就是电流源箭头所指的那一端：9 A 朝上，+ 在上；2 A 指向 A，+ 在 A 一侧。i = {i}，A 点 {vA}，B 点 {vB}。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "R12",
+            "type": "resistor",
+            "position": {
+              "x": 780,
+              "y": 0
+            },
+            "data": {
+              "label": "R1∥R2",
+              "type": "resistor",
+              "parameters": {
+                "value": 1
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "Us9",
+            "type": "vsource_dc",
+            "position": {
+              "x": 780,
+              "y": 240
+            },
+            "data": {
+              "label": "9 A × 1 Ω",
+              "type": "vsource_dc",
+              "parameters": {
+                "dc": 9
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R3",
+            "type": "resistor",
+            "position": {
+              "x": 1040,
+              "y": 0
+            },
+            "data": {
+              "label": "R3",
+              "type": "resistor",
+              "parameters": {
+                "value": 2
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "Us4",
+            "type": "vsource_dc",
+            "position": {
+              "x": 1300,
+              "y": 0
+            },
+            "data": {
+              "label": "2 A × 2 Ω",
+              "type": "vsource_dc",
+              "parameters": {
+                "dc": 4
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "VPA",
+            "type": "voltage_probe",
+            "position": {
+              "x": 500,
+              "y": 0
+            },
+            "data": {
+              "label": "A",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "R4",
+            "type": "resistor",
+            "position": {
+              "x": 1300,
+              "y": 240
+            },
+            "data": {
+              "label": "R4（电流 i）",
+              "type": "resistor",
+              "parameters": {
+                "value": 7
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VPB",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1560,
+              "y": 240
+            },
+            "data": {
+              "label": "B",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "GND",
+            "type": "ground",
+            "position": {
+              "x": 1300,
+              "y": 520
+            },
+            "data": {
+              "label": "GND",
+              "type": "ground",
+              "parameters": {},
+              "rotation": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "R12",
+            "target": "Us9",
+            "sourceHandle": "n",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e2",
+            "source": "VPA",
+            "target": "R12",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e3",
+            "source": "R12",
+            "target": "R3",
+            "sourceHandle": "p",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e4",
+            "source": "R3",
+            "target": "Us4",
+            "sourceHandle": "n",
+            "targetHandle": "pos"
+          },
+          {
+            "id": "e5",
+            "source": "Us4",
+            "target": "R4",
+            "sourceHandle": "neg",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e6",
+            "source": "VPB",
+            "target": "R4",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e7",
+            "source": "Us9",
+            "target": "R4",
+            "sourceHandle": "neg",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e8",
+            "source": "GND",
+            "target": "R4",
+            "sourceHandle": "gnd",
+            "targetHandle": "n"
+          }
+        ]
+      },
+      "compute": {
+        "method": "node_voltage"
+      },
+      "values": [
+        {
+          "key": "i",
+          "label": "i（7 Ω，向下）",
+          "path": "branch_currents.R4",
+          "unit": "A",
+          "expect": 0.5,
+          "tol": 1e-06,
+          "fromBook": true
+        },
+        {
+          "key": "vA",
+          "label": "A 点电位",
+          "path": "node_voltages.{VPA}",
+          "unit": "V",
+          "expect": 8.5,
+          "tol": 1e-06,
+          "fromBook": false
+        },
+        {
+          "key": "vB",
+          "label": "B 点电位",
+          "path": "node_voltages.{VPB}",
+          "unit": "V",
+          "expect": 3.5,
+          "tol": 1e-06,
+          "fromBook": false
+        }
+      ],
+      "highlight": [
+        "Us9",
+        "Us4"
+      ],
+      "notes": [
+        {
+          "id": "u9",
+          "anchor": "Us9",
+          "dx": -250,
+          "dy": 20,
+          "text": "9 A 朝上 → + 在上",
+          "tone": "accent"
+        },
+        {
+          "id": "u4",
+          "anchor": "Us4",
+          "dx": -20,
+          "dy": -90,
+          "text": "2 A 指向 A → + 在 A 一侧",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "⑥ 合并串联（图 2-15e）",
+      "text": "沿回路顺时针走：经过 9 V 是从 − 到 +（电位升），经过 4 V 是从 + 到 −（电位降），方向相反，所以相减得 5 V；1 Ω + 2 Ω = 3 Ω。i = 5/(3+7) = {i}，B 点 {vB}。",
+      "circuit": {
+        "nodes": [
+          {
+            "id": "Us5",
+            "type": "vsource_dc",
+            "position": {
+              "x": 780,
+              "y": 240
+            },
+            "data": {
+              "label": "9 V − 4 V",
+              "type": "vsource_dc",
+              "parameters": {
+                "dc": 5
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "R123",
+            "type": "resistor",
+            "position": {
+              "x": 1040,
+              "y": 0
+            },
+            "data": {
+              "label": "1 Ω + 2 Ω",
+              "type": "resistor",
+              "parameters": {
+                "value": 3
+              },
+              "rotation": 0
+            }
+          },
+          {
+            "id": "R4",
+            "type": "resistor",
+            "position": {
+              "x": 1300,
+              "y": 240
+            },
+            "data": {
+              "label": "R4（电流 i）",
+              "type": "resistor",
+              "parameters": {
+                "value": 7
+              },
+              "rotation": 90
+            }
+          },
+          {
+            "id": "VPB",
+            "type": "voltage_probe",
+            "position": {
+              "x": 1560,
+              "y": 240
+            },
+            "data": {
+              "label": "B",
+              "type": "voltage_probe",
+              "parameters": {},
+              "rotation": 0
+            }
+          },
+          {
+            "id": "GND",
+            "type": "ground",
+            "position": {
+              "x": 1300,
+              "y": 520
+            },
+            "data": {
+              "label": "GND",
+              "type": "ground",
+              "parameters": {},
+              "rotation": 0
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e1",
+            "source": "Us5",
+            "target": "R123",
+            "sourceHandle": "pos",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e2",
+            "source": "R123",
+            "target": "R4",
+            "sourceHandle": "n",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e3",
+            "source": "VPB",
+            "target": "R4",
+            "sourceHandle": "node",
+            "targetHandle": "p"
+          },
+          {
+            "id": "e4",
+            "source": "Us5",
+            "target": "R4",
+            "sourceHandle": "neg",
+            "targetHandle": "n"
+          },
+          {
+            "id": "e5",
+            "source": "GND",
+            "target": "R4",
+            "sourceHandle": "gnd",
+            "targetHandle": "n"
+          }
+        ]
+      },
+      "compute": {
+        "method": "node_voltage"
+      },
+      "values": [
+        {
+          "key": "i",
+          "label": "i（7 Ω，向下）",
+          "path": "branch_currents.R4",
+          "unit": "A",
+          "expect": 0.5,
+          "tol": 1e-06,
+          "fromBook": true
+        },
+        {
+          "key": "vB",
+          "label": "B 点电位",
+          "path": "node_voltages.{VPB}",
+          "unit": "V",
+          "expect": 3.5,
+          "tol": 1e-06,
+          "fromBook": false
+        }
+      ],
+      "highlight": [
+        "Us5",
+        "R123"
+      ],
+      "notes": [
+        {
+          "id": "u5",
+          "anchor": "Us5",
+          "dx": -250,
+          "dy": 20,
+          "text": "9 V − 4 V = 5 V\n（两个源方向相反）",
+          "tone": "accent"
+        },
+        {
+          "id": "r3",
+          "anchor": "R123",
+          "dx": -20,
+          "dy": -90,
+          "text": "1 Ω + 2 Ω = 3 Ω",
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "title": "小结：对外不变",
+      "text": "图 a～e 五张电路：i 都是 0.5 A，B 点都是 3.5 V，a～d 里 A 点都是 8.5 V——等效变换只对外等效。受控源也能这样变换（受控电压源串电阻 ↔ 受控电流源并电阻），但控制量所在的支路要保留，不能把它变换掉。",
+      "compute": {
+        "method": "node_voltage"
+      },
+      "highlight": [
+        "R4"
+      ],
+      "notes": [
+        {
+          "id": "end",
+          "anchor": "R4",
+          "dx": 60,
+          "dy": -90,
+          "text": "i = 0.5 A：a～e 都一样",
+          "tone": "accent"
+        }
+      ]
+    }
+  ]
+}

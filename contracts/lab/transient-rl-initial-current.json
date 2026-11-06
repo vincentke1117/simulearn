@@ -1,0 +1,22 @@
+{
+  "name": "lab-transient-rl-initial-current（电感初始电流 i0=2A 经 10Ω 释放：结点电压 −20e^(−t/τ)，τ=0.1s）",
+  "endpoint": "simulate",
+  "request": {
+    "components": [
+      { "id": "L1", "type": "inductor", "parameters": { "value": 1.0, "i0": 2.0 }, "connections": { "p": "n1", "n": "gnd" } },
+      { "id": "R1", "type": "resistor", "parameters": { "value": 10.0 }, "connections": { "p": "n1", "n": "gnd" } },
+      { "id": "G1", "type": "ground", "parameters": {}, "connections": { "gnd": "gnd" } },
+      { "id": "VP1", "type": "voltage_probe", "parameters": {}, "connections": { "node": "n1" } }
+    ],
+    "nets": [
+      { "name": "n1", "nodes": [["L1", "p"], ["R1", "p"], ["VP1", "node"]] },
+      { "name": "gnd", "nodes": [["L1", "n"], ["R1", "n"], ["G1", "gnd"]] }
+    ],
+    "sim": { "t_stop": 0.5, "n_samples": 101 }
+  },
+  "expect": [
+    { "path": "status", "equals": "ok" },
+    { "path": "data.signals.1.values.1", "approx": -20.0, "atol": 1e-04 },
+    { "path": "data.signals.1.values.21", "approx": -7.357588823428847, "atol": 0.01 }
+  ]
+}

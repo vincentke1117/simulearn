@@ -1,0 +1,50 @@
+{
+  "id": "ch02-input-resistance",
+  "chapter": 2,
+  "chapterTitle": "电阻电路的等效变换",
+  "section": "§2-7 输入电阻",
+  "source": "例 2-5",
+  "title": "含受控源一端口的输入电阻：可以是负的",
+  "summary": "这个一端口里只有电阻和一个并在 R2 两端的电流控制电流源 αi，没有独立电源。在端口 1-1′ 外加电压 uS、读端口电流 i，输入电阻 Ri = uS ÷ i。按教材给的一组参数（R1 = R2 = 1 Ω、R3 = 2 Ω、α = 5），i 是负的，Ri = −0.5 Ω：受控源在向外发出功率。",
+  "tryIt": [
+    "把 α 改成 0（受控源不起作用）：i ≈ 1.333 A，Ri = 0.75 Ω，正好是 R1 与 (R2 + R3) 并联的值。",
+    "把 α 改成 2：i = 4 A，Ri = 0.25 Ω；再改成 4：i = −4 A，Ri = −0.25 Ω。α 越过 3 时 Ri 由正变负。",
+    "把 uS 改成 2 V：i 变成 −4 A，uS ÷ i 仍是 −0.5 Ω。不含独立源的一端口，端口电压与电流成正比。"
+  ],
+  "notes": [
+    "教材只推出了公式 Ri = [R1R3 + (1 − α)R1R2] ÷ (R1 + R2 + R3)，并举了 R1 = R2 = 1 Ω、R3 = 2 Ω、α = 5 时 Ri = −0.5 Ω 的例子，案例就用这组参数。",
+    "教材图中用虚线画的外加电源 uS 在这里是实打实的 1 V 直流电压源，端口里再串一个电流探针 i；Ri = 1 V ÷ i。直接读 uS 的支路电流也可以，但内核按「从 + 端穿过电源到 − 端」记正，读数是 −i。",
+    "受控源的控制端 i+、i- 也串在端口支路里，端口电流 i 从 i+ 流进、从 i- 流出。输出端 +out 接 R2 左端、-out 接 R2 右端；内核约定受控电流源的电流在元件内部从 +out 流到 -out，所以 αi 从左向右，与教材箭头一致。",
+    "α = 3 时 Ri = 0，相当于把 1 V 电压源短路，内核会算出一个大得离谱的电流，没有物理意义，别取这个值。",
+    "接地点在端子 1′。"
+  ],
+  "preset": { "method": "node_voltage", "showBranchCurrents": true },
+  "checks": [
+    { "label": "外加 uS = 1 V 时的端口电流 i（Ri = 1 V ÷ i = −0.5 Ω）", "path": "branch_currents.i", "expect": -2, "unit": "A", "tol": 0.001, "fromBook": false }
+  ],
+  "circuit": {
+    "nodes": [
+      { "id": "Us", "type": "vsource_dc", "position": { "x": 0, "y": 400 }, "data": { "label": "uS（测试电源）", "type": "vsource_dc", "parameters": { "dc": 1 }, "rotation": 90 } },
+      { "id": "i", "type": "current_probe", "position": { "x": 250, "y": 60 }, "data": { "label": "i", "type": "current_probe", "parameters": {}, "rotation": 0 } },
+      { "id": "VP1", "type": "voltage_probe", "position": { "x": 250, "y": 240 }, "data": { "label": "1", "type": "voltage_probe", "parameters": {}, "rotation": 0 } },
+      { "id": "CCCS", "type": "cccs", "position": { "x": 750, "y": 60 }, "data": { "label": "αi（CCCS）", "type": "cccs", "parameters": { "gain": 5 }, "rotation": 0 } },
+      { "id": "R1", "type": "resistor", "position": { "x": 500, "y": 400 }, "data": { "label": "R1", "type": "resistor", "parameters": { "value": 1 }, "rotation": 90 } },
+      { "id": "R2", "type": "resistor", "position": { "x": 750, "y": 260 }, "data": { "label": "R2", "type": "resistor", "parameters": { "value": 1 }, "rotation": 0 } },
+      { "id": "R3", "type": "resistor", "position": { "x": 1000, "y": 400 }, "data": { "label": "R3", "type": "resistor", "parameters": { "value": 2 }, "rotation": 90 } },
+      { "id": "G1", "type": "ground", "position": { "x": 500, "y": 620 }, "data": { "label": "GND（1′）", "type": "ground", "parameters": {}, "rotation": 0 } }
+    ],
+    "edges": [
+      { "id": "e1", "source": "Us", "target": "i", "sourceHandle": "pos", "targetHandle": "p" },
+      { "id": "e2", "source": "VP1", "target": "i", "sourceHandle": "node", "targetHandle": "p" },
+      { "id": "e3", "source": "i", "target": "CCCS", "sourceHandle": "n", "targetHandle": "ctrl_p" },
+      { "id": "e4", "source": "CCCS", "target": "R2", "sourceHandle": "ctrl_n", "targetHandle": "p" },
+      { "id": "e5", "source": "CCCS", "target": "R2", "sourceHandle": "pos", "targetHandle": "p" },
+      { "id": "e6", "source": "R1", "target": "R2", "sourceHandle": "p", "targetHandle": "p" },
+      { "id": "e7", "source": "CCCS", "target": "R2", "sourceHandle": "neg", "targetHandle": "n" },
+      { "id": "e8", "source": "R3", "target": "R2", "sourceHandle": "p", "targetHandle": "n" },
+      { "id": "e9", "source": "R1", "target": "Us", "sourceHandle": "n", "targetHandle": "neg" },
+      { "id": "e10", "source": "R3", "target": "R1", "sourceHandle": "n", "targetHandle": "n" },
+      { "id": "e11", "source": "G1", "target": "R1", "sourceHandle": "gnd", "targetHandle": "n" }
+    ]
+  }
+}
