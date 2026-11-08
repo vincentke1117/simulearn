@@ -5,6 +5,7 @@ import type { CaseLibrary } from '@/cases/types'
 import { configureSimulationApi } from '@/simulation/apiBase'
 import { CircuitWorkspace, type WorkspaceEmbed } from '@/workspace/CircuitWorkspace'
 import { resolveEmbedTarget, type EmbedTarget } from './circuit'
+import { openExperimentStore } from './storage'
 import {
   circuitSignature,
   errorMessage,
@@ -30,11 +31,19 @@ type Experiment =
 export default function EmbedPage() {
   const [experiment, setExperiment] = useState<Experiment | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [reading, setReading] = useState(false)
   const [params] = useSearchParams()
   const debugExample = params.get('example')
   const debugLibrary = params.get('library')
 
   useEffect(() => {
+    // 解析电路的同时把本实验存在内核里的进度（草稿、上次打开的案例）预读进来，两样都到了才交给界面：
+    // 工作区一打开就同步读草稿，不能先闪一下初始电路再跳成草稿。镜像每个实验只开一次，宿主重发 load 时直接复用
+    const resolve = async (load: LoadMessage): Promise<EmbedTarget> => {
+      setReading(true)
+      const [target] = await Promise.all([resolveEmbedTarget(load), openExperimentStore(experimentKeyPrefix(load.experiment))])
+      return target
+    }
     const apply = (load: LoadMessage, target: EmbedTarget) => {
       const storagePrefix = experimentKeyPrefix(load.experiment)
       configureSimulationApi({ storagePrefix, embedded: true })
@@ -65,11 +74,11 @@ export default function EmbedPage() {
           ? current
           : { kind: 'circuit', experiment: load.experiment, storagePrefix, fingerprint, initial: circuit })
     }
-    const stop = startEmbed(window as unknown as EmbedWindow, { resolve: resolveEmbedTarget, applyExperiment: apply, onError: setError })
+    const stop = startEmbed(window as unknown as EmbedWindow, { resolve, applyExperiment: apply, onError: setError })
     const debugProject = debugLibrary ? { library: debugLibrary } : debugExample ? { example: debugExample } : null
     if (debugProject && window.parent === window) {
       const load: LoadMessage = { experiment: `debug-${debugLibrary ?? debugExample}`, project: debugProject, task: null }
-      resolveEmbedTarget(load).then((target) => apply(load, target)).catch((err: unknown) => {
+      resolve(load).then((target) => apply(load, target)).catch((err: unknown) => {
         setError(err instanceof Error ? err.message : String(err))
       })
     }
@@ -95,7 +104,11 @@ export default function EmbedPage() {
           <CircuitWorkspace key={`${experiment.experiment}:${experiment.fingerprint}`} embed={experiment} />
         </div>
       ) : (
-        !error && <div className="m-auto text-sm text-slate-400">正在等待课堂发来实验电路…</div>
+        !error && (
+          <div className="m-auto text-sm text-slate-400">
+            {reading ? '正在读取实验电路和你上次的进度…' : '正在等待课堂发来实验电路…'}
+          </div>
+        )
       )}
     </div>
   )

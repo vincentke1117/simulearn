@@ -2,7 +2,7 @@
 
 julia_version = "1.12.1"
 manifest_format = "2.0"
-project_hash = "1c97089fc235bcbdd50a079909810a524448434f"
+project_hash = "c3c917633f3e53942223b53e451c5f980abede3d"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "27cecae79e5cc9935255f90c53bb831cc3c870d7"
@@ -372,7 +372,7 @@ uuid = "92d709cd-6900-40b7-9082-c6be49f344b6"
 version = "0.2.6"
 
 [[deps.JGDO]]
-deps = ["Dates", "Graphs", "HTTP", "HiGHS", "Ipopt", "JSON3", "JuMP", "Juniper", "Logging", "MathOptInterface", "Oxygen", "PowerModels"]
+deps = ["Dates", "Graphs", "HTTP", "HiGHS", "Ipopt", "JSON3", "JuMP", "Juniper", "Logging", "MathOptInterface", "Oxygen", "PowerModels", "SHA", "Sockets"]
 path = "."
 uuid = "7cf171c1-0bde-4ac8-90a3-81a7d1d77d2e"
 version = "0.1.0"

@@ -898,5 +898,8 @@ end
 # 拓展入口与 HTTP 服务（src/server.jl）
 include("server.jl")
 
+# 页面键值存储（src/store.jl，草稿写进宿主给的数据目录）
+include("store.jl")
+
 # 变压器分接头与并联电容组（教材第十二章调压，例 12-3）
 include("transformer.jl")

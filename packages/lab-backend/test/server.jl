@@ -27,6 +27,29 @@ end
     @test JSON3.read(bad)["error"] == "内核加载失败"
 end
 
+@testset "标准输入关闭后等请求安静下来再停（wait_quiet）" begin
+    wait_quiet = JCircuitServer.wait_quiet
+    # 安静窗口 300 ms、最多等 1 s：加上 close 收尾，远在约定的 5 s 退出预算内
+    @test JCircuitServer.EOF_QUIET_S == 0.3
+    @test JCircuitServer.EOF_MAX_WAIT_S == 1.0
+    last_request = Threads.Atomic{UInt64}(0)
+    # 很久没有请求：也从读到 EOF 起再等满一个窗口
+    t0 = time()
+    @test wait_quiet(last_request; quiet = 0.3, max_wait = 1.0)
+    @test 0.29 <= time() - t0 < 0.9
+    # 请求一直不断：等到上限就停
+    busy = Ref(true)
+    feeder = @async while busy[]
+        last_request[] = time_ns()
+        sleep(0.05)
+    end
+    t0 = time()
+    @test !wait_quiet(last_request; quiet = 0.3, max_wait = 1.0)
+    @test 0.95 <= time() - t0 < 1.6
+    busy[] = false
+    wait(feeder)
+end
+
 @testset "静态文件路径解析" begin
     mktempdir() do tmp
         ui = joinpath(tmp, "ui")
@@ -103,7 +126,7 @@ end
         write(joinpath(ui, "assets", "app.js"), "console.log(1)")
         write(joinpath(tmp, "secret.txt"), "top secret")
         token = repeat("ab", 32)
-        port, server = JCircuitServer.start_ext_server(; token, ui_dir = ui)
+        port, server = JCircuitServer.start_ext_server(; token, ui_dir = ui, data_dir = joinpath(tmp, "data"))
         try
             base = "http://127.0.0.1:$port"
             auth = ["X-Zhifan-Ext-Token" => token]

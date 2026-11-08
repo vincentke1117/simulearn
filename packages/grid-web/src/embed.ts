@@ -101,8 +101,8 @@ export interface EmbedWindow {
 
 export interface EmbedHooks {
   loadExample(name: string): Promise<Topology>;
-  /** 拿到实验与它的初始算例后由界面接手（恢复草稿、上画布、提示） */
-  applyExperiment(load: LoadMessage, topology: Topology): void;
+  /** 拿到实验与它的初始算例后由界面接手（预读存储、恢复草稿、上画布、提示）；可以是异步的 */
+  applyExperiment(load: LoadMessage, topology: Topology): void | Promise<void>;
   onError(message: string): void;
 }
 
@@ -123,7 +123,7 @@ export function startEmbed(win: EmbedWindow, hooks: EmbedHooks): () => void {
       const resolved = resolveProject(load.project);
       if (resolved.kind === 'error') throw new Error(resolved.message);
       const topology = resolved.kind === 'example' ? await hooks.loadExample(resolved.name) : resolved.topology;
-      hooks.applyExperiment(load, topology);
+      await hooks.applyExperiment(load, topology);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       hooks.onError(message);

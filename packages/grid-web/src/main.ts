@@ -2,6 +2,7 @@ import './style.css';
 import { dia } from '@joint/core';
 import {
   ApiError,
+  apiUrl,
   fetchExample,
   fetchExamples,
   runN1,
@@ -37,16 +38,9 @@ import type { AnalysisKind, NodeType, ReconfigResult, Topology } from './types';
 import { isDynamicMachine, validateForAnalysis, validateTopology } from './validation';
 import { unwrapProjectFile, wrapGridProject } from './envelope';
 import { armTwoStep } from './confirm';
-import {
-  embedQuery,
-  experimentKeyPrefix,
-  isEmbedHash,
-  layoutFreeSignature,
-  projectFingerprint,
-  startEmbed,
-  type EmbedWindow,
-  type LoadMessage,
-} from './embed';
+import { embedQuery, isEmbedHash, layoutFreeSignature, startEmbed, type EmbedWindow } from './embed';
+import { createEmbedStorage } from './embedStorage';
+import { openKernelStore, type KernelStore, type SyncStorage } from './kernelStore';
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 
@@ -56,11 +50,18 @@ const embedMode = isEmbedHash(location.hash);
 // 本地存储命名空间：平时是 slp:grid:；嵌入模式按实验隔离（slp:grid:exp:<实验>:），
 // 收到宿主的实验之前一律不落盘（约定 zhifan-ext/1 §4）。
 let storagePrefix: string | null = embedMode ? null : 'slp:grid:';
+// 嵌入模式的存储交给内核、写进宿主给的数据目录（kernelStore.ts）：知帆每次启动给页面开随机端口，
+// localStorage 按端口隔离，重开客户端就丢。非嵌入模式不设它，仍用 localStorage。
+let kernelStore: KernelStore | null = null;
+
+function storage(): SyncStorage {
+  return kernelStore ?? localStorage;
+}
 
 function readStore(name: string): string | null {
   if (storagePrefix === null) return null;
   try {
-    return localStorage.getItem(storagePrefix + name);
+    return storage().getItem(storagePrefix + name);
   } catch {
     return null;
   }
@@ -69,7 +70,7 @@ function readStore(name: string): string | null {
 function writeStore(name: string, value: string): void {
   if (storagePrefix === null) return;
   try {
-    localStorage.setItem(storagePrefix + name, value);
+    storage().setItem(storagePrefix + name, value);
   } catch {
     /* 配额满、存储被禁用都不致命 */
   }
@@ -78,7 +79,7 @@ function writeStore(name: string, value: string): void {
 function removeStore(name: string): void {
   if (storagePrefix === null) return;
   try {
-    localStorage.removeItem(storagePrefix + name);
+    storage().removeItem(storagePrefix + name);
   } catch {
     /* 同上 */
   }
@@ -950,35 +951,40 @@ async function bindExamples(): Promise<void> {
 
 // ---------------------------------------------------------------- 嵌入模式（知帆拓展）
 
-function applyExperiment(load: LoadMessage, topology: Topology): void {
-  storagePrefix = experimentKeyPrefix(load.experiment);
-  const fingerprint = projectFingerprint(load.project);
-  loadParams();
-  setAnalysis(analysis);
-  let saved: { fingerprint?: string; snapshot?: unknown; topology?: Topology } | null = null;
-  try {
-    saved = JSON.parse(readStore('embed-draft-v2') ?? 'null');
-  } catch {
-    /* 草稿损坏则用初始算例 */
-  }
-  if (saved?.fingerprint === fingerprint && typeof saved.snapshot === 'string' && saved.topology?.nodes?.length) {
-    embedBaseline = { topology, fingerprint, snapshot: saved.snapshot };
-    loadTopology(saved.topology, '上次的修改');
-    toast('已恢复你上次的修改；点「恢复初始算例」可以重新开始', 'info', 6000);
-  } else {
-    embedBaseline = { topology, fingerprint, snapshot: '' };
-    loadTopology(topology, `实验 ${load.experiment}`);
-    // 画布导出的字段与传入的算例可能不同，以画布导出为准
-    embedBaseline.snapshot = layoutFreeSignature(exportTopology(board, currentMeta()));
-  }
-  renderHistory();
-  // 宿主刚把 iframe 塞进课堂舞台时尺寸还在变，等两帧再适配，否则会按旧尺寸缩放
-  requestAnimationFrame(() => requestAnimationFrame(() => board.fitContent()));
-}
+// 存储的打开、预读与 load 的先后、离开页面时的保存在 embedStorage.ts（有 jsdom 测试），这里只接界面
+const embedStorage = createEmbedStorage({
+  open: (prefix) => openKernelStore(apiUrl('store'), prefix),
+  activate(store, prefix) {
+    kernelStore = store;
+    storagePrefix = prefix;
+    loadParams();
+    setAnalysis(analysis);
+  },
+  show(load, topology, fingerprint, draft) {
+    if (draft) {
+      embedBaseline = { topology, fingerprint, snapshot: draft.snapshot };
+      loadTopology(draft.topology, '上次的修改');
+      toast('已恢复你上次的修改；点「恢复初始算例」可以重新开始', 'info', 6000);
+    } else {
+      embedBaseline = { topology, fingerprint, snapshot: '' };
+      loadTopology(topology, `实验 ${load.experiment}`);
+      // 画布导出的字段与传入的算例可能不同，以画布导出为准
+      embedBaseline.snapshot = layoutFreeSignature(exportTopology(board, currentMeta()));
+    }
+    renderHistory();
+    // 宿主刚把 iframe 塞进课堂舞台时尺寸还在变，等两帧再适配，否则会按旧尺寸缩放
+    requestAnimationFrame(() => requestAnimationFrame(() => board.fitContent()));
+  },
+  saveDraft,
+});
 
 function bootEmbed(): void {
   document.body.classList.add('embed');
   board.setLocked(true);
+  // 画布改动要经过 400 ms 防抖才进 saveDraft，存储自己还有一层写入防抖：页面关闭（宿主切走场景、
+  // 关客户端）时先同步存一次草稿，再用 keepalive 请求把还没发出去的修改送给内核。
+  // 必须在打开任何存储之前挂上（见 bindPageLeave 的说明）
+  embedStorage.bindPageLeave(window, document);
   // 宿主的课堂舞台大小不固定（约定 §4），窗口一变就重新适配一次
   let fitTimer: number | undefined;
   window.addEventListener('resize', () => {
@@ -999,14 +1005,16 @@ function bootEmbed(): void {
   );
   startEmbed(window as unknown as EmbedWindow, {
     loadExample: fetchExample,
-    applyExperiment,
+    applyExperiment: embedStorage.applyExperiment,
     onError: (message) => toast(message, 'error', 8000),
   });
   // 不经宿主直接打开 #/embed?example=<内置算例> 时用它调试
   const example = embedQuery(location.hash).get('example');
   if (example && window.parent === window) {
     void fetchExample(example)
-      .then((topology) => applyExperiment({ experiment: `example-${example}`, project: { example }, task: null }, topology))
+      .then((topology) =>
+        embedStorage.applyExperiment({ experiment: `example-${example}`, project: { example }, task: null }, topology),
+      )
       .catch((err) => reportError('加载示例失败', err));
   }
 }

@@ -8,7 +8,7 @@ using Sockets
 
 const CONTRACT = "zhifan-ext/1"
 # 拓展版本：ready 行与发布清单都用它，发版时改这里
-const EXT_VERSION = "0.5.2"
+const EXT_VERSION = "0.5.3"
 const TOKEN_HEADER = "X-Zhifan-Ext-Token"
 # 只给手工起服务的本机开发用；宿主与 start-all 每次启动都会传入随机令牌（设计记录 D17）
 const DEV_TOKEN = "simulearn-dev"
@@ -16,11 +16,13 @@ const DEV_TOKEN = "simulearn-dev"
 """
     ServerConfig
 
-服务运行所需的令牌与目录。`runs_dir` 是运行记录目录：拓展模式下必须落在 `--data-dir` 里（约定 §3）。
+服务运行所需的令牌与目录。`runs_dir` 是运行记录目录、`store_dir` 是页面键值存储目录（store.jl）：
+拓展模式下两者都必须落在 `--data-dir` 里（约定 §3）。
 """
 Base.@kwdef struct ServerConfig
     token::String
     runs_dir::String
+    store_dir::String
     ui_dir::String
     examples_dir::String
     host::String = "127.0.0.1"
@@ -76,6 +78,67 @@ json_response(body; status=200) = HTTP.Response(status, ["Content-Type" => "appl
 envelope_response(body::AbstractString) = json_response(body; status=http_status(body))
 
 const UNAUTHORIZED_BODY = """{"status":"error","code":"GRID_UNAUTHORIZED","message":"unauthorized","data":null}"""
+
+# 标准输入关闭后的收尾（wait_until_quiet）：最近一次有请求进来或处理完的时刻、正在处理的请求数
+const LAST_REQUEST_NS = Threads.Atomic{UInt64}(0)
+const ACTIVE_REQUESTS = Threads.Atomic{Int}(0)
+# 停服务前要求连续这么久没有新请求，且最多只等这么久（约定 §2 的退出预算是 5 s）
+const SHUTDOWN_QUIET_S = 0.3
+const SHUTDOWN_MAX_WAIT_S = 1.0
+
+"""
+记下每个请求进来和处理完的时刻。放在令牌校验的外层：处理完也记一次，
+否则一个刚好在安静期末尾进来、要算几十毫秒的写请求会被停服务截断。
+"""
+function activity_middleware(handler)
+    return function (req::HTTP.Request)
+        LAST_REQUEST_NS[] = time_ns()
+        Threads.atomic_add!(ACTIVE_REQUESTS, 1)
+        try
+            return handler(req)
+        finally
+            Threads.atomic_sub!(ACTIVE_REQUESTS, 1)
+            LAST_REQUEST_NS[] = time_ns()
+        end
+    end
+end
+
+"""
+    wait_until_quiet(; quiet_s, max_wait_s) -> Bool
+
+等到没有请求在处理、且最近 `quiet_s` 秒内没有新请求，最多等 `max_wait_s` 秒；返回是否等到了安静。
+安静期至少从调用时刻起算：调用前很久就没有请求了，也要再给 `quiet_s` 秒让晚到的请求进来。
+"""
+function wait_until_quiet(; quiet_s::Real=SHUTDOWN_QUIET_S, max_wait_s::Real=SHUTDOWN_MAX_WAIT_S)::Bool
+    start = time_ns()
+    deadline = start + round(UInt64, max_wait_s * 1e9)
+    quiet_ns = round(UInt64, quiet_s * 1e9)
+    while true
+        last = max(LAST_REQUEST_NS[], start)
+        now = time_ns()
+        ACTIVE_REQUESTS[] == 0 && now >= last + quiet_ns && return true
+        now >= deadline && return false
+        sleep(0.01)
+    end
+end
+
+"""
+    wait_for_host_exit(input; quiet_s, max_wait_s)
+
+约定 §2：宿主关闭标准输入就该退出。读到 EOF 后不立刻返回：宿主关窗口、切走场景时，页面正在 pagehide 里
+用 keepalive 请求把最后一批草稿送过来，这批请求可能比 EOF 晚到几十毫秒。等到安静（wait_until_quiet）再返回，
+最多多等 1 s，仍远在 5 s 的退出预算内。
+"""
+function wait_for_host_exit(input::IO; quiet_s::Real=SHUTDOWN_QUIET_S, max_wait_s::Real=SHUTDOWN_MAX_WAIT_S)
+    try
+        while !eof(input)
+            readavailable(input)
+        end
+    catch
+    end
+    wait_until_quiet(; quiet_s, max_wait_s)
+    return nothing
+end
 
 """所有请求（含 /health）都要带正确令牌，否则 401（约定 §3，设计记录 D17）。"""
 function token_middleware(token::AbstractString)
@@ -196,6 +259,11 @@ function register_routes!(cfg::ServerConfig)
             return envelope_response(response)
         end)
     end
+    # 页面的键值存储（草稿等，见 store.jl）：和健康检查一样，根路径与 /api/grid 前缀下都挂
+    for base in ("", "/api/grid")
+        Oxygen.route(["GET"], "$base/store", (req::HTTP.Request) -> envelope_response(store_get_response(cfg.store_dir, req)))
+        Oxygen.route(["POST"], "$base/store", (req::HTTP.Request) -> envelope_response(store_post_response(cfg.store_dir, req)))
+    end
     Oxygen.route(["GET"], "/api/grid/examples", _ -> json_response(list_examples(cfg.examples_dir)))
     Oxygen.route(["GET"], "/api/grid/examples/{name}", (req::HTTP.Request, name::String) -> example_response(cfg.examples_dir, name))
     # 页面挂在 /ui/（约定 §3：宿主里实际位于 /ext/<id>/ui/，所以页面只用相对路径）。
@@ -211,8 +279,10 @@ end
     start_server(cfg) -> (port, server)
 
 在 `cfg.host` 上监听（`cfg.port == 0` 时由系统分配空闲端口），不阻塞。
+拓展模式与开发态都从这里起服务，所以存储目录里上次残留的临时文件在这里清。
 """
 function start_server(cfg::ServerConfig)
+    store_clean_tmp!(cfg.store_dir)
     listener = Sockets.listen(parse(Sockets.IPAddr, cfg.host), cfg.port)
     port = Int(Sockets.getsockname(listener)[2])
     register_routes!(cfg)
@@ -221,7 +291,8 @@ function start_server(cfg::ServerConfig)
         port=port,
         server=listener,
         async=true,
-        middleware=[token_middleware(cfg.token)],
+        # Oxygen 按列表顺序从外到内套：activity 在最外层，被拒的请求也算动静
+        middleware=[activity_middleware, token_middleware(cfg.token)],
         docs=false,
         metrics=false,
         show_banner=false,
@@ -231,6 +302,25 @@ end
 
 stop_server() = Oxygen.terminate()
 
+"""
+    stop_server_now(server)
+
+拓展退出时停服务。调用前已经等过安静（wait_for_host_exit），没有请求在处理，剩下的只是浏览器留着复用的
+空闲连接；HTTP.jl 的 close(server) 是优雅关闭，每 0.5 s 轮询一次连接走没走光，单这一步就要 0.5～1 s，
+加上安静期和进程收尾会贴近 2 s。这里直接关掉连接（forceclose）。真到了 1 s 上限还有请求没处理完，
+被截断的写入也只会留下临时文件，下次启动时清掉（store_clean_tmp!）。
+"""
+function stop_server_now(server::HTTP.Server)
+    try
+        HTTP.forceclose(server)
+    catch err
+        @warn "直接关闭服务失败，改用常规关闭" exception = err
+    end
+    # forceclose 之后 Oxygen 看到服务已关，这一步只是兜底
+    stop_server()
+    return nothing
+end
+
 # 打包后程序的根目录：create_app 产物里 Sys.BINDIR 是 <根>/bin
 app_root() = normpath(joinpath(Sys.BINDIR, ".."))
 
@@ -238,7 +328,7 @@ app_root() = normpath(joinpath(Sys.BINDIR, ".."))
     julia_main() -> Cint
 
 拓展入口（`bin/simulearn-grid.exe`）。按约定 §2：解析参数 → 起服务 → 打 ready 行 →
-等宿主关闭标准输入后退出。失败时打 `{"ready": false, ...}` 并以非零码退出。
+等宿主关闭标准输入、晚到的请求处理完（wait_for_host_exit）后退出。失败时打 `{"ready": false, ...}` 并以非零码退出。
 """
 function julia_main()::Cint
     args = try
@@ -255,19 +345,15 @@ function julia_main()::Cint
             token=args.token,
             port=args.port,
             runs_dir=joinpath(args.data_dir, "runs"),
+            store_dir=joinpath(args.data_dir, "store"),
             ui_dir=get(ENV, "SIMULEARN_UI_DIR", joinpath(root, "ui")),
             examples_dir=get(ENV, "SIMULEARN_EXAMPLES_DIR", joinpath(root, "examples")),
         )
-        port, _ = start_server(cfg)
+        port, server = start_server(cfg)
         println(stdout, ready_line(port))
         flush(stdout)
-        try
-            while !eof(stdin)
-                readavailable(stdin)
-            end
-        catch
-        end
-        stop_server()
+        wait_for_host_exit(stdin)
+        stop_server_now(server)
         return 0
     catch err
         println(stdout, failure_line(sprint(showerror, err)))
@@ -296,10 +382,11 @@ function serve_dev(;
         host=String(host),
         port=Int(port),
         runs_dir=DEFAULT_RUNS_DIR,
+        store_dir=dev_store_dir(),
         ui_dir=normpath(joinpath(pkg_root, "..", "grid-web", "dist")),
         examples_dir=joinpath(pkg_root, "examples"),
     )
     actual, server = start_server(cfg)
-    @info "JGDO server started" host actual ui_present = isdir(cfg.ui_dir)
+    @info "JGDO server started" host actual ui_present = isdir(cfg.ui_dir) store_dir = cfg.store_dir
     wait(server)
 end

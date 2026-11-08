@@ -66,8 +66,9 @@ let token = repeat("ab", 32), tmp = mktempdir()
     mkpath(joinpath(ui, "assets"))
     write(joinpath(ui, "index.html"), "<!doctype html><p>warmup</p>")
     write(joinpath(ui, "assets", "app.js"), "1")
-    cfg = JGDO.ServerConfig(; token=token, runs_dir=joinpath(tmp, "runs"), ui_dir=ui, examples_dir=EXAMPLES)
-    port, _ = JGDO.start_server(cfg)
+    cfg = JGDO.ServerConfig(; token=token, runs_dir=joinpath(tmp, "runs"), store_dir=joinpath(tmp, "store"),
+                            ui_dir=ui, examples_dir=EXAMPLES)
+    port, server = JGDO.start_server(cfg)
     try
         base = "http://127.0.0.1:$port"
         auth = ["X-Zhifan-Ext-Token" => token, "Content-Type" => "application/json"]
@@ -77,9 +78,20 @@ let token = repeat("ab", 32), tmp = mktempdir()
         for (endpoint, body) in (("pf", read_example("ieee33")), ("opf", read_example("econ2")), ("pf", "{}"))
             HTTP.post(base * "/api/grid/" * endpoint; headers=auth, body=body, status_exception=false)
         end
+        # 页面存储：嵌入页面收到实验后先预读它再画算例，第一次请求不能现场 JIT
+        store_body = """{"entries":{"slp:grid:exp:warmup:draft":"{}","slp:grid:exp:warmup:gone":null}}"""
+        HTTP.post(base * "/api/grid/store"; headers=auth, body=store_body, status_exception=false)
+        for query in ("prefix=slp%3Agrid%3Aexp%3Awarmup%3A", "key=slp%3Agrid%3Aexp%3Awarmup%3Adraft", "")
+            HTTP.get(base * "/api/grid/store?" * query; headers=auth, status_exception=false)
+        end
         HTTP.get(base * "/health"; status_exception=false)
+        # 标准输入关闭后的收尾等待：宿主关窗口时它是最后跑的一段，别在退出预算里现场 JIT
+        let input = Base.BufferStream()
+            close(input)
+            JGDO.wait_for_host_exit(input; quiet_s=0.01, max_wait_s=0.05)
+        end
     finally
-        JGDO.stop_server()
+        JGDO.stop_server_now(server)   # 拓展退出走的就是这条
     end
     println("http workload done")
 end

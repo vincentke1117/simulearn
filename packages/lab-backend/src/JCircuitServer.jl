@@ -2486,11 +2486,12 @@ function warmup!()
 end
 
 function bootstrap(; host::AbstractString = "127.0.0.1", port::Integer = 8080, start::Bool = true, warmup::Bool = true, token::AbstractString = resolve_token(),
-                   ui_dir::Union{AbstractString, Nothing} = nothing)
+                   ui_dir::Union{AbstractString, Nothing} = nothing, data_dir::AbstractString = dev_data_dir())
     # 先预热再监听：端口一开、/health 一绿，服务就该是快的。
     # start-all.ps1 的 Wait-Health 本来就在等，这段等待对用户是免费的。
     start && warmup && warmup!()
-    router = build_router(; ui_dir)
+    # 开发态没有 --data-dir：页面存储写到 dev_data_dir()（见 Store.jl）
+    router = build_router(; ui_dir, data_dir)
     handler = token_guard(router, token)
     server = nothing
     if start
@@ -2500,6 +2501,7 @@ function bootstrap(; host::AbstractString = "127.0.0.1", port::Integer = 8080, s
     return (; host, port, router, handler, server)
 end
 
+include("Store.jl")
 include("Server.jl")
 
 end # module

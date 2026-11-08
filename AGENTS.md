@@ -38,7 +38,7 @@
 3. **本机服务安全（D17）**：内核不发任何跨域头；令牌由宿主或网关在转发时注入，页面拿不到。开发态由 `start-all.ps1` 每次启动生成令牌（环境变量 `SIMULEARN_TOKEN`）；没设置时内核、Caddy、Vite 代理都退回开发令牌 `simulearn-dev`，它只用于本机开发，不进发布物。
 4. **响应封套**统一为 `{status, code?, message, data}`，错误码分域 `GRID_*` / `LAB_*`；封套到 HTTP 状态码的映射有测试守着。
 5. **契约先行**：每项分析都对应 `contracts/` 里的解析解金标准，改内核先看它红不红。新分析或新元件要同时带「金标准契约 + 至少 1 个内置示例 + 1 页帮助」，三件齐才算完成（D1）。
-6. **localStorage** 键一律用 `slp:<module>:*` 命名空间；嵌入模式下按实验 id 隔离。
+6. **本地存储**键一律用 `slp:<module>:*` 命名空间；嵌入模式下按实验 id 隔离（`slp:<module>:exp:<实验>:`）。**嵌入模式不能用 localStorage 存要留下来的东西**：知帆客户端每次启动给拓展页面换一个本机端口，页面的 localStorage 跟着换来源，重开客户端就读不到。草稿、偏好、「上次打开的案例」都走内核的 `store` 接口（`GET store?prefix=` / `GET store?key=` / `POST store {entries}`），落在 `--data-dir/store/`；页面一侧用各自的 `kernelStore.ts` 同步镜像。非嵌入的开发态仍用 localStorage。
 7. **页面只用相对路径**：两个前端都用 hash 路由，构建 `base` 为 `./`，接口地址相对页面（lab-web 是 `../api/lab`，grid-web 是 `../api/grid/`）。同一份 dist 既挂在开发态网关的 `/circuit/`、`/grid/`，也挂在拓展的 `/ext/<id>/ui/`，所以网关不做 SPA 回退，页面里也不能写以 `/` 开头的地址。
 
 ## 代码约定
@@ -73,6 +73,7 @@ node scripts/fake-zhifan-host.mjs --entry <程序目录>/bin/simulearn-lab.exe -
 node scripts/fake-zhifan-host.mjs --attach 8080 --token simulearn-dev --id simulearn-lab --example voltage-divider   # 接 lab 开发态内核（run_server.jl 在 lab-web 构建过时才挂页面）
 node scripts/zhifan-rehearsal.mjs [--zip <grid 包>] [--lab-zip <电路包>]   # 用真实知帆客户端（开发版）演练：生成演练课堂包 + 起假下载站，并打印客户端的启动命令
 node scripts/ch12-course-kit.mjs     # 第十二章调压实验交给课程站的工程文件与场景，写到 dist/course/ch12/
+node scripts/circuits-course-kit.mjs --verify   # 电路课的独立课堂资源包（案例库入口）+ 给老师的说明，写到 dist/course/circuits/；--verify 用知帆的 importPackage 核对
 ```
 
 - 改了哪块就跑哪块的门禁；提交前全部门禁都要绿。

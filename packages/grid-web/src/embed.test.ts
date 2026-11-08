@@ -141,6 +141,16 @@ describe('startEmbed', () => {
     );
   });
 
+  it('waits for an async applyExperiment and reports its failure to the host', async () => {
+    const { win, parent, dispatch } = fakeWindow();
+    const onError = vi.fn();
+    const applyExperiment = vi.fn().mockRejectedValue(new Error('实验加载失败'));
+    startEmbed(win, { loadExample: vi.fn().mockResolvedValue(topo), applyExperiment, onError });
+    dispatch(parent, { source: 'zhifan-host', type: 'load', experiment: 'x', project: { example: 'ieee33' } });
+    await vi.waitFor(() => expect(onError).toHaveBeenCalledWith('实验加载失败'));
+    expect(parent.postMessage).toHaveBeenLastCalledWith({ source: 'zhifan-ext', type: 'error', message: '实验加载失败' }, '*');
+  });
+
   it('stays silent when not framed', () => {
     const listeners: Array<(event: MessageEvent) => void> = [];
     const win = { addEventListener: (_t: string, l: (e: MessageEvent) => void) => listeners.push(l), removeEventListener: vi.fn() } as unknown as EmbedWindow & { parent: unknown };

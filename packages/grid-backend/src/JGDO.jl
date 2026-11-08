@@ -217,6 +217,7 @@ function write_run_snapshot(data::AbstractDict; runs_dir=DEFAULT_RUNS_DIR)
 end
 
 # HTTP 服务与拓展入口要用到上面的全部 run_*，放在最后引入
+include("store.jl")
 include("server.jl")
 
 end # module

@@ -11,6 +11,8 @@
 //   3. 量冷启动到 ready 的时间（宿主最多等 120 s）；核对不带令牌 401、页面、计算、读不出来的请求体 422。
 //   4. 记工作集 / 私有内存；关标准输入，量退出时间（约定要求 5 s 内）。
 //   5. 统计数据目录以外写了什么：安装目录、depot、用户目录、TEMP 都应该是 0。
+//   6. 学生草稿的存储（lab 0.5.2、grid 0.5.3 起）：经 store 接口写一条，关掉拓展、用同一个数据目录重新启动，读回来要一样。
+//      知帆客户端每次启动给拓展页面换端口，页面的 localStorage 留不住，草稿只能靠内核写进数据目录。
 // 输出一段 JSON，任何一项不合格以非零码退出。只用 Node 自带模块。
 import { spawn, execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
@@ -48,6 +50,8 @@ const CHECKS = {
       method: 'node_voltage',
     }),
     expect: (data) => Math.abs(data.node_voltages.n2 - 2.5) < 1e-9,
+    store: 'api/lab/store',
+    storeSince: '0.5.2',
     // 新电路的第一次瞬态：MTK 要现场生成并编译方程代码，烤不进镜像，单独量
     slowBody: () => JSON.stringify({
       components: [
@@ -71,8 +75,17 @@ const CHECKS = {
     compute: 'api/grid/pf',
     computeBody: (installDir) => fs.readFileSync(path.join(installDir, 'examples', 'ieee33.json'), 'utf8'),
     expect: (data) => Array.isArray(data.buses) || typeof data === 'object',
+    store: 'api/grid/store',
+    storeSince: '0.5.3',
   },
 }[id];
+
+/** a ≥ b（只比 x.y.z 三段数字） */
+const atLeast = (a, b) => {
+  const [x, y] = [a, b].map((v) => v.split('.').map(Number));
+  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i];
+  return true;
+};
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'simulearn 冒烟 '));
 const installDir = path.join(root, '拓展', id, version);
@@ -129,23 +142,27 @@ const env = {
   TMP: dirs.temp,
 };
 const exe = path.join(installDir, 'bin', `${id}.exe`);
-t0 = Date.now();
-const child = spawn(exe, ['--port', '0', '--token', token, '--data-dir', dataDir, '--host-version', '0.11.3'], {
-  env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true,
-});
 let stderrTail = '';
-child.stderr.on('data', (chunk) => { stderrTail = (stderrTail + chunk).slice(-4000); });
-const exited = new Promise((resolve) => child.on('exit', (code) => resolve({ code, at: Date.now() })));
-
-const ready = await new Promise((resolve) => {
-  const timer = setTimeout(() => resolve(null), 120_000);
-  readline.createInterface({ input: child.stdout }).on('line', (line) => {
-    if (!line.startsWith('{"ready"')) return;
-    clearTimeout(timer);
-    resolve(JSON.parse(line));
+/** 按约定启动一次拓展，等 ready 行（最多 120 s） */
+async function launch(launchToken) {
+  const proc = spawn(exe, ['--port', '0', '--token', launchToken, '--data-dir', dataDir, '--host-version', '0.11.3'], {
+    env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true,
   });
-  exited.then(() => { clearTimeout(timer); resolve(null); });
-});
+  proc.stderr.on('data', (chunk) => { stderrTail = (stderrTail + chunk).slice(-4000); });
+  const procExited = new Promise((resolve) => proc.on('exit', (code) => resolve({ code, at: Date.now() })));
+  const procReady = await new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(null), 120_000);
+    readline.createInterface({ input: proc.stdout }).on('line', (line) => {
+      if (!line.startsWith('{"ready"')) return;
+      clearTimeout(timer);
+      resolve(JSON.parse(line));
+    });
+    procExited.then(() => { clearTimeout(timer); resolve(null); });
+  });
+  return { proc, procExited, procReady };
+}
+t0 = Date.now();
+const { proc: child, procExited: exited, procReady: ready } = await launch(token);
 report.readySeconds = (Date.now() - t0) / 1000;
 report.ready = ready;
 check(ready?.ready === true && ready.contract === 'zhifan-ext/1' && ready.version === version, '120 s 内没有收到合格的 ready 行');
@@ -196,6 +213,18 @@ if (CHECKS.slowBody) {
 const garbage = await post(CHECKS.compute, 'not json');
 check(garbage.response.status === 422, `读不出来的请求体返回 ${garbage.response.status}，应为 422`);
 
+// 6a. 草稿存储：写一条（带中文和换行），当场读回
+const storeSupported = Boolean(CHECKS.store) && atLeast(version, CHECKS.storeSince);
+const storeKey = `slp:smoke:exp:冒烟 实验:draft-v1`;
+const storeValue = JSON.stringify({ note: `冒烟草稿 ${randomBytes(4).toString('hex')}`, lines: 'a\nb' });
+if (storeSupported) {
+  check((await timed(`${CHECKS.store}?prefix=slp%3Asmoke%3A`)).response.status === 401, '不带令牌的 store 没有返回 401');
+  const put = await post(CHECKS.store, JSON.stringify({ entries: { [storeKey]: storeValue } }));
+  check(put.response.status === 200 && JSON.parse(put.body).status === 'ok', `store 写入失败：${put.body.slice(0, 200)}`);
+  const listed = await timed(`${CHECKS.store}?prefix=${encodeURIComponent('slp:smoke:')}`, { headers: auth });
+  check(listed.response.status === 200 && JSON.parse(listed.body).data?.entries?.[storeKey] === storeValue, `store 当场读回不一致：${listed.body.slice(0, 200)}`);
+}
+
 // 4. 内存
 try {
   const [ws, priv] = execFileSync(path.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe'), [
@@ -223,5 +252,27 @@ report.writes = {
 };
 check(report.writes.installDir.length === 0, '往安装目录写了文件');
 check(report.writes.outsideDataDir.length === 0, '往数据目录以外写了文件');
+
+// 6b. 用同一个数据目录重新启动（新令牌），草稿要还在
+if (storeSupported && exit) {
+  const restartToken = randomBytes(32).toString('hex');
+  t0 = Date.now();
+  const again = await launch(restartToken);
+  report.restartReadySeconds = (Date.now() - t0) / 1000;
+  if (again.procReady?.ready) {
+    const response = await fetch(`http://127.0.0.1:${again.procReady.port}/${CHECKS.store}?key=${encodeURIComponent(storeKey)}`,
+      { headers: { 'X-Zhifan-Ext-Token': restartToken } });
+    const body = await response.text();
+    report.storeSurvivesRestart = response.status === 200 && JSON.parse(body).data?.value === storeValue;
+    check(report.storeSurvivesRestart, `重启后读不回草稿：${body.slice(0, 200)}`);
+  } else {
+    check(false, '重启后 120 s 内没有 ready');
+  }
+  again.proc.stdin.end();
+  const second = await Promise.race([again.procExited, new Promise((resolve) => setTimeout(() => resolve(null), 10_000))]);
+  if (!second) again.proc.kill();
+} else if (!storeSupported) {
+  report.storeSurvivesRestart = `跳过（${id} ${version} 早于 ${CHECKS.storeSince ?? '—'}，还没有 store 接口）`;
+}
 
 await finish();

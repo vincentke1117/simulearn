@@ -79,20 +79,27 @@ let ok = 0, failed = String[]
     end
 end
 
-# HTTP 链路：起服务（端口 0）→ 带令牌的页面、计算请求 → 不带令牌的 401 → 停服务。
+# HTTP 链路：起服务（端口 0）→ 带令牌的页面、计算请求、页面存储 → 不带令牌的 401 → 停服务。
 # 拓展的第一次真实请求靠这一段热起来：请求解析、令牌守卫、路由、静态文件这条链路否则要现场 JIT。
+# 页面存储的预读挡在嵌入页面第一次画出电路之前，也要热好
 let token = repeat("ab", 32), tmp = mktempdir()
     ui = joinpath(tmp, "ui")
     mkpath(joinpath(ui, "assets"))
     write(joinpath(ui, "index.html"), "<!doctype html><p>warmup</p>")
     write(joinpath(ui, "assets", "app.js"), "1")
-    port, server = JCircuitServer.start_ext_server(; token, ui_dir = ui)
+    port, server = JCircuitServer.start_ext_server(; token, ui_dir = ui, data_dir = joinpath(tmp, "data"))
     try
         base = "http://127.0.0.1:$port"
         auth = ["X-Zhifan-Ext-Token" => token, "Content-Type" => "application/json"]
         for path in ("/api/lab/health", "/api/lab/version", "/ui/", "/ui/assets/app.js", "/ui")
             HTTP.get(base * path; headers = auth, status_exception = false, redirect = false)
         end
+        store = base * "/api/lab/store"
+        HTTP.get(store * "?prefix=slp%3Alab%3Aexp%3Awarmup%3A"; headers = auth, status_exception = false)
+        HTTP.post(store; headers = auth, status_exception = false,
+                  body = JSON3.write(Dict("entries" => Dict("slp:lab:exp:warmup:draft-v1" => "{}", "slp:lab:exp:warmup:last-case" => nothing))))
+        HTTP.get(store * "?key=slp%3Alab%3Aexp%3Awarmup%3Adraft-v1"; headers = auth, status_exception = false)
+        HTTP.post(store; headers = auth, body = "{}", status_exception = false)
         divider = JSON3.read(read(joinpath(CONTRACTS, "dc-node-voltage-divider.json"), String))[:request]
         HTTP.post(base * "/api/lab/simulate"; headers = auth, body = JSON3.write(divider), status_exception = false)
         HTTP.post(base * "/api/lab/simulate"; headers = auth, body = "{}", status_exception = false)

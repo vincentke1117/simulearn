@@ -46,6 +46,7 @@ import {
 } from './circuitWorkspaceHelpers'
 import { useWorkspaceSimulation, type WorkspaceMessage } from './useWorkspaceSimulation'
 import { clearDraft, readDraft, writeDraft, type EmbedCircuit } from '@/embed/circuit'
+import { flushPageStorage } from '@/embed/storage'
 import { circuitSignature } from '@/embed/protocol'
 import { dropRemovals } from './topologyLock'
 
@@ -127,7 +128,11 @@ function CircuitWorkspaceInner({ embed }: { embed?: WorkspaceEmbed }) {
   )
 
   // 草稿防抖写入（拖动时每帧都在变）。还没写出去的那一次，在页面被宿主卸掉（「重新启动」、切场景会直接移除 iframe）
-  // 或组件卸载时立即落盘，否则最后半秒的修改会丢
+  // 或组件卸载时立即落盘，否则最后半秒的修改会丢。
+  // 嵌入时草稿存在内核镜像里（embed/storage.ts），镜像自己监听 pagehide / visibilitychange，用 keepalive 把改动发给内核，
+  // 而且它注册得比这里早。这里用捕获阶段注册：事件就发在 window / document 本身，目标阶段捕获监听先于普通监听触发
+  // （现行 DOM 规范，Chromium 89+），草稿先写进镜像，镜像随后一次发完。不能这里再 flush 一次：
+  // 两个 keepalive 并行发出，到内核的先后没有保证，旧的一份可能盖掉新的；两份合计超过 64 KB 时后一个还会被浏览器拒掉
   const pendingDraft = useRef<(() => void) | null>(null)
   useEffect(() => {
     if (!embed) return
@@ -140,16 +145,18 @@ function CircuitWorkspaceInner({ embed }: { embed?: WorkspaceEmbed }) {
     return () => clearTimeout(timer)
   }, [embed, baseline, nodes, edges])
   useEffect(() => {
-    const flush = () => pendingDraft.current?.()
+    const writePending = () => pendingDraft.current?.()
     const onHidden = () => {
-      if (document.visibilityState === 'hidden') flush()
+      if (document.visibilityState === 'hidden') writePending()
     }
-    window.addEventListener('pagehide', flush)
-    document.addEventListener('visibilitychange', onHidden)
+    window.addEventListener('pagehide', writePending, { capture: true })
+    document.addEventListener('visibilitychange', onHidden, { capture: true })
     return () => {
-      window.removeEventListener('pagehide', flush)
-      document.removeEventListener('visibilitychange', onHidden)
-      flush()
+      window.removeEventListener('pagehide', writePending, { capture: true })
+      document.removeEventListener('visibilitychange', onHidden, { capture: true })
+      // 组件卸载（换案例、回列表）时页面还在，普通请求就行
+      writePending()
+      flushPageStorage()
     }
   }, [])
 
@@ -453,7 +460,7 @@ function CircuitWorkspaceInner({ embed }: { embed?: WorkspaceEmbed }) {
           onReset={embed ? undefined : handleReset}
           onRestoreInitial={embed ? handleRestoreInitial : undefined}
           // 回列表前先把防抖里还没写出去的草稿落盘：列表上的「改过参数」要在这次渲染里就看得到
-          onBack={embed?.onBack ? () => { pendingDraft.current?.(); embed.onBack?.() } : undefined}
+          onBack={embed?.onBack ? () => { pendingDraft.current?.(); flushPageStorage(); embed.onBack?.() } : undefined}
           settings={simulationSettings}
           onSettingsChange={handleSimulationSettingsChange}
           onRun={handleRunSimulation}

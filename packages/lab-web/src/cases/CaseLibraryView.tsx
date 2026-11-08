@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { ChevronRight } from 'lucide-react'
 
 import { hasDraft } from '@/embed/circuit'
+import { flushPageStorage, pageStorage } from '@/embed/storage'
 import { CircuitWorkspace, type WorkspaceEmbed } from '@/workspace/CircuitWorkspace'
 import { CaseGuide } from './CaseGuide'
 import { presetSettings } from './checks'
@@ -14,7 +15,7 @@ const LAST_CASE_KEY = 'last-case'
 
 function readLastCase(prefix: string): string | null {
   try {
-    return localStorage.getItem(prefix + LAST_CASE_KEY)
+    return pageStorage.getItem(prefix + LAST_CASE_KEY)
   } catch {
     return null
   }
@@ -22,11 +23,13 @@ function readLastCase(prefix: string): string | null {
 
 function writeLastCase(prefix: string, id: string | null): void {
   try {
-    if (id) localStorage.setItem(prefix + LAST_CASE_KEY, id)
-    else localStorage.removeItem(prefix + LAST_CASE_KEY)
+    if (id) pageStorage.setItem(prefix + LAST_CASE_KEY, id)
+    else pageStorage.removeItem(prefix + LAST_CASE_KEY)
   } catch {
     // 记不住上次的案例只是少个方便
   }
+  // 嵌入时存在内核里（storage.ts）：选了案例马上发出去，学生紧接着关掉客户端也记得住
+  flushPageStorage()
 }
 
 function openCase(item: TeachingCase, experimentPrefix: string, onBack: () => void): WorkspaceEmbed {
@@ -43,7 +46,7 @@ function openCase(item: TeachingCase, experimentPrefix: string, onBack: () => vo
 
 /**
  * 案例库（课程包里 {"library": id}）：先列出全部案例，学生点进去做；
- * 「案例列表」回到这里。上次打开的案例记在本实验的存储里，宿主重启实验后直接回到它。
+ * 「案例列表」回到这里。上次打开的案例记在本实验的存储里（嵌入时是内核镜像），客户端重开后直接回到它。
  */
 export function CaseLibraryView({ library, experimentPrefix }: { library: CaseLibrary; experimentPrefix: string }) {
   const [selected, setSelected] = useState<string | null>(() => {

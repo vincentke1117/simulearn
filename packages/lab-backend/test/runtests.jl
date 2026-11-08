@@ -155,6 +155,7 @@ include("initial_values.jl")
 include("control_simulation.jl")
 include("mixed_simulation.jl")
 include("server.jl")
+include("store.jl")
 
 # ---- Golden 契约（contracts/ 双端共享，冻结跨进程契约行为）----
 using JSON3

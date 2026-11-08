@@ -5,6 +5,7 @@ import { loadExamples } from '@/examples/registry'
 import type { CircuitNodeData } from '@/types/circuit'
 import { buildProjectSnapshot, loadProjectFromObject } from '@/workspace/project'
 import { circuitSignature, resolveProject, type LoadMessage } from './protocol'
+import { pageStorage } from './storage'
 
 export interface EmbedCircuit {
   nodes: Node<CircuitNodeData>[]
@@ -49,6 +50,7 @@ export async function resolveEmbedTarget(load: LoadMessage): Promise<EmbedTarget
 /**
  * 嵌入模式的草稿：和课程电路的指纹绑在一起，电路改了版就不再恢复。
  * 只存学生真改过的（电气内容和初始电路不同）；改回原样就删掉，下次直接给初始电路。
+ * 存在 pageStorage 里：嵌入知帆时是内核镜像（客户端重开还在），见 storage.ts。
  */
 const DRAFT_KEY = 'draft-v1'
 
@@ -59,7 +61,7 @@ interface StoredDraft {
 
 export function readDraft(prefix: string, fingerprint: string): EmbedCircuit | null {
   try {
-    const saved = JSON.parse(localStorage.getItem(prefix + DRAFT_KEY) ?? 'null') as StoredDraft | null
+    const saved = JSON.parse(pageStorage.getItem(prefix + DRAFT_KEY) ?? 'null') as StoredDraft | null
     if (!saved || saved.fingerprint !== fingerprint) return null
     return fromProject(saved.project)
   } catch {
@@ -76,11 +78,11 @@ export function writeDraft(
 ): void {
   try {
     if (circuitSignature(nodes, edges) === baseline) {
-      localStorage.removeItem(prefix + DRAFT_KEY)
+      pageStorage.removeItem(prefix + DRAFT_KEY)
       return
     }
     const draft: StoredDraft = { fingerprint, project: buildProjectSnapshot(nodes, edges) }
-    localStorage.setItem(prefix + DRAFT_KEY, JSON.stringify(draft))
+    pageStorage.setItem(prefix + DRAFT_KEY, JSON.stringify(draft))
   } catch {
     // 存储满了或被禁用：草稿只是方便，不影响实验本身
   }
@@ -89,7 +91,7 @@ export function writeDraft(
 /** 案例列表上标「改过参数」用：有草稿、而且是这一版电路的草稿（指纹对得上，打开时才真会恢复） */
 export function hasDraft(prefix: string, fingerprint: string): boolean {
   try {
-    const saved = JSON.parse(localStorage.getItem(prefix + DRAFT_KEY) ?? 'null') as StoredDraft | null
+    const saved = JSON.parse(pageStorage.getItem(prefix + DRAFT_KEY) ?? 'null') as StoredDraft | null
     return saved?.fingerprint === fingerprint
   } catch {
     return false
@@ -98,7 +100,7 @@ export function hasDraft(prefix: string, fingerprint: string): boolean {
 
 export function clearDraft(prefix: string): void {
   try {
-    localStorage.removeItem(prefix + DRAFT_KEY)
+    pageStorage.removeItem(prefix + DRAFT_KEY)
   } catch {
     // 同上
   }

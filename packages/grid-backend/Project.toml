@@ -16,11 +16,13 @@ Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
 Oxygen = "df9a0d86-3283-4920-82dc-4555fc0d1d8b"
 PowerModels = "c36e90e8-916a-50a6-bd94-075b64ef4655"
+SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
 
 [compat]
 HTTP = "1.11.0"
 Oxygen = "1.7.5"
+SHA = "0.7.0"
 Sockets = "1.11.0"
 
 [extras]

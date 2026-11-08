@@ -6,7 +6,7 @@
 
 const CONTRACT = "zhifan-ext/1"
 # 拓展版本：ready 行与发布清单都用它，发版时改这里
-const EXT_VERSION = "0.5.1"
+const EXT_VERSION = "0.5.2"
 # 页面在宿主里位于 /ext/<id>/ui/，接口用相对路径 ../api/lab/…；开发态网关把 /api/lab 剥掉再转发，
 # 所以根路径和带前缀的路径都要能到
 const API_PREFIXES = ("", "/api/lab")
@@ -112,12 +112,15 @@ function simulate_route(req::HTTP.Request)
 end
 
 """
-    build_router(; ui_dir = nothing) -> HTTP.Router
+    build_router(; data_dir, ui_dir = nothing) -> HTTP.Router
 
 接口挂在根路径和 `/api/lab` 下各一份；给了 `ui_dir` 时页面挂在 `/ui/`（拓展模式）。
+页面存储写在 `data_dir/store` 下：拓展模式是宿主给的 --data-dir，开发态是 dev_data_dir()。
+没有默认值是故意的：拓展只能写 --data-dir（约定 §3），每个调用方都得说清楚写哪儿。
 """
-function build_router(; ui_dir::Union{AbstractString, Nothing} = nothing)
+function build_router(; data_dir::AbstractString, ui_dir::Union{AbstractString, Nothing} = nothing)
     router = HTTP.Router()
+    register_store_routes!(router, PageStore(store_dir(data_dir)), API_PREFIXES)
     for prefix in API_PREFIXES
         HTTP.register!(router, "GET", prefix * "/health", _ -> json_ok(Dict("status" => "ok")))
         HTTP.register!(router, "GET", prefix * "/metrics", _ -> json_ok(lock(() -> copy(_METRICS), _STATE_LOCK)))
@@ -138,15 +141,72 @@ function build_router(; ui_dir::Union{AbstractString, Nothing} = nothing)
     return router
 end
 
-"""
-    start_ext_server(; token, ui_dir, port = 0) -> (port, server)
+# 宿主关掉标准输入时，页面多半正被卸掉：它在 pagehide 里用 keepalive 发出的最后一批草稿可能刚到或还在路上。
+# 读到 EOF 后先等请求安静下来再停服务：最近 EOF_QUIET_S 秒（从 EOF 起算）没有请求进出就停，最多等 EOF_MAX_WAIT_S。
+# 再加上 close 等在途连接收尾（HTTP.jl 每轮约 0.5 s），仍远在约定的 5 s 退出预算内
+const EOF_QUIET_S = 0.3
+const EOF_MAX_WAIT_S = 1.0
 
-只绑 127.0.0.1（约定 §2），`port == 0` 时由系统分配空闲端口；不阻塞。
+"""在处理函数外面套一层：请求进来、处理完都记下时刻（HTTP.jl 每个请求一个 task，所以用原子量）。"""
+function track_requests(handler, last_request::Threads.Atomic{UInt64})
+    return function (req::HTTP.Request)
+        last_request[] = time_ns()
+        try
+            return handler(req)
+        finally
+            last_request[] = time_ns()
+        end
+    end
+end
+
 """
-function start_ext_server(; token::AbstractString, ui_dir::AbstractString, port::Integer = 0)
+    wait_quiet(last_request; since = time_ns(), quiet = EOF_QUIET_S, max_wait = EOF_MAX_WAIT_S) -> Bool
+
+等到 `max(since, 最后一次请求)` 之后安静满 `quiet` 秒；从 `since` 起最多等 `max_wait` 秒。
+安静下来返回 true，等到上限返回 false。从 `since` 起算：EOF 前很久没请求时也要等一个窗口，EOF 之后才到的写入不能丢。
+"""
+function wait_quiet(last_request::Threads.Atomic{UInt64}; since::UInt64 = time_ns(),
+                    quiet::Real = EOF_QUIET_S, max_wait::Real = EOF_MAX_WAIT_S)
+    quiet_ns = round(UInt64, quiet * 1e9)
+    deadline = since + round(UInt64, max_wait * 1e9)
+    while true
+        now = time_ns()
+        latest = max(since, last_request[])
+        (now >= latest && now - latest >= quiet_ns) && return true
+        now >= deadline && return false
+        sleep(0.02)
+    end
+end
+
+"""
+    serve_until_eof(server, last_request; input = stdin)
+
+拓展模式下 ready 之后的主循环：等宿主关闭标准输入（约定 §2），等请求安静下来（`wait_quiet`），再停服务。
+"""
+function serve_until_eof(server, last_request::Threads.Atomic{UInt64}; input::IO = stdin,
+                         quiet::Real = EOF_QUIET_S, max_wait::Real = EOF_MAX_WAIT_S)
+    try
+        while !eof(input)
+            readavailable(input)
+        end
+    catch
+    end
+    wait_quiet(last_request; since = time_ns(), quiet, max_wait)
+    close(server)
+    return nothing
+end
+
+"""
+    start_ext_server(; token, ui_dir, data_dir, port = 0, last_request) -> (port, server)
+
+只绑 127.0.0.1（约定 §2），`port == 0` 时由系统分配空闲端口；不阻塞。页面存储只写 `data_dir`（宿主给的 --data-dir）。
+每个请求进来、处理完都记进 `last_request`，标准输入关闭后 `serve_until_eof` 靠它判断什么时候停。
+"""
+function start_ext_server(; token::AbstractString, ui_dir::AbstractString, data_dir::AbstractString, port::Integer = 0,
+                          last_request::Threads.Atomic{UInt64} = Threads.Atomic{UInt64}(0))
     listener = Sockets.listen(Sockets.ip"127.0.0.1", port)
     actual = Int(Sockets.getsockname(listener)[2])
-    handler = token_guard(build_router(; ui_dir), token)
+    handler = track_requests(token_guard(build_router(; ui_dir, data_dir), token), last_request)
     server = HTTP.serve!(handler, "127.0.0.1", actual; server = listener, verbose = false)
     return actual, server
 end
@@ -158,7 +218,7 @@ app_root() = normpath(joinpath(Sys.BINDIR, ".."))
     julia_main() -> Cint
 
 拓展入口（`bin/simulearn-lab.exe`）。按约定 §2：解析参数 → 预热 → 起服务 → 打 ready 行 →
-等宿主关闭标准输入后退出。失败时打 `{"ready": false, ...}` 并以非零码退出。
+等宿主关闭标准输入、请求安静下来后退出（`serve_until_eof`）。失败时打 `{"ready": false, ...}` 并以非零码退出。
 
 预热放在 ready 之前：宿主装好后会试启动一次，等到 ready 就关标准输入；要是 ready 之后才预热，
 Julia 单线程上预热一直占着，读标准输入的任务轮不到，5 s 内就退不出去。
@@ -172,23 +232,20 @@ function julia_main()::Cint
         return 2
     end
     try
-        # 电路内核什么都不存，但约定要求数据目录可用；建好它，宿主卸载时才有东西可问
+        # 页面的草稿、上次打开的案例存在这里（Store.jl）：客户端重开后页面换了端口，localStorage 跟着丢，这里不丢
         mkpath(args.data_dir)
         warmup!()
+        last_request = Threads.Atomic{UInt64}(0)
         port, server = start_ext_server(;
             token = args.token,
             port = args.port,
+            data_dir = args.data_dir,
             ui_dir = get(ENV, "SIMULEARN_UI_DIR", joinpath(app_root(), "ui")),
+            last_request,
         )
         println(stdout, ready_line(port))
         flush(stdout)
-        try
-            while !eof(stdin)
-                readavailable(stdin)
-            end
-        catch
-        end
-        close(server)
+        serve_until_eof(server, last_request)
         return 0
     catch err
         println(stdout, failure_line(sprint(showerror, err)))
