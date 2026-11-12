@@ -15,7 +15,7 @@
 //      知帆客户端每次启动给拓展页面换端口，页面的 localStorage 留不住，草稿只能靠内核写进数据目录。
 // 输出一段 JSON，任何一项不合格以非零码退出。只用 Node 自带模块。
 import { spawn, execFileSync } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -74,7 +74,8 @@ const CHECKS = {
     health: 'api/grid/health',
     compute: 'api/grid/pf',
     computeBody: (installDir) => fs.readFileSync(path.join(installDir, 'examples', 'ieee33.json'), 'utf8'),
-    expect: (data) => Array.isArray(data.buses) || typeof data === 'object',
+    // 数值按金标准契约 contracts/grid/pf-ieee33.json 核对：只看「是个对象」的话，算错了也照样过
+    expect: (data) => Math.abs(data?.summary?.loss_mw - 0.202677) <= 5e-4 && data?.summary?.vmin_bus === 'bus-18',
     store: 'api/grid/store',
     storeSince: '0.5.3',
   },
@@ -101,7 +102,29 @@ const dataDir = path.join(sandbox, 'extensions-data', id);
 for (const dir of [installDir, ...Object.values(dirs)]) fs.mkdirSync(dir, { recursive: true });
 
 const failures = [];
-const report = { id, version, zip: zipPath, root };
+// 这份报告是在哪台机器、哪个系统代码页、对哪份 zip 跑出来的：发版要求在代码页 936 上冒一遍，
+// 而且冒的必须就是要上传的那份字节，光看报告得分得清
+const systemCodePage = () => {
+  try {
+    // 用 Windows 自带的 5.1：它的默认编码就是系统 ANSI 代码页（PowerShell 7 一律报 65001）
+    return Number(execFileSync(path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe'),
+      ['-NoProfile', '-Command', '[System.Text.Encoding]::Default.CodePage'], { encoding: 'utf8' }).trim());
+  } catch (err) {
+    return `读不到：${err.message}`;
+  }
+};
+const sha256OfFile = (file) => {
+  const hash = createHash('sha256');
+  const fd = fs.openSync(file, 'r');
+  const buffer = Buffer.alloc(1 << 20);
+  for (let n; (n = fs.readSync(fd, buffer, 0, buffer.length, null)) > 0;) hash.update(buffer.subarray(0, n));
+  fs.closeSync(fd);
+  return hash.digest('hex');
+};
+const report = {
+  id, version, zip: zipPath, zipBytes: fs.statSync(zipPath).size, zipSha256: sha256OfFile(zipPath),
+  host: os.hostname(), codePage: systemCodePage(), root,
+};
 const check = (ok, what) => { if (!ok) failures.push(what); };
 
 function listFiles(dir) {

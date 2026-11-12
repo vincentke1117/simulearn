@@ -10,7 +10,7 @@
     "lint": "eslint . --no-inline-config --report-unused-disable-directives --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "test:e2e": "vitest run src/simulation/liveBackend.e2e.test.ts",
+    "test:e2e": "vitest run .e2e.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {

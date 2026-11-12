@@ -56,6 +56,7 @@ npm run build           # 构建两个前端
 npm run check:bundle    # lab-web 体积预算
 LAB_E2E=1 npx vitest run src/cases/cases.e2e.test.ts   # 在 packages/lab-web 下：案例库逐个对着 8080 上的 lab 内核核对教材答案（CASE=<id> 只跑一个）
 LAB_E2E=1 npx vitest run src/cases/demo/demos.e2e.test.ts   # 同上：课堂演示逐步核对读数（DEMO=<案例 id>.<演示 id> 只跑一个；KVL 演示只有离线检查）
+LAB_E2E_URL=http://127.0.0.1:<端口>/simulate SIMULEARN_TOKEN=<令牌> npm run test:e2e -w @simulearn/lab-web   # 发版前：全部 e2e（案例、演示、活后端）对着打好包的拓展程序跑，而不是 8080 上的开发态内核
 node scripts/demo-layout-check.mjs --size 1600x900   # 课堂演示逐帧布局检查（无头浏览器量重叠 / 穿线 / 出画面并截图，需先起假宿主 --library，见脚本头）
 julia --project=packages/grid-backend -e "using Pkg; Pkg.test()"   # 含 grid 金标准契约
 julia --project=packages/lab-backend  -e "using Pkg; Pkg.test()"   # 含 lab 金标准契约
@@ -68,6 +69,7 @@ node scripts/ext-smoke.mjs dist/ext/<id>-<版本>.zip   # 发版前隔离冒烟�
 julia scripts/ext-launcher/rebuild_launcher.jl <程序目录> <可执行文件名> <入口函数>   # 只重编拓展的启动程序，不动镜像（用构建这份程序的同一个 Julia）
 node scripts/fake-zhifan-host.mjs --entry <程序目录>/bin/simulearn-grid.exe   # 假知帆宿主：按 zhifan-ext/1 启动、转发、嵌入，打开 http://127.0.0.1:8200/
 node scripts/fake-zhifan-host.mjs --attach 8123 --token simulearn-dev    # 同上，但接已在跑的 grid 开发态内核（它自带页面）
+node scripts/fake-zhifan-host.mjs --entry <程序> --data-dir <目录> --host-port 8300   # 预演「重开客户端草稿还在」：同一个 --data-dir、换一个 --host-port 再起一次（真宿主就是数据目录固定、端口每次换）
 node scripts/fake-zhifan-host.mjs --entry <程序目录>/bin/simulearn-lab.exe --id simulearn-lab --example voltage-divider   # 电路拓展
 node scripts/fake-zhifan-host.mjs --entry <程序目录>/bin/simulearn-lab.exe --id simulearn-lab --library qiu-circuits   # 电路拓展的内置案例库（课程包里写 {"library": "qiu-circuits"}）
 node scripts/fake-zhifan-host.mjs --attach 8080 --token simulearn-dev --id simulearn-lab --example voltage-divider   # 接 lab 开发态内核（run_server.jl 在 lab-web 构建过时才挂页面）

@@ -166,7 +166,7 @@ const TYPE_TITLES: Record<string, string> = {
 export interface InspectorHooks {
   onChanged(): void;
   onDelete(): void;
-  /** 嵌入模式锁定拓扑时为 false：不显示「删除」（设计记录 D19） */
+  /** 嵌入模式锁定拓扑时为 false：不显示「删除」，支路「类型」也不能改（设计记录 D19） */
   canDelete?: boolean;
 }
 
@@ -263,6 +263,8 @@ export function renderInspector(container: HTMLElement, board: Board, cell: dia.
       }
       input.value =
         field.key === '__kind' ? String(cell.get('jgdoType')) : String(elec[field.key] ?? field.options?.[0]?.value ?? '');
+      // 锁定拓扑时支路类型也算拓扑：改成线路后，草稿和导出都不带变压器字段，重开再改回变压器就被默认值悄悄顶掉
+      if (field.key === '__kind' && hooks.canDelete === false) input.disabled = true;
     } else if (field.kind === 'bool') {
       input = document.createElement('input');
       input.type = 'checkbox';

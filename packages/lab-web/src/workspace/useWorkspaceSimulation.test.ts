@@ -295,3 +295,30 @@ describe('useWorkspaceSimulation switch cache and staleness (round 3)', () => {
     expect(result.current.theveninPort).toBeUndefined()
   })
 })
+
+// 网孔法 / 支路法的教学步骤是内核里没写完的占位（网孔数恒多 1，还带「完整实现需要……」的说明），
+// 已随 0.5.1 发给学生。内核重建前先在页面这一侧拦住：这两种方法不向内核要教学步骤
+describe('useWorkspaceSimulation 教学模式只对步骤可靠的方法生效', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.clearAllMocks()
+  })
+
+  const runWith = async (method: SimulationPayload['method']) => {
+    buildMock.mockReturnValue({ ok: true, errors: [], payload: { ...payload, method } })
+    runMock.mockResolvedValue(okResponse)
+    const { result } = setup(resistiveCircuit)
+    act(() => result.current.setTeachingMode(true))
+    await act(() => result.current.handleRunSimulation())
+    return runMock.mock.calls[runMock.mock.calls.length - 1][0] as SimulationPayload
+  }
+
+  it('结点电压法照常带上 teaching_mode', async () => {
+    expect((await runWith('node_voltage')).teaching_mode).toBe(true)
+  })
+
+  it.each(['mesh_current', 'branch_current'] as const)('%s 不带 teaching_mode', async (method) => {
+    expect((await runWith(method)).teaching_mode).toBe(false)
+  })
+})
+

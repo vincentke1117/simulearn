@@ -18,6 +18,13 @@ import type {
 import { supportsVoltageOverlay } from '@/simulation/resultKind'
 import { buildProjectSnapshot, loadProjectFromObject, wrapProject } from './project'
 
+/**
+ * 内核的教学步骤只有结点电压法写完了。网孔法、支路法的步骤还是占位：网孔数恒多 1，
+ * 还带着「完整实现需要图论算法」的说明。内核重建前，页面不向这两种方法要教学步骤。
+ */
+export const teachingStepsReliable = (method: string | undefined): boolean =>
+  method !== 'mesh_current' && method !== 'branch_current'
+
 export const initialSimulationSettings: SimulationSettings = {
   tStop: 1e-3,
   nSamples: 1000,

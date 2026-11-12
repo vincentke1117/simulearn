@@ -22,6 +22,7 @@ import {
 import type { DiagramMode } from '@/types/control'
 import { cancelSimulation } from '@/simulation/api'
 import { EditorTopBarSettingsControls } from './EditorTopBarSettingsControls'
+import { teachingStepsReliable } from './circuitWorkspaceHelpers'
 import { useTwoStep } from './useTwoStep'
 
 export interface EditorTopBarProps {
@@ -177,7 +178,7 @@ export function EditorTopBar({
   const isSweep = currentMethod === 'frequency_sweep'
   const sweep: SweepSettings = settings.sweep ?? defaultSweepSettings
   const showTheveninConfig = diagramMode === 'electrical' && currentMethod === 'thevenin'
-  const showTeachingMode = diagramMode === 'electrical' && isResistive && (currentMethod !== 'thevenin' && currentMethod !== 'transient' || (settings.comparisonMethods?.length ?? 0) > 0)
+  const showTeachingMode = diagramMode === 'electrical' && isResistive && ((currentMethod !== 'thevenin' && currentMethod !== 'transient' && teachingStepsReliable(currentMethod)) || (settings.comparisonMethods?.length ?? 0) > 0)
 
   const updateSweep = (patch: Partial<SweepSettings>) => {
     onSettingsChange({ ...settings, sweep: { ...sweep, ...patch } })

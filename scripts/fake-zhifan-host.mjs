@@ -5,7 +5,8 @@
 //   电路拓展：加 --id simulearn-lab，算例用 --example voltage-divider（lab-web 的内置示例 id）或 --project；
 //     --library qiu-circuits 打开内置案例库（课程包里写 {"library": "qiu-circuits"}）；
 //     --attach 接 lab 开发态内核时，要先构建 lab-web：run_server.jl 只在 packages/lab-web/dist 存在时才挂 /ui/ 页面
-//   可选：--experiment ch12-demo（实验 id）、--task <任务.json>、--host-port 8200（宿主界面端口，拓展端口 = 它 + 1）
+//   可选：--experiment ch12-demo（实验 id）、--task <任务.json>、--host-port 8200（宿主界面端口，拓展端口 = 它 + 1）、
+//     --data-dir <目录>（固定数据目录；配合不同的 --host-port 起两次，预演「换了端口草稿还在」）
 //
 // 做的事情与真宿主一致：
 //   §2 用 --port 0 --token --data-dir --host-version 启动，只认第一条以 {"ready" 开头的行，最多等 120 s；退出时关标准输入，5 s 不退就杀
@@ -42,7 +43,10 @@ let token;
 
 async function startEntry(entry) {
   token = randomBytes(32).toString('hex');
-  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), `${EXT_ID}-data-`));
+  // 真宿主的数据目录是固定的，端口每次启动都换。要预演「关掉重开草稿还在」，
+  // 用同一个 --data-dir、不同的 --host-port 起两次；不给就每次用新的临时目录
+  const dataDir = opt('--data-dir') ? path.resolve(opt('--data-dir')) : fs.mkdtempSync(path.join(os.tmpdir(), `${EXT_ID}-data-`));
+  fs.mkdirSync(dataDir, { recursive: true });
   const started = Date.now();
   child = spawn(entry, ['--port', '0', '--token', token, '--data-dir', dataDir, '--host-version', '0.11.0'], {
     stdio: ['pipe', 'pipe', 'pipe'],

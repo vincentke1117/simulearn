@@ -27,6 +27,7 @@ import {
   initialSimulationSettings,
   pickBranchCurrents,
   pickNodeVoltages,
+  teachingStepsReliable,
 } from './circuitWorkspaceHelpers'
 
 export type WorkspaceMessage = { tone: 'info' | 'error'; text: string } | null
@@ -296,7 +297,7 @@ export function useWorkspaceSimulation({
       }
 
       const applyAnalysisOptions = (payload: SimulationPayload) => {
-        payload.teaching_mode = teachingMode
+        payload.teaching_mode = teachingMode && teachingStepsReliable(payload.method)
         if (simulationSettings.method === 'thevenin' && theveninPort) {
           payload.thevenin_port = {
             positive: theveninPort.positiveNode,

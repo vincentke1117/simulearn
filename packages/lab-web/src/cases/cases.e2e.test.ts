@@ -9,11 +9,13 @@ import { QIU_CASES, casePayload } from './library'
  * 需要 lab 内核在 127.0.0.1:8080 上跑着，所以不进离线门禁。
  * 跑法：LAB_E2E=1 npx vitest run src/cases/cases.e2e.test.ts（只跑一个：再加 CASE=<案例 id>）
  */
-const BACKEND = 'http://127.0.0.1:8080/simulate'
+// LAB_E2E_URL：改对着别处的内核跑，比如发版前对着打好包的拓展程序（它的 /simulate 同样挂在根路径）
+const BACKEND = process.env.LAB_E2E_URL ?? 'http://127.0.0.1:8080/simulate'
 const TOKEN = process.env.SIMULEARN_TOKEN ?? 'simulearn-dev'
 const ONLY = process.env.CASE
 
-describe.runIf(process.env.LAB_E2E === '1')('案例库 × 真实内核', () => {
+// 给了地址就算开了：只设 LAB_E2E_URL、忘了 LAB_E2E 时全部跳过也是退出码 0，发版前会把「没跑」当成「通过」
+describe.runIf(process.env.LAB_E2E === '1' || !!process.env.LAB_E2E_URL)('案例库 × 真实内核', () => {
   const cases = ONLY ? QIU_CASES.filter((item) => item.id === ONLY) : QIU_CASES
   it.each(cases.map((item) => [item.id, item] as const))('%s', async (_, item) => {
     const build = casePayload(item)

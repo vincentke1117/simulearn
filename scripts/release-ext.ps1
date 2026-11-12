@@ -19,16 +19,21 @@ $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Import-Module (Join-Path $root 'scripts\ext-package.psm1') -Force
 if (-not $OutDir) { $OutDir = Join-Path $root 'dist\ext' }
 
-# 两个拓展的差别只在这张表里：内核目录、版本号所在文件、前端包、要不要带算例目录
+# 两个拓展的差别只在这张表里：内核目录、版本号所在文件、前端包、随包带哪些算例
 $targets = @{
-    'simulearn-grid' = @{ Backend = 'packages\grid-backend'; VersionFile = 'src\server.jl'; Web = 'grid-web'; Examples = $true; MemoryMB = 2048 }
+    'simulearn-grid' = @{ Backend = 'packages\grid-backend'; VersionFile = 'src\server.jl'; Web = 'grid-web'; MemoryMB = 2048
+        ExampleNames = @('ieee33', 'ring4', 'smib', 'econ2', 'reconfiguration_test', 'ch12_tap_max', 'ch12_tap_min') }
     # lab 的私有内存实测 3.5 GB（labpc 上的 ext-smoke，跑过一次瞬态后），清单如实写 4 GB（设计记录 R13）
-    'simulearn-lab'  = @{ Backend = 'packages\lab-backend'; VersionFile = 'src\Server.jl'; Web = 'lab-web'; Examples = $false; MemoryMB = 4096 }
+    'simulearn-lab'  = @{ Backend = 'packages\lab-backend'; VersionFile = 'src\Server.jl'; Web = 'lab-web'; MemoryMB = 4096; ExampleNames = @() }
 }
 $target = $targets[$Id]
 $backend = Join-Path $root $target.Backend
 $webDir = Join-Path $root ('packages\' + $target.Web)
 $appDir = Join-Path $backend "sysimage\ext\$Id"
+# 点了名的算例先核对在不在：名字写错的话，别等几十分钟的程序构建完了才报
+foreach ($name in $target.ExampleNames) {
+    if (-not (Test-Path (Join-Path $backend "examples\$name.json"))) { throw "点了名的算例不存在：$name" }
+}
 
 $versionSource = Get-Content -Raw -Encoding UTF8 (Join-Path $backend $target.VersionFile)
 if ($versionSource -notmatch 'const EXT_VERSION = "([0-9]+\.[0-9]+\.[0-9]+)"') { throw "在 $($target.VersionFile) 里找不到 EXT_VERSION" }
@@ -77,10 +82,13 @@ try {
         if (Test-Path $src) { Copy-Item -Recurse -Path $src -Destination (Join-Path $staging $part) }
     }
     Copy-Item -Recurse -Path (Join-Path $webDir 'dist') -Destination (Join-Path $staging 'ui')
-    if ($target.Examples) {
+    if ($target.ExampleNames.Count -gt 0) {
         New-Item -ItemType Directory -Force -Path (Join-Path $staging 'examples') | Out-Null
-        Get-ChildItem -File -Path (Join-Path $backend 'examples') -Filter '*.json' |
-            Copy-Item -Destination (Join-Path $staging 'examples')
+        # 只带点了名的算例：目录里另有几个没有测试、课程也不用的旧算例（设计记录修订 2026-11-11），
+        # 内核会把 examples 目录里有的全部列给学生，所以不能整个目录照搬
+        foreach ($name in $target.ExampleNames) {
+            Copy-Item -Path (Join-Path $backend "examples\$name.json") -Destination (Join-Path $staging 'examples')
+        }
     }
 
     # 许可清单覆盖打进页面的全部 npm 包（D18），目录由 web-deps.mjs 按 dependencies 闭包列出

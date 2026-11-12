@@ -6,7 +6,8 @@ import { buildSimulationPayload } from '@/simulation/payload'
 import { classifyResult, supportsVoltageOverlay } from '@/simulation/resultKind'
 import { formatPhasor } from '@/simulation/format'
 
-const BACKEND = 'http://127.0.0.1:8080/simulate'
+// LAB_E2E_URL：改对着别处的内核跑，比如发版前对着打好包的拓展程序（它的 /simulate 同样挂在根路径）
+const BACKEND = process.env.LAB_E2E_URL ?? 'http://127.0.0.1:8080/simulate'
 // 内核只认带令牌的请求（设计记录 D17）：跟随内核的 SIMULEARN_TOKEN，没设置时两边都是开发令牌
 const TOKEN = process.env.SIMULEARN_TOKEN ?? 'simulearn-dev'
 
@@ -16,7 +17,7 @@ const TOKEN = process.env.SIMULEARN_TOKEN ?? 'simulearn-dev'
  * 需要 lab 内核在 127.0.0.1:8080 上跑着，因此不进离线门禁（npm run check 保持不依赖后端）。
  * 跑法：LAB_E2E=1 npm run test:e2e -w @simulearn/lab-web
  */
-const E2E_ENABLED = process.env.LAB_E2E === '1'
+const E2E_ENABLED = process.env.LAB_E2E === '1' || !!process.env.LAB_E2E_URL
 
 function n(id: string, type: string, parameters: Record<string, number> = {}): Node<CircuitNodeData> {
   return { id, type, position: { x: 0, y: 0 }, data: { label: id, type: type as CircuitNodeData['type'], parameters } }

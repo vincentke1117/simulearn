@@ -8,7 +8,8 @@ import type { CaseDemoScript, StepsDemo } from './types'
  * 演示逐步对着真实内核核对：每一步带 expect 的读数、对照表每一行的教材值。
  * 跑法：LAB_E2E=1 npx vitest run src/cases/demo/demos.e2e.test.ts（只跑一个：DEMO=<案例 id>.<演示 id>）
  */
-const BACKEND = 'http://127.0.0.1:8080/simulate'
+// LAB_E2E_URL：改对着别处的内核跑，比如发版前对着打好包的拓展程序（它的 /simulate 同样挂在根路径）
+const BACKEND = process.env.LAB_E2E_URL ?? 'http://127.0.0.1:8080/simulate'
 const TOKEN = process.env.SIMULEARN_TOKEN ?? 'simulearn-dev'
 const ONLY = process.env.DEMO
 
@@ -27,7 +28,7 @@ async function post(payload: unknown): Promise<SimulationResponse> {
   return (await res.json()) as SimulationResponse
 }
 
-describe.runIf(process.env.LAB_E2E === '1')('演示 × 真实内核', () => {
+describe.runIf(process.env.LAB_E2E === '1' || !!process.env.LAB_E2E_URL)('演示 × 真实内核', () => {
   it.each(scripts.map((script) => [`${script.caseId}.${script.id}`, script] as const))('%s', async (name, script) => {
     const failures: string[] = []
     for (let index = 0; index < script.steps.length; index += 1) {
