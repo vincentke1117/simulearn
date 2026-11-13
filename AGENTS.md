@@ -75,7 +75,9 @@ node scripts/fake-zhifan-host.mjs --entry <程序目录>/bin/simulearn-lab.exe -
 node scripts/fake-zhifan-host.mjs --attach 8080 --token simulearn-dev --id simulearn-lab --example voltage-divider   # 接 lab 开发态内核（run_server.jl 在 lab-web 构建过时才挂页面）
 node scripts/zhifan-rehearsal.mjs [--zip <grid 包>] [--lab-zip <电路包>]   # 用真实知帆客户端（开发版）演练：生成演练课堂包 + 起假下载站，并打印客户端的启动命令
 node scripts/ch12-course-kit.mjs     # 第十二章调压实验交给课程站的工程文件与场景，写到 dist/course/ch12/
+node scripts/ch12-course-kit.mjs --classroom <course-site>/content/classrooms/ch12-l3-shiyan   # 写成课程站「电力系统分析」第十二章第 3 讲的课堂目录（已上线，场景顺序不能再改）
 node scripts/circuits-course-kit.mjs --verify   # 电路课的独立课堂资源包（案例库入口）+ 给老师的说明，写到 dist/course/circuits/；--verify 用知帆的 importPackage 核对
+node scripts/circuits-course-kit.mjs --version <版本> --classroom <course-site>/content/courses/course-ecd2814d/classrooms/simulearn-circuits-lab   # 主站「电路」课那一讲的课堂目录；发给老师的本地包用课程站打出的那份
 ```
 
 - 改了哪块就跑哪块的门禁；提交前全部门禁都要绿。

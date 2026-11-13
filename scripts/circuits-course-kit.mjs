@@ -1,12 +1,15 @@
 #!/usr/bin/env node
-// 电路课的课堂资源包「电路仿真实验」：给电路课老师和学生用。主站还没有电路课（学生也未必有知帆账号），
-// 所以不走「课程资料」在线下载，而是老师把这个 zip 发给学生，在知帆客户端「课程 → 导入课堂资源包」导入。
-// 不登录（访客）也能导入、安装拓展、做实验。
+// 电路课的课堂资源包「电路仿真实验」：挂在知帆主站的「电路」课（course-ecd2814d）里，学生在客户端「课程资料」里直接下载；
+// 同一个包也可以由老师发给学生、在客户端「课程 → 导入本地课堂包」导入（不登录也能用）。
 //
-//   node scripts/circuits-course-kit.mjs [--version 2026.11.06.1] [--out dist/course/circuits] [--verify]
+//   node scripts/circuits-course-kit.mjs [--version 2026.11.13.1] [--out dist/course/circuits] [--verify]
+//   node scripts/circuits-course-kit.mjs --classroom <course-site>/content/courses/course-ecd2814d/classrooms/simulearn-circuits-lab
 //
 // 输出 电路仿真实验-<版本>.zip 和 给老师的说明.md。--verify 用知帆客户端自己的 importPackage 导入到临时目录核对一遍
-// （需要本机有 course-site 仓库，路径用 --course-site 指定）。
+// （需要本机有 course-site 仓库，路径用 --course-site 指定）。--classroom 另外把这一讲写成课程站的课堂目录，
+// 主站上的课程包由课程站的 pack-chapter-release.mjs 从那里打（身份与本脚本的 zip 相同：同一 courseId + packageId）。
+// 发给老师本机导入的包也要用课程站打出的那一份（与主站下载的逐字节相同）：本脚本的 zip 内容和它不一样（少 private/answers.json），
+// 同一版本号、内容不同，学生先导入一份再下载另一份时知帆会拒收。本脚本的 zip 只用于本机演练和 --verify。
 // 课堂清单不带时间戳，同样的内容同一版本号重复生成，文件逐字节相同；改了内容就换版本号——知帆拒绝导入
 // 「同一 packageId、同一版本、内容不同」的包。
 import fs from 'node:fs'
@@ -14,15 +17,15 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-import { coursePackage, sha256 } from './course-package.mjs'
+import { coursePackage, guideSlide, sha256, writeClassroom } from './course-package.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const args = process.argv.slice(2)
 const opt = (name, fallback) => (args.includes(name) ? args[args.indexOf(name) + 1] : fallback)
 
 // 课程身份：知帆按 courseId + packageId 认同一个课堂，以后发新版本这两个都不能变。
-// 本机导入、又不在账号「我的课程」里的课程，客户端侧栏直接把 courseId 当课程名显示，所以取一个看得懂的英文名。
-export const COURSE_ID = 'circuits'
+// courseId 是主站「电路」课的课程编号（2026-11-13 起；之前的 'circuits' 只在本机演练里用过，没有发给学生）
+export const COURSE_ID = 'course-ecd2814d'
 export const PACKAGE_ID = 'simulearn-circuits-lab'
 // 案例库和课堂演示 0.5.1 起就有；0.5.2 起学生改过的参数才在重开客户端后还在（存进拓展的数据目录），
 // 所以要求 0.5.2：装着 0.5.1 的学生会被提示先更新拓展
@@ -53,29 +56,14 @@ const withDemos = cases.filter((item) => item.demos?.length)
 const demoLine = withDemos.map((item) => `${item.source}（${item.demos[0].title.split('：')[0]}）`).join('、')
 
 // ---------------- 课堂清单 ----------------
-const text = (id, left, top, width, height, html, color = '#333333') => ({
-  id, type: 'text', left, top, width, height, content: html, defaultFontName: 'Microsoft YaHei', defaultColor: color, rotate: 0,
-})
-const para = (body, size = 18) => `<p style="font-size:${size}px;">${body}</p>`
 const guide = {
-  type: 'slide', title: '怎么用', order: 1,
-  content: {
-    canvas: {
-      viewportSize: 1000, viewportRatio: 0.5625,
-      background: { type: 'solid', color: '#ffffff' },
-      elements: [
-        text('title', 60, 40, 880, 60, para('<strong>电路仿真实验：怎么用</strong>', 30), '#1e3a5f'),
-        { id: 'rule', type: 'shape', left: 60, top: 104, width: 880, height: 3, path: 'M 0 0 L 1 0 L 1 1 L 0 1 Z', viewBox: [1, 1], fill: '#5b9bd5', fixedRatio: false, rotate: 0 },
-        text('body', 60, 124, 880, 400, [
-          para('• <strong>第一次用</strong>：在「个人中心 → 拓展」安装「仿真实验 · 电路」（约 550 MB，需要知帆客户端 0.11.3 及以上，装一次就行）。'),
-          para(`• <strong>下一页是案例库</strong>：${cases.length} 道邱关源《电路》例题，按章排列。电路结构固定，元件参数可以改、分析方法可以换：先点「运行仿真」，对照说明卡里的「教材结果」，再按「动手试试」改参数看变化。`),
-          para(`• <strong>课堂演示</strong>：${demoLine}。在说明卡里点开后全屏逐步讲解，点「下一步」或按 → 翻页，Esc 退出。`),
-          para('• 改过的参数会自动保存在你的电脑上，关掉客户端再打开也还在；「恢复初始电路」随时回到教材里的初始状态。'),
-        ].join('')),
-      ],
-    },
-  },
-  actions: [],
+  ...guideSlide('电路仿真实验：怎么用', [
+    '<strong>第一次用</strong>：在「个人中心 → 拓展」安装「仿真实验 · 电路」（约 550 MB，需要知帆客户端 0.11.3 及以上，装一次就行）。',
+    `<strong>下一页是案例库</strong>：${cases.length} 道邱关源《电路》例题，按章排列。电路结构固定，元件参数可以改、分析方法可以换：先点「运行仿真」，对照说明卡里的「教材结果」，再按「动手试试」改参数看变化。`,
+    `<strong>课堂演示</strong>：${demoLine}。在说明卡里点开后全屏逐步讲解，点「下一步」或按 → 翻页，Esc 退出。`,
+    '改过的参数会自动保存在你的电脑上，关掉客户端再打开也还在；「恢复初始电路」随时回到教材里的初始状态。',
+  ]),
+  order: 1,
 }
 const library = {
   type: 'interactive', title: '电路案例库', order: 2,
@@ -84,6 +72,11 @@ const library = {
 const files = {
   'manifest.json': Buffer.from(JSON.stringify({ stage: { name: TITLE }, scenes: [guide, library] })),
 }
+const classroomDir = opt('--classroom', null)
+if (classroomDir) {
+  writeClassroom(path.resolve(classroomDir), files)
+  console.log(`已写出课程站课堂目录：${path.resolve(classroomDir)}`)
+}
 const zip = coursePackage({ courseId: COURSE_ID, packageId: PACKAGE_ID, version, title: TITLE, files })
 
 // ---------------- 给老师的说明 ----------------
@@ -91,13 +84,13 @@ const caseTable = cases.map((item) => `| ${item.source} | ${item.title}${item.de
 const zipName = `电路仿真实验-${version}.zip`
 const readme = `# 电路仿真实验：给老师的说明
 
-课堂资源包：\`${zipName}\`（版本 ${version}）。它在知帆客户端里加一门「电路仿真实验」课，里面是一页使用说明和一个电路案例库：${cases.length} 道邱关源《电路》例题，其中 ${withDemos.length} 道带课堂演示。
+这一讲「${TITLE}」已挂在知帆主站的「电路」课里（2026-11-13 起），学生登录知帆客户端后在「课程资料」里直接下载；同一份内容也做成了课堂资源包 \`${zipName}\`（版本 ${version}），给没加入课程的人本机导入。里面是一页使用说明和一个电路案例库：${cases.length} 道邱关源《电路》例题，其中 ${withDemos.length} 道带课堂演示。
 
 ## 老师先试一遍
 
 1. 装好知帆客户端（0.11.3 及以上）：${CLIENT_URL}
 2. 「个人中心 → 拓展」安装「仿真实验 · 电路」（${MIN_VERSION} 及以上，约 550 MB，装一次就行；装过旧版的点更新）。
-3. 「课程 → 导入课堂资源包」，选 \`${zipName}\`。侧栏的课程切换里会多一门 **circuits**（本机导入的课程，客户端拿课程编号当名字显示），课堂名是「${TITLE}」。
+3. 登录知帆客户端，侧栏课程选「电路」，在「课程资料」里下载「${TITLE}」。
 4. 打开课堂，翻到「电路案例库」，选一道例题。说明卡里有「课堂演示」的，点开就是全屏演示。
 
 ## 上课投屏（课堂演示）
@@ -109,15 +102,16 @@ const readme = `# 电路仿真实验：给老师的说明
 
 ## 发给学生
 
-把 \`${zipName}\` 和下面这段话发给学生（不登录知帆账号也能用）：
+学生要先加入知帆上的「电路」课（老师在网站「电路」课的班级里打开课程码发给学生，或把学生加进名单）。然后把下面这段话发给学生：
 
 > 1. 下载安装知帆客户端：${CLIENT_URL}
-> 2. 打开客户端，「个人中心 → 拓展」安装「仿真实验 · 电路」（约 550 MB）。
-> 3. 「课程 → 导入课堂资源包」，选老师发的 \`${zipName}\`。
-> 4. 侧栏课程选 circuits，进入「${TITLE}」，在「电路案例库」里做题：先运行，对照教材结果，再按「动手试试」改参数。
+> 2. 打开客户端，用知帆账号登录，「个人中心 → 拓展」安装「仿真实验 · 电路」（约 550 MB）。
+> 3. 侧栏课程选「电路」，在「课程资料」里下载「${TITLE}」。
+> 4. 进入这一讲，在「电路案例库」里做题：先运行，对照教材结果，再按「动手试试」改参数。
 
 ## 说明
 
+- 不登录也能用：客户端「课程」页点「导入本地课堂包」，选 \`${zipName}\`。本机导入、又不在账号「我的课程」里的课程，侧栏拿课程编号 course-ecd2814d 当名字显示。
 - 电路实验暂时不判分：打开满 60 秒后点「我已完成」即算学完这一页。
 - 学生改过的参数自动保存在自己电脑上（拓展的数据目录），关掉客户端再打开也还在；以后发新版本的课堂资源包也不会丢。在「个人中心 → 拓展」卸载拓展并选择删除数据时会一起清掉。
 - 课堂资源包要求「仿真实验 · 电路」0.5.2 及以上：装着旧版的学生打开实验时会被提示先更新拓展。

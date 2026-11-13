@@ -5,11 +5,17 @@
 //
 //   node scripts/ch12-course-kit.mjs            # 写到 dist/course/ch12/
 //   node scripts/ch12-course-kit.mjs --out <目录>
+//   node scripts/ch12-course-kit.mjs --classroom <course-site>/content/classrooms/ch12-l3-shiyan
+//
+// --classroom 把两个实验连同一页说明写成课程站「电力系统分析」第十二章第 3 讲的课堂目录（2026-11-13 定：第 2 讲已上线，
+// 课程站不许在已上线的讲中间插页，所以单开一讲）。这一讲要求拓展 0.5.3：学生改过的设置从这一版起才在重开客户端后还在。
 //
 // 课程内容的部署走课程站自己的流程，这里只产出交接件，不碰课程站仓库。
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+
+import { guideSlide, writeClassroom } from './course-package.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -56,7 +62,28 @@ export function ch12Experiments({ minVersion = CH12_MIN_VERSION, createdAt = CH1
   return { files, scenes };
 }
 
+// 课程站第十二章第 3 讲：一页说明 + 两个实验
+export const CH12_LECTURE_MIN_VERSION = '0.5.3';
+function lectureFiles() {
+  const { files, scenes } = ch12Experiments({ minVersion: CH12_LECTURE_MIN_VERSION });
+  const guide = guideSlide('调压仿真实验：怎么做', [
+    '<strong>第一次用</strong>：在「个人中心 → 拓展」安装「仿真实验 · 配电网」（约 350 MB，需要知帆客户端 0.11.3 及以上，装一次就行）。',
+    '<strong>接着第 2 讲的例 12-3</strong>：110 ± 2×2.5% / 6.3 kV 降压变压器，要求低压母线最大负荷时不低于 6.0 kV、最小负荷时不高于 6.6 kV。后面两页分别是最大负荷（28 + j14 MVA）和最小负荷（10 + j6 MVA）的电网。',
+    '<strong>怎么做</strong>：点「开始实验」打开电网，先运行潮流看低压母线电压，再在变压器参数里换分接头挡位重新运算，找出两种负荷下都满足要求的那一挡，和第 2 讲手算选出的分接头对照。电网结构固定，参数可以改。',
+    '实验不判分：打开满 60 秒后点「我已完成」；还没装拓展可以先点「先跳过」，装好再回来做。改过的设置自动保存在你的电脑上，关掉客户端再打开也还在。',
+  ]);
+  const manifest = { stage: { name: '第十二章第3讲：调压仿真实验' }, scenes: [guide, ...scenes].map((scene, i) => ({ ...scene, order: i + 1 })) };
+  return { ...files, 'manifest.json': Buffer.from(JSON.stringify(manifest)) };
+}
+
 function main() {
+  const c = process.argv.indexOf('--classroom');
+  if (c > 0) {
+    const dir = path.resolve(process.argv[c + 1]);
+    writeClassroom(dir, lectureFiles());
+    console.log(`已写出课程站课堂目录：${dir}`);
+    return;
+  }
   const i = process.argv.indexOf('--out');
   const outDir = i > 0 ? path.resolve(process.argv[i + 1]) : path.join(root, 'dist', 'course', 'ch12');
   const { files, scenes } = ch12Experiments();
